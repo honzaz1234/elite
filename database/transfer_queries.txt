@@ -1,0 +1,10 @@
+insert into  main.places select * from old_db.places;
+insert into main.nationalities select * from old_db.nationalities;
+insert into main.leagues select * from old_db.leagues;
+insert into main.teams (id, team) select id, team from old_db.teams;
+insert into main.players select * from old_db.players;
+insert into main.achievements select * from old_db.achievements;
+insert into main.seasons select * from old_db.seasons where id > 277;
+insert into main.players_achievements select * from old_db.players_achievements;
+insert into main.player_stats select * from old_db.player_stats;
+insert into main.goalie_stats select * from old_db.goalie_stats;
