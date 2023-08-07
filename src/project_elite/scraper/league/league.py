@@ -1,7 +1,7 @@
 import scrapy
 import requests
 import re
-import scraper.league.league_season.league_season as league_season
+import src.project_elite.scraper.league.league_season.league_season as league_season
 
 class LeagueScrapper():
 

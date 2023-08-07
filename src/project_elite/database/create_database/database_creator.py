@@ -94,21 +94,23 @@ class Team(Base):
     id = Column("id", Integer, primary_key=True)
     u_id = Column("u_id", Integer)
     team = Column("team", String)
+    active = Column("active", Integer)
     team_colours = Column("team_colours", String)
     founded = Column("founded", Integer)
     place_id = Column("place_id", ForeignKey("places.id"))
     stadium_id = Column("stadium_id", ForeignKey("stadiums.id"))
 
-    def __init__(self, u_id,  team, team_colours, founded, place_id, stadium_id):
+    def __init__(self, u_id,  team, active,  team_colours, founded, place_id, stadium_id):
         self.u_id = u_id
         self.team = team
+        self.active = active
         self.team_colours = team_colours
         self.founded = founded
         self.place_id = place_id
         self.stadium_id = stadium_id
     
     def __repr__(self):
-        return f"({self.id}, {self.u_id}, {self.team}, {self.team_colours}, {self.founded} {self.place_id}, {self.stadium_id})"
+        return f"({self.id}, {self.u_id}, {self.team}, {self.active}, {self.team_colours}, {self.founded} {self.place_id}, {self.stadium_id})"
     
 class AffiliatedTeam(Base):
 
@@ -188,6 +190,25 @@ class TeamLeague(Base):
 
     def __repr__(self):
         return f"({self.league_id}, {self.team_id})"
+    
+class TeamName(Base):
+    
+    __tablename_ = "team_names"
+
+    id = Column("id", Integer, primary_key=True)
+    team_name = Column("team_name", String)
+    year_from = Column("year_from", Integer)
+    year_to = Column("year_to", Integer)
+    team_id = Column("team_id", Integer, ForeignKey("teams.id"))
+
+    def __init__(self, team_name, year_from, year_to, team_id):
+        self.team_name = team_name
+        self.year_from = year_from
+        self.year_to = year_to
+        self.team_id = team_id
+
+    def __repr__(self):
+        return f"({self.team_name}, {self.year_from}, {self.year_to}, {self.team_id})"
 
 class Place(Base):
     

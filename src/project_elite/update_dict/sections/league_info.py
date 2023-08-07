@@ -10,6 +10,7 @@ class UpdateLeagueDict():
         for league_section in league_dict:
             new_dict[league_section] = {}
             for season in league_dict[league_section]:
+                print(season)
                 new_dict[league_section][season] = {}
                 for position in league_dict[league_section][season]:
                     new_key_name = re.findall("([0-9]+).", position)[0]

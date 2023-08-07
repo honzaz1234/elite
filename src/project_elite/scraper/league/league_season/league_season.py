@@ -1,5 +1,6 @@
 import requests
 import scrapy
+import re
 
 class LeagueSeasonScraper():
 
@@ -15,16 +16,20 @@ class LeagueSeasonScraper():
 
     def get_section_standings(self, path_section):
         n_rows = len(self.selector.xpath(path_section).getall())
-        print(n_rows)
         dict_section = {}
         for row_ind in range(1, n_rows + 1):
             dict_row = {}
             one_row_path = path_section + "[" + str(row_ind) + "]" + "/td//text()"
+            one_row_html = path_section + "[" + str(row_ind) + "]" "/td[@class='team']//a/@href"
+            print(one_row_html)
             row_data = self.selector.xpath(one_row_path).getall()
+            url_team_season = self.selector.xpath(one_row_html).getall()[0]
+            url_team_general = re.findall("(.+)\/[0-9]{4}\-[0-9]{4}$", url_team_season)[0]
+            u_id = re.findall("team\/([0-9]+)\/", url_team_season)[0]
             row_data = [value.strip() for value in row_data if value.strip()!=""]
             for ind in range(1, len(row_data)):
-                print(row_data[ind].strip())
                 dict_row[LeagueSeasonScraper.header_names[ind]] = row_data[ind].strip()
+            dict_row[u_id] = url_team_general
             dict_section[row_data[0]] = dict_row
         return dict_section
     

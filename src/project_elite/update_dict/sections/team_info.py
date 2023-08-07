@@ -7,6 +7,8 @@ class UpdateTeamDict():
                               "IA", "MS", "SD", "ND", "MD",	"DE", "NV", "MT", "TN", "VT", "DC", "GA", "ID"],
                               "CAN": ["AB", "BC", "MB", "NB", "NL", "NS", "NT", "ON", "ONT", "PE", "QC", "SK","YT", "NU"]}
     integer_vals = ["founded", "construction_year", "capacity"]
+    gen_info_keys = ["short_name", "plays_in", "full_name", "team_colours", "town", "founded"]
+    stadium_info_keys = ["construction_year", "capacity", "construction_year", "arena_name"]
     
 
     def __init__(self):
@@ -37,28 +39,33 @@ class UpdateTeamDict():
         return dict_place
     
     def update_key_names(self, dict_info):
-        new_dict = {}
-        for key in dict_info:
-            new_key = key.strip()
-            new_key = new_key.lower()
-            new_key = re.sub(" ", "_", new_key)
-            new_dict[new_key] = dict_info[key]
-        return new_dict
+        for key in ["general_info", "stadium_info"]:
+            for subkey in list(dict_info[key].keys()):
+                new_key = subkey.strip()
+                new_key = new_key.lower()
+                new_key = re.sub(" ", "_", new_key)
+                if new_key != subkey:
+                    dict_info[key][new_key] = dict_info[key][subkey]
+                    del dict_info[key][subkey]
+        return dict_info
     
     def update_urls(self, list_url, regex):
         dict_url = {}
         for url in list_url:
+            print(url)
             u_id = re.findall(regex, url)[0]
             dict_url[u_id] = url
         return dict_url
     
     def update_numbers(self, dict_info):
-        for key in UpdateTeamDict.integer_vals:
-            if dict_info[key] is None:
-                return dict_info
-            old_val = dict_info[key]
-            new_val = re.sub(" ", "", old_val)
-            dict_info[key] = int(new_val)
+        for key in dict_info:
+            for subkey in dict_info[key]:
+                if subkey in UpdateTeamDict.integer_vals:
+                    if dict_info[key][subkey] is None:
+                        continue
+                    old_val = dict_info[key][subkey]
+                    new_val = re.sub(" ", "", old_val)
+                    dict_info[key][subkey] = int(new_val)
         return dict_info
 
     def update_status(self, league_names):
@@ -78,20 +85,53 @@ class UpdateTeamDict():
         if len(hist_names_dict) == 1:
             for key in list(hist_names_dict.keys()):
                 if key == "-":
-                    hist_names_dict[dict_info["short_name"]] = hist_names_dict[key]
+                    hist_names_dict[dict_info["general_info"]["short_name"]] = hist_names_dict[key]
                     del hist_names_dict[key]
         dict_info["titles"] = hist_names_dict
         return dict_info
-        
-        
+    
+    def update_team_url(self, list_url):
+        new_list = []
+        for url in list_url:
+            u_id = re.findall("team\/([0-9]+)\/", url)[0]
+            new_list.append(u_id)
+        return new_list
+    
+    def update_retired_numbers(self, player_dict):
+        for url_key in list(player_dict.keys()):
+            u_id = re.findall("player\/([0-9]+)\/", url_key)[0]
+            new_number = int(re.findall("#([0-9]+)", player_dict[url_key])[0])
+            new_dict = {new_number, url_key}
+            player_dict[u_id] = new_dict
+            del player_dict[url_key]
+        return player_dict
+    
+    def update_info(self, info_dict, list_keys):
+        for key in list(info_dict.keys()):
+            if key not in list_keys:
+                del info_dict[key]
+        for key in list_keys:
+            if key not in info_dict:
+                info_dict[key] = None
+        return info_dict
+    
     def update_team_dict_wrap(self, dict_info):
+        print(dict_info)
         dict_info = self.update_key_names(dict_info)
-        place_dict = self.update_place(place_name=dict_info["town"])
-        dict_info = {**dict_info, **place_dict}
+        if "town" in dict_info["stadium_info"]:
+            place_dict = self.update_place(place_name=dict_info["stadium_info"]["town"])
+            dict_info = {**dict_info, **place_dict}
         dict_info["affiliated_teams"] = self.update_urls(list_url=dict_info["affiliated_teams"], regex="team\/([0-9]+)")
-        dict_info["retired_numbers"] = self.update_urls(list_url=dict_info["retired_numbers"], regex="player\/([0-9]+)")
+        #dict_info["retired_numbers"] = self.update_urls(list_url=dict_info["retired_numbers"], regex="player\/([0-9]+)")
         dict_info = self.update_NA(dict_info)
+        print(dict_info)
         dict_info =  self.update_numbers(dict_info=dict_info)
-        dict_info["active"] = self.update_status(league_names=dict_info["plays_in"])
+        print(dict_info)
+        dict_info["active"] = self.update_status(league_names=dict_info["general_info"]["plays_in"])
+        print(dict_info)
         dict_info = self.update_historic_name(dict_info)
+        #dict_info["affiliated_teams"] = self.update_team_url(list_url=dict_info["affiliated_teams"])
+        dict_info["retired_numbers"] = self.update_retired_numbers(player_dict=dict_info["retired_numbers"])
+        dict_info["general_info"] = self.update_info(info_dict=dict_info["general_info"], list_keys=UpdateTeamDict.gen_info_keys)
+        dict_info["stadium_info"] = self.update_info(info_dict=dict_info["stadium_info"], list_keys=UpdateTeamDict.stadium_info_keys)
         return dict_info

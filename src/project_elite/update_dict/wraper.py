@@ -1,6 +1,6 @@
-import update_dict.sections.player_info as player_info
-import update_dict.sections.player_stats as player_stats
-import update_dict.sections.league_info as league_info
+import src.project_elite.update_dict.sections.player_info as player_info
+import src.project_elite.update_dict.sections.player_stats as player_stats
+import src.project_elite.update_dict.sections.league_info as league_info
 
 
 class UpdateDictWraper():
@@ -19,10 +19,10 @@ class UpdateDictWraper():
         is_goalie = self.check_goalie(dict)
         info_updater = player_info.UpdatePlayerInfo(is_goalie=is_goalie)
         dict_info = dict["Info"]
-        dict["Info"] = info_updater.update_info_wraper(dict_info)
+        dict["Info"] = info_updater.update_info_dict(dict_info)
         stats_updater = player_stats.UpdatePlayerStats(is_goalie=is_goalie)
         dict_stats = dict["Stats"]
-        dict["Stats"] = stats_updater.update_stats_wraper(dict_stats)
+        dict["Stats"] = stats_updater.update_stats_dict(dict_stats)
         return dict
     
     def update_league_dict(self, dict):

@@ -6,7 +6,8 @@ import database.entry_data.input_data.tables.stats as stats
 import database.entry_data.input_data.tables.season as season
 import database.entry_data.input_data.tables.achievement as achievement
 import database.entry_data.input_data.tables.achievement_player as achievement_player
-import database.entry_data.input_data.tables.place as place                  
+import database.entry_data.input_data.tables.place as place
+import database.entry_data.input_data.tables.stadium as stadium                  
 
 
 class InputData:
@@ -14,13 +15,17 @@ class InputData:
     def __init__(self):
         pass
 
-    def input_player_data(self, dict_info):
+    def input_player_data(self, dict_info, status):
         u_id = dict_info["u_id"]
         player_o = player.CreatePlayerTableEntry()
-        player_id = player_o.check_if_id_exists_in_table_player(u_id)
-        if player_id == None:
-            dict_fk = {}
-            for key in ["youth_team", "nhl_team_rights", "draft_team"]:
+        if status == "insert_uid":
+            insert_uid_entry = player_o.insert_uid_player_entry(dict_info["u_id"])\            
+            player.db.session.add(insert_uid_entry)
+            player.db.session.commit()
+            player_id = player_o.check_if_id_exists_in_table_player(u_id)
+            return player_id
+        dict_fk = {}
+        for key in ["youth_team", "nhl_team_rights", "draft_team"]:
                 team_name = dict_info[key]
                 team_id = self.input_team_data(team_name=team_name)
                 key_id = key + "_id"
@@ -141,6 +146,19 @@ class InputData:
             season.db.session.commit()
             season_id = season_o.find_id_in_season_table(season_name=season_name)
         return season_id
+    
+    def input_stadium_data(self, stadium_dict):
+        stadium_o =  stadium.CreateStadiumEntry()
+        stadium_id = stadium_o.find_id_in_stadium_table(stadium_dict=stadium_dict)
+        if stadium_id is None:
+            stadium_entry = stadium_o.create_database_entry(stadium_dict=stadium_dict)
+            place.db.session.add(stadium_entry)
+            place.db.session.commit()
+            stadium_id = stadium_o.find_id_in_stadium_table(stadium_dict=stadium_dict)
+        return stadium_id
+    
+    def input
+    
 
     
     

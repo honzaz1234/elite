@@ -10,7 +10,7 @@ class TeamScraper():
              "stadium_facts_names": "//div[@class='facts' and preceding-sibling::div[text()='Team Captains'][1]]/span[@class='lbl']/text()", 
              "stadium_facts_values": "//div[@class='facts' and preceding::div[text()='Team Captains'][1]]/strong[@class='value']//text()",
              "affiliated_team_values": "//strong[@class='value' and preceding-sibling::span[text()='Affiliated Team(s)']]//@href", 
-             "retired_num_values": "//ul[@class='column-3' and preceding-sibling::h4[text()='Retired Numbers']]//@href",
+             "retired_num_values": "//ul[@class='column-3' and preceding-sibling::h4[text()='Retired Numbers']]//a[1]/",
              "history_table": "//table[@class ='table table-striped team-history-and-standings'][1]",
              "history_names": "//tr[@class='title']/td/text()",
              "history_seasons": "//td[@class='season']/a/text()",
@@ -31,14 +31,12 @@ class TeamScraper():
         self.selector = scrapy.Selector(text=self.html)
 
     def get_info(self):
-        dict_gi = self.get_general_info()
-        dict_si = self.get_stadium_info()
-        dict_at = self.get_affiliated_teams()
-        dict_rn = self.get_retired_numbers()
-        dict_htn = {}
-        dict_htn["titles"] = self.get_historic_names()
-        print(dict_htn)
-        dict_info = {**dict_gi, **dict_si, **dict_at, **dict_rn, **dict_htn}
+        dict_info = {}
+        dict_info["general_info"] = self.get_general_info()
+        dict_info["stadium_info"] = self.get_stadium_info()
+        dict_info["affiliated_teams"] = self.get_affiliated_teams()
+        dict_info["retired_numbers"] = self.get_retired_numbers()
+        dict_info["titles"] = self.get_historic_names()
         return dict_info
     
     def get_general_info(self):
@@ -70,21 +68,24 @@ class TeamScraper():
         stadium_values = [value for value in stadium_values if value!=""]
         stadium_names.reverse()
         stadium_values.reverse()
-        for ind in range(0, 4):
+        for ind in range(0, len(stadium_names)):
             dict_si[stadium_names[ind]] = stadium_values[ind]
         return dict_si
 
     def get_affiliated_teams(self):
         dict_at = {}
-        dict_at["affiliated_teams"] = self.selector.xpath(TeamScraper.paths["affiliated_team_values"]).getall()
+        dict_at = self.selector.xpath(TeamScraper.paths["affiliated_team_values"]).getall()
         return dict_at
     
     def get_retired_numbers(self):
-        dict_rn = {}
-        retired_numbers = self.selector.xpath(TeamScraper.paths["retired_num_values"]).getall()
-        retired_numbers = list(set(retired_numbers))
-        dict_rn["retired_numbers"] = retired_numbers
-        return dict_rn
+        dict_num = {}
+        path_url = TeamScraper.paths["retired_num_values"] + "@href"
+        path_num = TeamScraper.paths["retired_num_values"] + "text()"
+        urls = self.selector.xpath(path_url).getall()
+        numbers = self.selector.xpath(path_num).getall()
+        for ind in range(len(urls)):
+            dict_num[urls[ind]] = numbers[ind].strip()
+        return dict_num
     
     def get_historic_names(self):
         n_names = self.selector.xpath(TeamScraper.paths["num_titles"]).getall()[0]

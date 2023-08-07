@@ -1,4 +1,5 @@
 import database.create_database.database_creator as db
+from sqlalchemy import update
 
 class CreatePlayerTableEntry:
 
@@ -42,11 +43,36 @@ class CreatePlayerTableEntry:
             return row_data.id
 
         
-    def create_team_entry(self, team_name, dict_fkeys):
-        team_entry = db.Team(team=team_name, 
-                                 league_id=dict_fkeys["league_id"],
-                                 country_id = dict_fkeys["country_id"])
-        return team_entry
+    def update_player_entry(self, dictd, dict_fkeys):
+        update_query = update(db.Player).where(db.Player.u_id == dictd["u_id"]).values(name = dictd["name"],
+                                 position = dictd["position"], 
+                                 active = dictd["active"],
+                                 age = dictd["age"],
+                                 shoots = dictd["shoots"],
+                                 catches = dictd["catches"],
+                                 contract = dictd["contract"],
+                                 cap_hit= dictd["cap_hit"],
+                                 signed_nhl = dictd["signed_nhl"],
+                                 date_birth = dictd["date_birth"],
+                                 drafted = dictd["drafted"],
+                                 draft_round = dictd["draft_round"],
+                                 draft_position = dictd["draft_position"],
+                                 draft_year = dictd["draft_year"],
+                                 height = dictd["height"],
+                                 weight = dictd["weight"],
+                                 youth_team_id = dict_fkeys["youth_team_id"],
+                                 nhl_rights_id = dict_fkeys["nhl_team_rights_id"],
+                                 draft_team_id = dict_fkeys["draft_team_id"],
+                                 nation_id = dict_fkeys["nation_id"],
+                                 place_birth_id = dict_fkeys["place_birth_id"])
+        return update_query
+    
+
+    def insert_uid_player_entry(self, u_id_1):
+         player_entry = db.Player(u_id = u_id_1)
+         return player_entry
+
+
             
 
 
