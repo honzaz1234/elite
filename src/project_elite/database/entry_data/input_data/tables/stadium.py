@@ -5,7 +5,7 @@ class CreateStadiumEntry():
     def __init__(self):
         pass
 
-    def create_database_entry(self, stadium_dict):
+    def create_stadium_entry(self, stadium_dict):
         stadium_entry = db.Stadium(stadium=stadium_dict["arena_name"],
                                    capacity=stadium_dict["capacity"],
                                    construction_year=stadium_dict["construction_year"],

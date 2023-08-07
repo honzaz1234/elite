@@ -7,7 +7,8 @@ import database.entry_data.input_data.tables.season as season
 import database.entry_data.input_data.tables.achievement as achievement
 import database.entry_data.input_data.tables.achievement_player as achievement_player
 import database.entry_data.input_data.tables.place as place
-import database.entry_data.input_data.tables.stadium as stadium                  
+import database.entry_data.input_data.tables.stadium as stadium
+import database.entry_data.input_data.tables.stadium_team as stadium_team                
 
 
 class InputData:
@@ -151,13 +152,13 @@ class InputData:
         stadium_o =  stadium.CreateStadiumEntry()
         stadium_id = stadium_o.find_id_in_stadium_table(stadium_dict=stadium_dict)
         if stadium_id is None:
-            stadium_entry = stadium_o.create_database_entry(stadium_dict=stadium_dict)
+            stadium_entry = stadium_o.create_stadium_entry(stadium_dict=stadium_dict)
             place.db.session.add(stadium_entry)
             place.db.session.commit()
             stadium_id = stadium_o.find_id_in_stadium_table(stadium_dict=stadium_dict)
         return stadium_id
     
-    def input
+
     
 
     

@@ -5,11 +5,11 @@ class InputPlayerDict():
     def __init__(self):
         pass
 
-    def input_dict(self, dict):
+    def input_player_dict(self, dict):
         input_data_o = input_data.InputData()
-        dict_info = dict["Info"]
+        dict_info = dict["info"]
         player_id = input_data_o.input_player_data(dict_info=dict_info)
-        dict_stats = dict["Stats"]
+        dict_stats = dict["stats"]
         if dict_info["position"] == "G":
             is_goalie = True
         else:
@@ -90,6 +90,40 @@ class InputPlayerDict():
             dict_achiev_season = dict_achievements[season]
             for achievement_name in dict_achiev_season:
                 achievement_player_id = input_data_o.input_achievement_relation(achievement_name=achievement_name, season_name=season, player_id=player_id)
+
+
+
+class InputTeamDict():
+
+
+    def __init__(self):
+        pass
+
+    def input_team_dict(self, team_dict):
+        input_data_o = input_data.InputData()
+        gi_dict = team_dict["general_info"]
+        if set(stadium_dict.values()) != {None}:
+            stadium_id = input_data_o.input_stadium_data(stadium_dict=stadium_dict)
+        else:
+            stadium_id = None
+        gi_dict["stadium_id"] = stadium_id
+        team_id = input_data_o.input_team(general_info_dict=gi_dict)
+        stadium_dict = team_dict["stadium_info"]
+        affiliated_teams_dict = team_dict["affiliated_teams"]
+        for u_id in affiliated_teams_dict:
+            team_a_id = input_data_o.input_team()
+            input_data_o.input_affiliated_teams(team_id=team_id, team_affiliated_id=team_a_id)
+        retired_numbers_dict = team_dict["retired_numbers"]
+        for u_id in retired_numbers_dict:
+            player_id = input_data_o.input_player()
+            input_data_o.input_retired_number()
+
+        
+
+
+
+
+
 
                     
 
