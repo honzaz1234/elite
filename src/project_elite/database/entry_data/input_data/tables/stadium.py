@@ -13,7 +13,7 @@ class CreateStadiumEntry():
         return stadium_entry
     
     def find_id_in_stadium_table(self, stadium_dict):
-        row_data = db.session.query(db.Season.id).filter_by(stadium=stadium_dict["arena_name"],
+        row_data = db.session.query(db.Stadium.id).filter_by(stadium=stadium_dict["arena_name"],
                                                             capacity=stadium_dict["capacity"],
                                                             construction_year=stadium_dict["construction_year"],
                                                             place_id=stadium_dict["place_id"]).first()

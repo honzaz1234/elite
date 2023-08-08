@@ -8,7 +8,10 @@ import database.entry_data.input_data.tables.achievement as achievement
 import database.entry_data.input_data.tables.achievement_player as achievement_player
 import database.entry_data.input_data.tables.place as place
 import database.entry_data.input_data.tables.stadium as stadium
-import database.entry_data.input_data.tables.stadium_team as stadium_team                
+import database.entry_data.input_data.tables.stadium_team as stadium_team
+import database.entry_data.input_data.tables.affiliated_teams as affiliated_teams
+import database.entry_data.input_data.tables.retired_number as retired_number
+import database.entry_data.input_data.tables.team_name as team_name                   
 
 
 class InputData:
@@ -16,11 +19,43 @@ class InputData:
     def __init__(self):
         pass
 
+
+    def input_player_uid(self, u_id):
+        player_o = player.CreatePlayerTableEntry()
+        player_id = player_o.check_if_id_exists_in_table_player(u_id_1=u_id)
+        if player_id is None:
+            player_entry = player_o.insert_uid_player_entry(u_id_1=u_id)
+            player.db.session.add(player_entry)
+            player.db.session.commit()
+            player_id = player_o.check_if_id_exists_in_table_player(u_id_1=u_id)
+        return player_id
+    
+    def input_team_uid(self, u_id):
+        team_o = team.CreateTeamTableEntry()
+        team_id = team_o.find_id_in_team_table(u_id_1=u_id)
+        if team_id is None:
+            team_entry = team_o.insert_uid_team_entry(u_id_1=u_id)
+            team.db.session.add(team_entry)
+            team.db.session.commit()
+            team_id = team_o.find_id_in_team_table(u_id_1=u_id)
+        return team_id
+    
+    def input_league_uid(self, league_uid):
+        league_o = league.CreateLeagueTableEntry()
+        league_id = league_o.find_id_in_league_table(league_uid=league_uid)
+        if league_id is None:
+            league_entry = league_o.insert_uid_league_entry(league_uid=league_uid)
+            league.db.session.add(league_entry)
+            league.db.session.commit()
+            league_id = league_o.find_id_in_league_table(league_uid=league_uid)
+        return league_id
+
+
     def input_player_data(self, dict_info, status):
         u_id = dict_info["u_id"]
         player_o = player.CreatePlayerTableEntry()
         if status == "insert_uid":
-            insert_uid_entry = player_o.insert_uid_player_entry(dict_info["u_id"])\            
+            insert_uid_entry = player_o.insert_uid_player_entry(dict_info["u_id"])            
             player.db.session.add(insert_uid_entry)
             player.db.session.commit()
             player_id = player_o.check_if_id_exists_in_table_player(u_id)
@@ -31,12 +66,12 @@ class InputData:
                 team_id = self.input_team_data(team_name=team_name)
                 key_id = key + "_id"
                 dict_fk[key_id] = team_id
-            dict_fk["nation_id"] = self.input_nationality_data(nationality_name=dict_info["nation"])
-            dict_fk["place_birth_id"] = self.input_place_data(country_name=dict_info["birth_country"], place_name=dict_info["birth_place"], region_name=dict_info["birth_region"])
-            print(dict_info["name"])
-            player_entry = player_o.create_player_entry(dictd=dict_info, dict_fkeys=dict_fk)
-            player.db.session.add(player_entry)
-            player.db.session.commit()
+        dict_fk["nation_id"] = self.input_nationality_data(nationality_name=dict_info["nation"])
+        dict_fk["place_birth_id"] = self.input_place_data(country_name=dict_info["birth_country"], place_name=dict_info["birth_place"], region_name=dict_info["birth_region"])
+        print(dict_info["name"])
+        player_entry = player_o.create_player_entry(dictd=dict_info, dict_fkeys=dict_fk)
+        player.db.session.add(player_entry)
+        player.db.session.commit()
         player_id = player_o.check_if_id_exists_in_table_player(u_id)
         return player_id
     
@@ -52,18 +87,23 @@ class InputData:
             nationality_id = nationality_o.find_id_in_nationality_table(nationality_name=nationality_name)
         return nationality_id
     
-    def input_team_data(self, team_name):
-        if team_name is None:
-            return None
+    def input_team_data(self, general_info_dict):
         team_o = team.CreateTeamTableEntry()
-        team_id = team_o.find_id_in_team_table(team_name=team_name)
+        place_dict = general_info_dict["place"]
+        if place_dict == None:
+                place_id = None
+        else:
+                place_id = self.input_place_data(place_name=place_dict["place"],
+                                                         region_name=place_dict["region"],
+                                                         country_name=place_dict["country"])
+        general_info_dict["place_id"] = place_id
+        team_id = team_o.find_id_in_team_table_long(gi_dict=general_info_dict)
         if team_id is None:
-            team_entry = team_o.create_team_entry(team_name=team_name)
+            team_entry = team_o.create_team_entry(gi_dict=general_info_dict)
             team.db.session.add(team_entry)
             team.db.session.commit()
-            team_id = team_o.find_id_in_team_table(team_name=team_name)
+            team_id = team_o.find_id_in_team_table(u_id_1=general_info_dict["u_id"])
         return team_id
-
 
     def input_league_data(self, league_name):
         if league_name is None:
@@ -150,6 +190,12 @@ class InputData:
     
     def input_stadium_data(self, stadium_dict):
         stadium_o =  stadium.CreateStadiumEntry()
+        place_dict = stadium_dict["place"]
+        place_id = self.input_place_data(place_name=place_dict["place"],
+                                                         region_name=place_dict["region"],
+                                                         country_name=place_dict["country"])
+        print(place_id)
+        stadium_dict["place_id"] = place_id
         stadium_id = stadium_o.find_id_in_stadium_table(stadium_dict=stadium_dict)
         if stadium_id is None:
             stadium_entry = stadium_o.create_stadium_entry(stadium_dict=stadium_dict)
@@ -157,6 +203,65 @@ class InputData:
             place.db.session.commit()
             stadium_id = stadium_o.find_id_in_stadium_table(stadium_dict=stadium_dict)
         return stadium_id
+    
+    def input_affiliated_teams(self, main_team, affiliated_team):
+        affiliated_team_o = affiliated_teams.CreateAffiliatedTeamsTableEntry()
+        a_teams_id = affiliated_team_o.find_id_in_affiliated_teams_table(team_1_id=affiliated_team,
+                                                                    team_2_id=main_team)
+        if a_teams_id is not None:
+            return a_teams_id
+        a_teams_id = affiliated_team_o.find_id_in_affiliated_teams_table(team_1_id=main_team,
+                                                                    team_2_id=affiliated_team)
+        if a_teams_id is not None:
+            return a_teams_id        
+        affiliated_team_entry = affiliated_team_o.create_affiliated_teams_entry(team_main=main_team, 
+                                                                                    team_affiliated=affiliated_team)
+        affiliated_teams.db.session.add(affiliated_team_entry)
+        affiliated_teams.db.session.commit()
+        a_teams_id = affiliated_team_o.find_id_in_affiliated_teams_table(team_1_id=main_team,
+                                                                    team_2_id=affiliated_team)
+        return a_teams_id
+    
+
+    def input_retired_number_data(self, team_id, player_id, number):
+        retired_number_o =  retired_number.CreateRetiredNumberTableEntry()
+        retired_number_id = retired_number_o.find_id_in_retired_number_table(team_id=team_id,
+                                                                             player_id=player_id,
+                                                                             number=number)
+        if retired_number_id is None:
+            retired_number_entry = retired_number_o.create_retired_number_entry(team_id=team_id,
+                                                                        player_id=player_id,
+                                                                        number=number)
+            place.db.session.add(retired_number_entry)
+            place.db.session.commit()
+            retired_number_id = retired_number_o.find_id_in_retired_number_table(team_id=team_id,
+                                                                          player_id=player_id,
+                                                                          number=number)
+        return retired_number_id
+    
+    def input_team_name(self, name, min, max, team_id):
+        team_name_o = team_name.CreateTeamNameEntry()
+        season_id_min = self.input_season_data(season_name=min)
+        season_id_max = self.input_season_data(season_name=max)
+        team_name_id = team_name_o.find_id_in_team_name_table(team_name=name,
+                                                              min=season_id_min,
+                                                              max=season_id_max, 
+                                                              team_id=team_id)
+        if team_name_id is None:
+            team_name_entry = team_name_o.create_team_name_entry(team_name=name,
+                                                              min=season_id_min,
+                                                              max=season_id_max, 
+                                                              team_id=team_id)
+            team_name.db.session.add(team_name_entry)
+            team_name.db.session.commit()
+            team_name_id = team_name_o.find_id_in_team_name_table(team_name=name,
+                                                              min=season_id_min,
+                                                              max=season_id_max, 
+                                                              team_id=team_id)
+        return team_name_id
+
+            
+
     
 
     

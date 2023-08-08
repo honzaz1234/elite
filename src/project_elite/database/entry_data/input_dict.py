@@ -92,7 +92,6 @@ class InputPlayerDict():
                 achievement_player_id = input_data_o.input_achievement_relation(achievement_name=achievement_name, season_name=season, player_id=player_id)
 
 
-
 class InputTeamDict():
 
 
@@ -102,21 +101,37 @@ class InputTeamDict():
     def input_team_dict(self, team_dict):
         input_data_o = input_data.InputData()
         gi_dict = team_dict["general_info"]
-        if set(stadium_dict.values()) != {None}:
+        print(gi_dict)
+        stadium_dict = team_dict["stadium_info"]
+        print(stadium_dict)
+        if set([value for value in stadium_dict.values() if type(value) is not dict]) != {None}:
             stadium_id = input_data_o.input_stadium_data(stadium_dict=stadium_dict)
         else:
             stadium_id = None
         gi_dict["stadium_id"] = stadium_id
-        team_id = input_data_o.input_team(general_info_dict=gi_dict)
-        stadium_dict = team_dict["stadium_info"]
+        team_id = input_data_o.input_team_data(general_info_dict=gi_dict)
         affiliated_teams_dict = team_dict["affiliated_teams"]
         for u_id in affiliated_teams_dict:
-            team_a_id = input_data_o.input_team()
-            input_data_o.input_affiliated_teams(team_id=team_id, team_affiliated_id=team_a_id)
+            team_a_id = input_data_o.input_team_uid(u_id=u_id)
+            input_data_o.input_affiliated_teams(main_team=team_id, affiliated_team=team_a_id)
         retired_numbers_dict = team_dict["retired_numbers"]
         for u_id in retired_numbers_dict:
-            player_id = input_data_o.input_player()
-            input_data_o.input_retired_number()
+            print(retired_numbers_dict)
+            retired_number = retired_numbers_dict[u_id][0]
+            player_id = input_data_o.input_player_uid(u_id=int(u_id))
+            input_data_o.input_retired_number_data(player_id=player_id, team_id=team_id, 
+                                                   number=retired_number)
+        titles_dict = team_dict["titles"]
+        for title in titles_dict:
+            min = titles_dict[title]["min"]
+            max = titles_dict[title]["max"]
+            input_data_o.input_team_name(name=title, min=min, 
+                                         max=max, team_id=team_id)
+            
+
+
+        
+        
 
         
 

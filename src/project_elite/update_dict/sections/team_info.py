@@ -7,8 +7,8 @@ class UpdateTeamDict():
                               "IA", "MS", "SD", "ND", "MD",	"DE", "NV", "MT", "TN", "VT", "DC", "GA", "ID"],
                               "CAN": ["AB", "BC", "MB", "NB", "NL", "NS", "NT", "ON", "ONT", "PE", "QC", "SK","YT", "NU"]}
     integer_vals = ["founded", "construction_year", "capacity"]
-    gen_info_keys = ["short_name", "plays_in", "full_name", "team_colours", "town", "founded"]
-    stadium_info_keys = ["construction_year", "capacity", "construction_year", "arena_name"]
+    gen_info_keys = ["short_name", "plays_in", "full_name", "team_colours", "founded", "active", "u_id", "place"]
+    stadium_info_keys = ["construction_year", "capacity", "construction_year", "arena_name", "place"]
     
 
     def __init__(self):
@@ -17,25 +17,25 @@ class UpdateTeamDict():
     def update_place(self, place_name):
         dict_place = {}
         if "," not in place_name:
-            dict_place["stadium_country"] = None
-            dict_place["stadium_region"] = None
-            dict_place["stadium_place"] = None
+            dict_place["country"] = None
+            dict_place["region"] = None
+            dict_place["place"] = None
             return dict_place
         list_place = place_name.split(", ")
-        dict_place["stadium_place"] = list_place[0]
+        dict_place["place"] = list_place[0]
         if len(list_place) == 2 and len(list_place[1]) == 2:
             if list_place[1] in UpdateTeamDict.NA_region_abbrevations["USA"]:
-                dict_place["stadium_region"] = list_place[1] 
-                dict_place["stadium_country"] = "USA"
+                dict_place["region"] = list_place[1] 
+                dict_place["country"] = "USA"
             elif list_place[1] in UpdateTeamDict.NA_region_abbrevations["CAN"]:
-                dict_place["stadium_region"] = list_place[1] 
-                dict_place["stadium_country"] = "CAN"
+                dict_place["region"] = list_place[1] 
+                dict_place["country"] = "CAN"
         elif len(list_place) == 2:
-            dict_place["stadium_country"] = list_place[1]
-            dict_place["stadium_region"] = None
+            dict_place["country"] = list_place[1]
+            dict_place["region"] = None
         elif len(list_place) == 3:
-                dict_place["stadium_country"] = list_place[2]
-                dict_place["stadium_region"] = list_place[1]
+                dict_place["country"] = list_place[2]
+                dict_place["region"] = list_place[1]
         return dict_place
     
     def update_key_names(self, dict_info):
@@ -59,6 +59,8 @@ class UpdateTeamDict():
     
     def update_numbers(self, dict_info):
         for key in dict_info:
+            if key == "u_id":
+                continue
             for subkey in dict_info[key]:
                 if subkey in UpdateTeamDict.integer_vals:
                     if dict_info[key][subkey] is None:
@@ -101,7 +103,7 @@ class UpdateTeamDict():
         for url_key in list(player_dict.keys()):
             u_id = re.findall("player\/([0-9]+)\/", url_key)[0]
             new_number = int(re.findall("#([0-9]+)", player_dict[url_key])[0])
-            new_dict = {new_number, url_key}
+            new_dict = [new_number, url_key]
             player_dict[u_id] = new_dict
             del player_dict[url_key]
         return player_dict
@@ -118,16 +120,21 @@ class UpdateTeamDict():
     def update_team_dict_wrap(self, dict_info):
         print(dict_info)
         dict_info = self.update_key_names(dict_info)
-        if "town" in dict_info["stadium_info"]:
-            place_dict = self.update_place(place_name=dict_info["stadium_info"]["town"])
-            dict_info = {**dict_info, **place_dict}
+        for key in ["stadium_info", "general_info"]:
+            if "town" in dict_info[key]:
+                subkey = "town"
+            elif "location" in dict_info[key]:
+                subkey="location"
+            else: continue
+            place_dict = self.update_place(place_name=dict_info[key][subkey])
+            dict_info[key]["place"] = place_dict
         dict_info["affiliated_teams"] = self.update_urls(list_url=dict_info["affiliated_teams"], regex="team\/([0-9]+)")
         #dict_info["retired_numbers"] = self.update_urls(list_url=dict_info["retired_numbers"], regex="player\/([0-9]+)")
         dict_info = self.update_NA(dict_info)
         print(dict_info)
         dict_info =  self.update_numbers(dict_info=dict_info)
         print(dict_info)
-        dict_info["active"] = self.update_status(league_names=dict_info["general_info"]["plays_in"])
+        dict_info["general_info"]["active"] = self.update_status(league_names=dict_info["general_info"]["plays_in"])
         print(dict_info)
         dict_info = self.update_historic_name(dict_info)
         #dict_info["affiliated_teams"] = self.update_team_url(list_url=dict_info["affiliated_teams"])

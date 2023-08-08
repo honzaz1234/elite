@@ -1,5 +1,6 @@
 import requests
 import scrapy
+import re
 
 class TeamScraper():
 
@@ -10,7 +11,7 @@ class TeamScraper():
              "stadium_facts_names": "//div[@class='facts' and preceding-sibling::div[text()='Team Captains'][1]]/span[@class='lbl']/text()", 
              "stadium_facts_values": "//div[@class='facts' and preceding::div[text()='Team Captains'][1]]/strong[@class='value']//text()",
              "affiliated_team_values": "//strong[@class='value' and preceding-sibling::span[text()='Affiliated Team(s)']]//@href", 
-             "retired_num_values": "//ul[@class='column-3' and preceding-sibling::h4[text()='Retired Numbers']]//a[1]/",
+             "retired_num_values": "//ul[preceding-sibling::h4[text()='Retired Numbers']]//a[1]/",
              "history_table": "//table[@class ='table table-striped team-history-and-standings'][1]",
              "history_names": "//tr[@class='title']/td/text()",
              "history_seasons": "//td[@class='season']/a/text()",
@@ -37,6 +38,7 @@ class TeamScraper():
         dict_info["affiliated_teams"] = self.get_affiliated_teams()
         dict_info["retired_numbers"] = self.get_retired_numbers()
         dict_info["titles"] = self.get_historic_names()
+        dict_info["general_info"]["u_id"] = int(re.findall("team\/([0-9]+)\/", self.url)[0])
         return dict_info
     
     def get_general_info(self):

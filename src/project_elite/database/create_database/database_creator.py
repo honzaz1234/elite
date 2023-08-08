@@ -94,15 +94,17 @@ class Team(Base):
     id = Column("id", Integer, primary_key=True)
     u_id = Column("u_id", Integer)
     team = Column("team", String)
+    team_long_name = Column("team_long_name", String)
     active = Column("active", Integer)
     team_colours = Column("team_colours", String)
     founded = Column("founded", Integer)
     place_id = Column("place_id", ForeignKey("places.id"))
     stadium_id = Column("stadium_id", ForeignKey("stadiums.id"))
 
-    def __init__(self, u_id,  team, active,  team_colours, founded, place_id, stadium_id):
+    def __init__(self, u_id,  team, team_long_name, active,  team_colours, founded, place_id, stadium_id):
         self.u_id = u_id
         self.team = team
+        self.team_long_name = team_long_name
         self.active = active
         self.team_colours = team_colours
         self.founded = founded
@@ -110,7 +112,7 @@ class Team(Base):
         self.stadium_id = stadium_id
     
     def __repr__(self):
-        return f"({self.id}, {self.u_id}, {self.team}, {self.active}, {self.team_colours}, {self.founded} {self.place_id}, {self.stadium_id})"
+        return f"({self.id}, {self.u_id}, {self.team}, {self.team_long_name}, {self.active}, {self.team_colours}, {self.founded} {self.place_id}, {self.stadium_id})"
     
 class AffiliatedTeam(Base):
 
@@ -191,24 +193,6 @@ class TeamLeague(Base):
     def __repr__(self):
         return f"({self.league_id}, {self.team_id})"
     
-class TeamName(Base):
-    
-    __tablename_ = "team_names"
-
-    id = Column("id", Integer, primary_key=True)
-    team_name = Column("team_name", String)
-    year_from = Column("year_from", Integer)
-    year_to = Column("year_to", Integer)
-    team_id = Column("team_id", Integer, ForeignKey("teams.id"))
-
-    def __init__(self, team_name, year_from, year_to, team_id):
-        self.team_name = team_name
-        self.year_from = year_from
-        self.year_to = year_to
-        self.team_id = team_id
-
-    def __repr__(self):
-        return f"({self.team_name}, {self.year_from}, {self.year_to}, {self.team_id})"
 
 class Place(Base):
     
@@ -240,6 +224,26 @@ class Season(Base):
 
     def __repr__(self):
         return f"({self.id, self.season})"
+    
+
+class TeamName(Base):
+    
+    __tablename__ = "team_names"
+
+    id = Column("id", Integer, primary_key=True)
+    team_name = Column("team_name", String)
+    year_from = Column("year_from", Integer, ForeignKey("seasons.id"))
+    year_to = Column("year_to", Integer, ForeignKey("seasons.id"))
+    team_id = Column("team_id", Integer, ForeignKey("teams.id"))
+
+    def __init__(self, team_name, year_from, year_to, team_id):
+        self.team_name = team_name
+        self.year_from = year_from
+        self.year_to = year_to
+        self.team_id = team_id
+
+    def __repr__(self):
+        return f"({self.team_name}, {self.year_from}, {self.year_to}, {self.team_id})"
 
 class Divison(Base):
     
@@ -437,7 +441,7 @@ class GoalieStats(Base):
         return f"({self.id},{self.player_id}, {self.regular_season}, {self.season_id}, {self.league_id}, {self.team_id}, {self.captaincy}, {self.games_played}, {self.gd}, {self.goal_against_average}, {self.save_percentage}, {self.goal_against}, {self.shot_saved}, {self.shotouts}, {self.wins}, {self.looses}, {self.ties}, {self.toi})"
 
 
-engine = create_engine("sqlite:///C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite_prospects/database/hockey_v2.db", echo=False)
+engine = create_engine("sqlite:///C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/database/hockey_v3.db", echo=False)
 Base.metadata.create_all(bind=engine)
 
 DBSession = sessionmaker(bind=engine)

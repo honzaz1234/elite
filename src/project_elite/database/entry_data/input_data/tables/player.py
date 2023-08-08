@@ -67,9 +67,29 @@ class CreatePlayerTableEntry:
                                  place_birth_id = dict_fkeys["place_birth_id"])
         return update_query
     
-
     def insert_uid_player_entry(self, u_id_1):
-         player_entry = db.Player(u_id = u_id_1)
+         player_entry = db.Player(u_id = u_id_1,
+                                  name=None, 
+                                position = None, 
+                                 active = None,
+                                 age = None,
+                                 shoots = None,
+                                 catches = None,
+                                 contract = None,
+                                 cap_hit= None,
+                                 signed_nhl = None,
+                                 date_birth = None,
+                                 drafted = None,
+                                 draft_round = None,
+                                 draft_position = None,
+                                 draft_year = None,
+                                 height = None,
+                                 weight = None,
+                                 youth_team_id = None,
+                                 nhl_rights_id = None,
+                                 draft_team_id = None,
+                                 nation_id = None,
+                                 place_birth_id = None)
          return player_entry
 
 
