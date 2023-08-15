@@ -96,23 +96,49 @@ class Team(Base):
     team = Column("team", String)
     team_long_name = Column("team_long_name", String)
     active = Column("active", Integer)
-    team_colours = Column("team_colours", String)
     founded = Column("founded", Integer)
     place_id = Column("place_id", ForeignKey("places.id"))
     stadium_id = Column("stadium_id", ForeignKey("stadiums.id"))
 
-    def __init__(self, u_id,  team, team_long_name, active,  team_colours, founded, place_id, stadium_id):
+    def __init__(self, u_id,  team, team_long_name, active, founded, place_id, stadium_id):
         self.u_id = u_id
         self.team = team
         self.team_long_name = team_long_name
         self.active = active
-        self.team_colours = team_colours
         self.founded = founded
         self.place_id = place_id
         self.stadium_id = stadium_id
     
     def __repr__(self):
-        return f"({self.id}, {self.u_id}, {self.team}, {self.team_long_name}, {self.active}, {self.team_colours}, {self.founded} {self.place_id}, {self.stadium_id})"
+        return f"({self.id}, {self.u_id}, {self.team}, {self.team_long_name}, {self.active}, {self.founded} {self.place_id}, {self.stadium_id})"
+    
+class Colour(Base):
+
+    __tablename__ = "colours"
+
+    id = Column("id", Integer, primary_key=True)
+    colour = Column("colour", String)
+
+    def __init__(self, colour):
+        self.colour = colour
+
+    def __repr__(self):
+        return f"({self.id}, {self.colour})"
+
+class TeamColour(Base):
+
+    __tablename__ = "team_colours"
+
+    id = Column("id", Integer, primary_key=True)
+    team_id = Column("team_id", ForeignKey("teams.id"))
+    colour_id = Column("colour_id", ForeignKey("colours.id"))
+
+    def __init__(self, team_id, colour_id):
+        self.team_id = team_id
+        self.colour_id = colour_id
+
+    def __repr__(self):
+        return f"({self.id}, {self.team_id}, {self.colour_id})"
     
 class AffiliatedTeam(Base):
 
@@ -127,7 +153,7 @@ class AffiliatedTeam(Base):
         self.team_2_id = team_2_id
 
     def __repr__(self):
-        return f"({self.team_1_id}, {self.team_2_id})"
+        return f"({self.id}, {self.team_1_id}, {self.team_2_id})"
     
 
 class RetiredNumber(Base):
@@ -145,7 +171,7 @@ class RetiredNumber(Base):
         self.number = number
 
     def __repr__(self):
-        return f"({self.team_id}, {self.player_id}, {self.number})"
+        return f"({self.id}, {self.team_id}, {self.player_id}, {self.number})"
 
 
 class League(Base):
@@ -191,7 +217,7 @@ class TeamLeague(Base):
         self.team_id = team_id
 
     def __repr__(self):
-        return f"({self.league_id}, {self.team_id})"
+        return f"({self.id}, {self.league_id}, {self.team_id})"
     
 
 class Place(Base):
@@ -243,7 +269,7 @@ class TeamName(Base):
         self.team_id = team_id
 
     def __repr__(self):
-        return f"({self.team_name}, {self.year_from}, {self.year_to}, {self.team_id})"
+        return f"({self.id}, {self.team_name}, {self.year_from}, {self.year_to}, {self.team_id})"
 
 class Divison(Base):
     
@@ -307,7 +333,7 @@ class TeamSeason(Base):
         self.postseason_type_id = postseason_type_id
 
     def __repr__(self):
-        return f"({self.position}, {self.league_id}, {self.team_id}, {self.divison_id}, {self.conference_id}, {self.season_id}, {self.gp}, {self.w}, {self.t}, {self.l}, {self.otw}, {self.otl}, {self.gf}, {self.ga}, {self.plus_minus}, {self.tp}, {self.ppg}, {self.postseason_type_id})"
+        return f"({self.id}, {self.position}, {self.league_id}, {self.team_id}, {self.divison_id}, {self.conference_id}, {self.season_id}, {self.gp}, {self.w}, {self.t}, {self.l}, {self.otw}, {self.otl}, {self.gf}, {self.ga}, {self.plus_minus}, {self.tp}, {self.ppg}, {self.postseason_type_id})"
 
 
 class PostseasonType(Base):
@@ -438,7 +464,7 @@ class GoalieStats(Base):
         self.toi = toi
 
     def __repr__(self):
-        return f"({self.id},{self.player_id}, {self.regular_season}, {self.season_id}, {self.league_id}, {self.team_id}, {self.captaincy}, {self.games_played}, {self.gd}, {self.goal_against_average}, {self.save_percentage}, {self.goal_against}, {self.shot_saved}, {self.shotouts}, {self.wins}, {self.looses}, {self.ties}, {self.toi})"
+        return f"({self.id}, {self.player_id}, {self.regular_season}, {self.season_id}, {self.league_id}, {self.team_id}, {self.captaincy}, {self.games_played}, {self.gd}, {self.goal_against_average}, {self.save_percentage}, {self.goal_against}, {self.shot_saved}, {self.shotouts}, {self.wins}, {self.looses}, {self.ties}, {self.toi})"
 
 
 engine = create_engine("sqlite:///C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/database/hockey_v3.db", echo=False)

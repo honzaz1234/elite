@@ -16,6 +16,11 @@ class UpdateTeamDict():
 
     def update_place(self, place_name):
         dict_place = {}
+        if place_name is None:
+            dict_place["country"] = None
+            dict_place["region"] = None
+            dict_place["place"] = None
+            return dict_place
         if "," not in place_name:
             dict_place["country"] = None
             dict_place["region"] = None
@@ -69,6 +74,13 @@ class UpdateTeamDict():
                     new_val = re.sub(" ", "", old_val)
                     dict_info[key][subkey] = int(new_val)
         return dict_info
+    
+    def update_colours(self, colour_string):
+        if colour_string == None:
+            return []
+        colour_list = colour_string.split(" + ")
+        return colour_list
+
 
     def update_status(self, league_names):
         if league_names == "-":
@@ -101,7 +113,7 @@ class UpdateTeamDict():
     
     def update_retired_numbers(self, player_dict):
         for url_key in list(player_dict.keys()):
-            u_id = re.findall("player\/([0-9]+)\/", url_key)[0]
+            u_id = int(re.findall("player\/([0-9]+)\/", url_key)[0])
             new_number = int(re.findall("#([0-9]+)", player_dict[url_key])[0])
             new_dict = [new_number, url_key]
             player_dict[u_id] = new_dict
@@ -123,8 +135,8 @@ class UpdateTeamDict():
         for key in ["stadium_info", "general_info"]:
             if "town" in dict_info[key]:
                 subkey = "town"
-            elif "location" in dict_info[key]:
-                subkey="location"
+            elif "place" in dict_info[key]:
+                subkey="place"
             else: continue
             place_dict = self.update_place(place_name=dict_info[key][subkey])
             dict_info[key]["place"] = place_dict
@@ -141,4 +153,5 @@ class UpdateTeamDict():
         dict_info["retired_numbers"] = self.update_retired_numbers(player_dict=dict_info["retired_numbers"])
         dict_info["general_info"] = self.update_info(info_dict=dict_info["general_info"], list_keys=UpdateTeamDict.gen_info_keys)
         dict_info["stadium_info"] = self.update_info(info_dict=dict_info["stadium_info"], list_keys=UpdateTeamDict.stadium_info_keys)
+        dict_info["colour_list"] = self.update_colours(colour_string=dict_info["general_info"]["team_colours"])
         return dict_info

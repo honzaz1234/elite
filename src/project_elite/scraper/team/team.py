@@ -22,7 +22,11 @@ class TeamScraper():
              "path_left": "count((//div[@class='content_left']//table[@class ='table table-striped team-history-and-standings'])[1]/tbody/tr[@class='title'][",
              "path_right": "]/following-sibling::tr)",
              "num_tr": "count((//div[@class='content_left']//table[@class ='table table-striped team-history-and-standings'])[1]/tbody/tr)",
-             "short_name": "//h1[@class='semi-logo']/text()"
+             "short_name": "//h1[@class='semi-logo']/text()",
+             "arena_name": "//strong[preceding::span[1][contains(text(), 'Arena Name')]]/text()",
+             "place": "//strong[preceding::span[1][contains(text(), 'Location')]]/text()",
+             "capacity": "//strong[preceding::span[1][contains(text(), 'Capacity')]]/text()",
+             "construction_year": "//strong[preceding::span[1][contains(text(), 'Construction Year')]]/text()" 
              }
     url_parts = {"history": "?team-history=complete#team-history"}
 
@@ -64,14 +68,14 @@ class TeamScraper():
     
     def get_stadium_info(self):
         dict_si = {}
-        stadium_names = self.selector.xpath(TeamScraper.paths["stadium_facts_names"]).getall()
-        stadium_values = self.selector.xpath(TeamScraper.paths["stadium_facts_values"]).getall()
-        stadium_values = [value.strip() for value in stadium_values]
-        stadium_values = [value for value in stadium_values if value!=""]
-        stadium_names.reverse()
-        stadium_values.reverse()
-        for ind in range(0, len(stadium_names)):
-            dict_si[stadium_names[ind]] = stadium_values[ind]
+        for path_name in ["arena_name", "place", "capacity", "construction_year"]:
+            value = self.selector.xpath(TeamScraper.paths[path_name]).getall()
+            print(path_name)
+            print(value)
+            if value ==[]:
+                dict_si[path_name] = None
+            else:
+                dict_si[path_name] = value[0]
         return dict_si
 
     def get_affiliated_teams(self):
@@ -97,6 +101,7 @@ class TeamScraper():
         title_positions = []
         titles = self.selector.xpath(TeamScraper.paths["path_titles"]).getall()
         titles = [title.strip() for title in titles]
+        print(titles)
         for ind in range(1, n_names + 1):
             path1 = TeamScraper.paths["path_left"] + str(ind) + TeamScraper.paths["path_right"]
             n_following = self.selector.xpath(path1).getall()[0]
@@ -107,7 +112,7 @@ class TeamScraper():
             n_names = 1
             titles = ["-"]
             title_positions = [0]
-        title_positions.append(n_tr)
+        title_positions.append(n_tr + 1)
         print(title_positions)
         dict_titles = {}
         count = title_positions[0]
@@ -118,10 +123,13 @@ class TeamScraper():
                 count += 1
                 if count in title_positions:
                     break
-                path_season = TeamScraper.paths["path_season_left"] + str(count) + TeamScraper.paths["path_season_right"] 
+                path_season = TeamScraper.paths["path_season_left"] + str(count) + TeamScraper.paths["path_season_right"]
+                print([path_season]) 
                 season = self.selector.xpath(path_season).getall()
+                print(season)
                 if season != []:
                     list_years.append(season[0])
+            print(list_years)
             dict_titles[titles[ind-1]] = {}
             dict_titles[titles[ind-1]]["min"] = list_years[0]
             dict_titles[titles[ind-1]]["max"] = list_years[len(list_years)-1]

@@ -72,16 +72,14 @@ class SeasonUrlDownload:
         return dict_season
     
 
-    def get_team_season_refs(self, url_season, league_team_refs):
+    def get_team_season_refs(self, url_season, ref_list):
         season_html = requests.get(url_season).content
         sel_season = scrapy.Selector(text=season_html)
         team_refs = sel_season.xpath(SeasonUrlDownload.paths["team_url"]).getall()
         for team_ref in team_refs:
             team_ref_wo_season = re.findall("(.+)\/[0-9]{4}\-[0-9]{4}$", team_ref)[0]
-            print(team_ref_wo_season)
-            if team_ref_wo_season not in league_team_refs:
-                league_team_refs.append(team_ref_wo_season)
-        return league_team_refs
+            ref_list.append(team_ref_wo_season)
+        return ref_list
 
 
 

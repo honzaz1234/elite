@@ -127,6 +127,10 @@ class InputTeamDict():
             max = titles_dict[title]["max"]
             input_data_o.input_team_name(name=title, min=min, 
                                          max=max, team_id=team_id)
+        colour_list = team_dict["colour_list"]
+        for colour in colour_list:
+            input_data_o.input_colour_team(team_id=team_id, colour=colour)
+
             
 
 

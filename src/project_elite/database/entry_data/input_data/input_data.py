@@ -11,7 +11,9 @@ import database.entry_data.input_data.tables.stadium as stadium
 import database.entry_data.input_data.tables.stadium_team as stadium_team
 import database.entry_data.input_data.tables.affiliated_teams as affiliated_teams
 import database.entry_data.input_data.tables.retired_number as retired_number
-import database.entry_data.input_data.tables.team_name as team_name                   
+import database.entry_data.input_data.tables.team_name as team_name 
+import database.entry_data.input_data.tables.colour as colour    
+import database.entry_data.input_data.tables.team_colour as team_colour                  
 
 
 class InputData:
@@ -95,14 +97,18 @@ class InputData:
         else:
                 place_id = self.input_place_data(place_name=place_dict["place"],
                                                          region_name=place_dict["region"],
-                                                         country_name=place_dict["country"])
+                                                        country_name=place_dict["country"])
         general_info_dict["place_id"] = place_id
-        team_id = team_o.find_id_in_team_table_long(gi_dict=general_info_dict)
+        team_id = team_o.find_id_in_team_table(u_id_1=general_info_dict["u_id"])
         if team_id is None:
-            team_entry = team_o.create_team_entry(gi_dict=general_info_dict)
-            team.db.session.add(team_entry)
+            insert_entry = team_o.create_team_entry(gi_dict=general_info_dict)
+            team.db.session.add(insert_entry)
             team.db.session.commit()
-            team_id = team_o.find_id_in_team_table(u_id_1=general_info_dict["u_id"])
+        else:
+            general_info_dict["id"] = team_id
+            update_entry = team_o.update_team_entry(gi_dict=general_info_dict)                                          
+            team.db.session.execute(update_entry)
+        team_id = team_o.find_id_in_team_table(u_id_1=general_info_dict["u_id"])
         return team_id
 
     def input_league_data(self, league_name):
@@ -259,6 +265,32 @@ class InputData:
                                                               max=season_id_max, 
                                                               team_id=team_id)
         return team_name_id
+    
+    
+    def input_colour(self, colour_name):
+        colour_o = colour.CreateColourTableEntry()
+        colour_id = colour_o.find_id_in_colour_table(colour=colour_name)
+        if colour_id is None:
+            colour_entry = colour_o.create_colour_entry(colour=colour_name)
+            colour.db.session.add(colour_entry)
+            colour.db.session.commit()
+            colour_id = colour_o.find_id_in_colour_table(colour=colour_name)
+        return colour_id
+
+    def input_colour_team(self, team_id, colour):
+        team_colour_o = team_colour.CreateTeamColourTableEntry()
+        colour_id = self.input_colour(colour_name=colour)
+        team_colour_id = team_colour_o.find_id_in_team_colour_table(team_id=team_id, colour_id=colour_id)
+        if team_colour_id is None:
+            team_colour_entry = team_colour_o.create_team_colour_entry(team_id=team_id, colour_id=colour_id)
+            team_colour.db.session.add(team_colour_entry)
+            team_colour.db.session.commit()
+            team_colour_id = team_colour_o.find_id_in_team_colour_table(team_id=team_id, colour_id=colour_id)
+        return team_colour_id
+
+
+
+
 
             
 

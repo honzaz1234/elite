@@ -41,10 +41,35 @@ class CreatePlayerTableEntry:
             return None
         else:
             return row_data.id
-
-        
     def update_player_entry(self, dictd, dict_fkeys):
-        update_query = update(db.Player).where(db.Player.u_id == dictd["u_id"]).values(name = dictd["name"],
+        update_query = db.Player(
+                                id = dictd["id"],
+                                name = dictd["name"],
+                                 position = dictd["position"], 
+                                 active = dictd["active"],
+                                 age = dictd["age"],
+                                 shoots = dictd["shoots"],
+                                 catches = dictd["catches"],
+                                 contract = dictd["contract"],
+                                 cap_hit= dictd["cap_hit"],
+                                 signed_nhl = dictd["signed_nhl"],
+                                 date_birth = dictd["date_birth"],
+                                 drafted = dictd["drafted"],
+                                 draft_round = dictd["draft_round"],
+                                 draft_position = dictd["draft_position"],
+                                 draft_year = dictd["draft_year"],
+                                 height = dictd["height"],
+                                 weight = dictd["weight"],
+                                 youth_team_id = dict_fkeys["youth_team_id"],
+                                 nhl_rights_id = dict_fkeys["nhl_team_rights_id"],
+                                 draft_team_id = dict_fkeys["draft_team_id"],
+                                 nation_id = dict_fkeys["nation_id"],
+                                 place_birth_id = dict_fkeys["place_birth_id"])
+        return update_query
+        
+    def update_player_entry_2(self, dictd, dict_fkeys):
+        update_query = update(db.Player).where(db.Player.u_id == dictd["u_id"]).values(
+            name = dictd["name"],
                                  position = dictd["position"], 
                                  active = dictd["active"],
                                  age = dictd["age"],

@@ -8,7 +8,7 @@ import get_urls.player.league as league_url
 import update_dict.wraper as update_dict_wraper
 import database.entry_data.input_dict as input_dict
 
-url_links = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/links/"
+url_links = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/links/players/"
 dict_data = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/data_dict/"
 file_name_done = "done_players.json"
 

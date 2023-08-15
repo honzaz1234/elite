@@ -215,7 +215,11 @@ class LeagueUrlDownload:
         sel_league = scrapy.Selector(text=league_page_html)
         season_refs = sel_league.xpath(LeagueUrlDownload.paths["season_refs"]).getall()
         for season_ref in season_refs:
-            season_refs = season_getter.get_team_season_refs(url_season=season_ref, league_team_refs=league_team_refs)
+            print(season_ref)
+            season_refs = season_getter.get_team_season_refs(url_season=season_ref, ref_list=league_team_refs)
+            season_refs = [value for value in season_refs if type(value) == str]
             if season_refs != []:
-                league_team_refs.append(season_refs)
+                league_team_refs = league_team_refs + season_refs
+                league_team_refs = list(set(league_team_refs))
+                print(league_team_refs)
         return league_team_refs

@@ -1,4 +1,5 @@
 import database.create_database.database_creator as db
+from sqlalchemy import update
 
 class CreateTeamTableEntry:
 
@@ -12,11 +13,19 @@ class CreateTeamTableEntry:
                              team = gi_dict["short_name"],
                               team_long_name = gi_dict["full_name"],
                               active=gi_dict["active"],
-                              team_colours=gi_dict["team_colours"],
                                place_id = gi_dict["place_id"], 
                                founded=gi_dict["founded"],
                                stadium_id=gi_dict["stadium_id"])
         return team_entry
+    
+    def update_team_entry(self, gi_dict):
+        update_query = update(db.Team).where(db.Team.u_id == gi_dict["u_id"]).values(team = gi_dict["short_name"],
+                                                                                    team_long_name = gi_dict["full_name"],
+                                                                                    active=gi_dict["active"],
+                                                                                    place_id = gi_dict["place_id"], 
+                                                                                    founded=gi_dict["founded"],
+                                                                                    stadium_id=gi_dict["stadium_id"])
+        return update_query
             
     def find_id_in_team_table(self, u_id_1):
         row_data =  db.session.query(db.Team.id).filter_by(u_id=u_id_1).first()
@@ -30,7 +39,6 @@ class CreateTeamTableEntry:
                              team = gi_dict["short_name"],
                               team_long_name = gi_dict["full_name"],
                               active=gi_dict["active"],
-                              team_colours=gi_dict["team_colours"],
                                place_id = gi_dict["place_id"], 
                                founded=gi_dict["founded"],
                                stadium_id=gi_dict["stadium_id"]).first()
@@ -44,7 +52,6 @@ class CreateTeamTableEntry:
                               team = None,
                               team_long_name = None,
                               active=None,
-                              team_colours=None,
                                place_id = None, 
                                founded=None,
                                stadium_id=None)
