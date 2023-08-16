@@ -72,7 +72,12 @@ class UpdateTeamDict():
                         continue
                     old_val = dict_info[key][subkey]
                     new_val = re.sub(" ", "", old_val)
-                    dict_info[key][subkey] = int(new_val)
+                    if dict_info[key][subkey] == "-":
+                        dict_info[key][subkey] = None
+                    else:
+                        new_int = re.findall("[0-9\/s]+", dict_info[key][subkey])[0]
+                        print(new_int) 
+                        dict_info[key][subkey] = int(new_int)
         return dict_info
     
     def update_colours(self, colour_string):
@@ -127,6 +132,8 @@ class UpdateTeamDict():
         for key in list_keys:
             if key not in info_dict:
                 info_dict[key] = None
+            elif type(info_dict[key]) == str:
+                info_dict[key] = info_dict[key].strip()
         return info_dict
     
     def update_team_dict_wrap(self, dict_info):

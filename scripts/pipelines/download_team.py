@@ -45,8 +45,9 @@ for league in league_list:
         team_dict_updated = tu_o.update_team_dict_wrap(team_data)
         insert_team_data.input_team_dict(team_dict=team_dict_updated)
         u_id_done_list.append(u_id)
+    u_id_done_dict["teams"] = u_id_done_list
     with open(dict_data_path, "w") as fp:
-        json.dump(u_id_done_list, fp)
+        json.dump(u_id_done_dict, fp)
 
 
 
