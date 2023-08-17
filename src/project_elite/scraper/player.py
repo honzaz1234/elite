@@ -70,6 +70,7 @@ class PlayerScraper:
         s_o = PlayerStats(selector=self.selector)
         dict_player["stats"] = s_o.get_all_stats()
         dict_player["u_id"] = re.findall("player\/([0-9]+)\/", self.url)[0]
+        print(dict_player)
         return dict_player
     
 class PlayerGeneralInfo():
@@ -88,6 +89,7 @@ class PlayerGeneralInfo():
 
         def _get_general_info(self):
             dict_gi = self._get_info_wraper()
+            print(dict_gi)
             dict_gi["name"] = self._get_name()
             return dict_gi
 
@@ -113,7 +115,6 @@ class PlayerGeneralInfo():
         def _get_info(self, info_name, keep_list):
             dict_val = {}
             info_path_val = PlayerGeneralInfo.paths["general_info_left"] + info_name + "')]]//text()"
-            print(info_path_val)
             info_val = self.selector.xpath(info_path_val).getall()
             info_val = [string.strip() for string in info_val]
             info_val = [string for string in info_val if string != ""]
@@ -203,13 +204,11 @@ class PlayerStats():
         if leadership != []:
             leadership = leadership[0]
             dict_season[league_name][team_name]["leadership"] = leadership
-        print(dict_season)
         return dict_season
     
     def extract_general_url(self, path, regex):
         list_data = self.selector.xpath(path).getall()
         orig_url = list_data[0]
-        print(orig_url)
         url_list = re.findall(regex, orig_url)
         url = url_list[0]
         print(url)
@@ -223,8 +222,7 @@ class PlayerAchievements():
 
     def __init__(self, selector):
         self.selector = selector
-
-
+        
     def get_achievements(self, years=None):
 
         """method for downloading achievements of player into dictionary """

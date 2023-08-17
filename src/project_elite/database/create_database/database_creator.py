@@ -94,23 +94,23 @@ class Team(Base):
     id = Column("id", Integer, primary_key=True)
     u_id = Column("u_id", Integer)
     team = Column("team", String)
-    team_long_name = Column("team_long_name", String)
+    long_name = Column("long_name", String)
     active = Column("active", Integer)
     founded = Column("founded", Integer)
     place_id = Column("place_id", ForeignKey("places.id"))
     stadium_id = Column("stadium_id", ForeignKey("stadiums.id"))
 
-    def __init__(self, u_id,  team, team_long_name, active, founded, place_id, stadium_id):
+    def __init__(self, u_id,  team, long_name, active, founded, place_id, stadium_id):
         self.u_id = u_id
         self.team = team
-        self.team_long_name = team_long_name
+        self.long_name = long_name
         self.active = active
         self.founded = founded
         self.place_id = place_id
         self.stadium_id = stadium_id
     
     def __repr__(self):
-        return f"({self.id}, {self.u_id}, {self.team}, {self.team_long_name}, {self.active}, {self.founded} {self.place_id}, {self.stadium_id})"
+        return f"({self.id}, {self.u_id}, {self.team}, {self.long_name}, {self.active}, {self.founded} {self.place_id}, {self.stadium_id})"
     
 class Colour(Base):
 
@@ -181,15 +181,13 @@ class League(Base):
     id = Column("id", Integer, primary_key=True)
     league_elite = Column("league_elite", String)
     league = Column("league", String)
-    country = Column("country", String)
 
-    def __init__(self,  league_elite, league, country):
+    def __init__(self,  league_elite, league):
         self.league_elite = league_elite
         self.league = league
-        self.country = country
 
     def __repr__(self):
-        return f"({self.id}, {self.league_elite}, {self.league}, {self.country})"
+        return f"({self.id}, {self.league_elite}, {self.league})"
 
 class Nationality(Base):
     
@@ -305,18 +303,17 @@ class TeamSeason(Base):
     ga = Column("ga", Integer)
     plus_minus = Column("plus_minus", Integer)
     tp = Column("tp", Integer)
-    ppg = Column("ppg", Integer)
     postseason_type_id = Column("postseason_type_id", Integer, ForeignKey("postseason_types.id"))
 
 
     def __init__(self, position, league_id, team_id, division_id, conference_id,
                  season_id, gp, w, t, l, otw, otl, gf, ga, plus_minus,
-                 tp, ppg, postseason_type_id):
+                 tp, postseason_type_id):
         
         self.position = position
         self.league_id = league_id
         self.team_id = team_id
-        self.divison_id = division_id
+        self.division_id = division_id
         self.conference_id = conference_id
         self.season_id = season_id
         self.gp = gp
@@ -329,11 +326,10 @@ class TeamSeason(Base):
         self.ga = ga
         self.plus_minus = plus_minus
         self.tp = tp
-        self.ppg = ppg
         self.postseason_type_id = postseason_type_id
 
     def __repr__(self):
-        return f"({self.id}, {self.position}, {self.league_id}, {self.team_id}, {self.divison_id}, {self.conference_id}, {self.season_id}, {self.gp}, {self.w}, {self.t}, {self.l}, {self.otw}, {self.otl}, {self.gf}, {self.ga}, {self.plus_minus}, {self.tp}, {self.ppg}, {self.postseason_type_id})"
+        return f"({self.id}, {self.position}, {self.league_id}, {self.team_id}, {self.divison_id}, {self.conference_id}, {self.season_id}, {self.gp}, {self.w}, {self.t}, {self.l}, {self.otw}, {self.otl}, {self.gf}, {self.ga}, {self.plus_minus}, {self.tp}, {self.postseason_type_id})"
 
 
 class PostseasonType(Base):
@@ -467,7 +463,7 @@ class GoalieStats(Base):
         return f"({self.id}, {self.player_id}, {self.regular_season}, {self.season_id}, {self.league_id}, {self.team_id}, {self.captaincy}, {self.games_played}, {self.gd}, {self.goal_against_average}, {self.save_percentage}, {self.goal_against}, {self.shot_saved}, {self.shotouts}, {self.wins}, {self.looses}, {self.ties}, {self.toi})"
 
 
-engine = create_engine("sqlite:///C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/database/hockey_v3.db", echo=False)
+engine = create_engine("sqlite:///C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/database/hockey_v4.db", echo=False)
 Base.metadata.create_all(bind=engine)
 
 DBSession = sessionmaker(bind=engine)

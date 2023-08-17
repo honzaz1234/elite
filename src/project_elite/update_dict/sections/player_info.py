@@ -29,14 +29,12 @@ class UpdatePlayerInfo:
         if info_dict["Status"] is not None:
             return info_dict
         elif "Age" in info_dict:
-            print(info_dict["Age"])
             info_dict["Status"] = "Active"
         else:
             info_dict["Status"] = "Retired"
         return info_dict
     
     def _add_active(self, info_dict):
-        print(info_dict["Status"])
         if info_dict["Status"] == "Active":
             info_dict["Active"] = True 
         else:
@@ -163,9 +161,6 @@ class UpdatePlayerInfo:
         if info_dict["date_birth"] is None:
             return info_dict
         orig_date = info_dict["date_birth"]
-        print("orig_date:")
-        print(orig_date)
-        should_return = False
         month_name = re.findall("^([A-Za-z]+)\s", orig_date)
         if month_name == []:
             info_dict["date_birth"] = None

@@ -4,8 +4,8 @@ class UpdateTeamDict():
 
     NA_region_abbrevations = {"USA": ["NJ", "CA", "AZ", "OH", "MI", "NY", "NE", "WI", "MA", "FL", "CO", "SC", "MO", "MN", "PA",	
                               "TX",	"CT", "IN",	"WA", "IL", "ME", "AL", "OK", "UT", "OR", "NC", "RI", "NH", "VA", "AK", 	
-                              "IA", "MS", "SD", "ND", "MD",	"DE", "NV", "MT", "TN", "VT", "DC", "GA", "ID"],
-                              "CAN": ["AB", "BC", "MB", "NB", "NL", "NS", "NT", "ON", "ONT", "PE", "QC", "SK","YT", "NU"]}
+                              "IA", "MS", "SD", "ND", "MD",	"DE", "NV", "MT", "TN", "VT", "DC", "GA", "ID", "KY", "LA"],
+                              "CAN": ["AB", "BC", "MB", "NB", "NL", "NS", "NT", "ON", "ONT", "PE", "QC", "SK","YT", "NU", "WV"]}
     integer_vals = ["founded", "construction_year", "capacity"]
     gen_info_keys = ["short_name", "plays_in", "full_name", "team_colours", "founded", "active", "u_id", "place"]
     stadium_info_keys = ["construction_year", "capacity", "construction_year", "arena_name", "place"]
@@ -57,7 +57,6 @@ class UpdateTeamDict():
     def update_urls(self, list_url, regex):
         dict_url = {}
         for url in list_url:
-            print(url)
             u_id = re.findall(regex, url)[0]
             dict_url[u_id] = url
         return dict_url
@@ -76,7 +75,6 @@ class UpdateTeamDict():
                         dict_info[key][subkey] = None
                     else:
                         new_int = re.findall("[0-9\/s]+", dict_info[key][subkey])[0]
-                        print(new_int) 
                         dict_info[key][subkey] = int(new_int)
         return dict_info
     
@@ -137,7 +135,6 @@ class UpdateTeamDict():
         return info_dict
     
     def update_team_dict_wrap(self, dict_info):
-        print(dict_info)
         dict_info = self.update_key_names(dict_info)
         for key in ["stadium_info", "general_info"]:
             if "town" in dict_info[key]:
@@ -150,15 +147,13 @@ class UpdateTeamDict():
         dict_info["affiliated_teams"] = self.update_urls(list_url=dict_info["affiliated_teams"], regex="team\/([0-9]+)")
         #dict_info["retired_numbers"] = self.update_urls(list_url=dict_info["retired_numbers"], regex="player\/([0-9]+)")
         dict_info = self.update_NA(dict_info)
-        print(dict_info)
         dict_info =  self.update_numbers(dict_info=dict_info)
-        print(dict_info)
         dict_info["general_info"]["active"] = self.update_status(league_names=dict_info["general_info"]["plays_in"])
-        print(dict_info)
         dict_info = self.update_historic_name(dict_info)
         #dict_info["affiliated_teams"] = self.update_team_url(list_url=dict_info["affiliated_teams"])
         dict_info["retired_numbers"] = self.update_retired_numbers(player_dict=dict_info["retired_numbers"])
         dict_info["general_info"] = self.update_info(info_dict=dict_info["general_info"], list_keys=UpdateTeamDict.gen_info_keys)
         dict_info["stadium_info"] = self.update_info(info_dict=dict_info["stadium_info"], list_keys=UpdateTeamDict.stadium_info_keys)
         dict_info["colour_list"] = self.update_colours(colour_string=dict_info["general_info"]["team_colours"])
+        print(dict_info)
         return dict_info
