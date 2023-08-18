@@ -74,7 +74,9 @@ class UpdateTeamDict():
                     if dict_info[key][subkey] == "-":
                         dict_info[key][subkey] = None
                     else:
-                        new_int = re.findall("[0-9\/s]+", dict_info[key][subkey])[0]
+                        new_int = (re.sub("\s","", dict_info[key][subkey]))
+                        new_int = re.findall("[0-9]+", new_int)[0]
+                        new_int = int(new_int)
                         dict_info[key][subkey] = int(new_int)
         return dict_info
     

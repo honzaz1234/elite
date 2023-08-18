@@ -37,28 +37,25 @@ class InputData:
         return league_id
 
 
-    def input_player_data(self, dict_info, status):
+    def input_player_data(self, dict_info):
         u_id = dict_info["u_id"]
         player_o = tables_o.CreatePlayerTableEntry()
-        if status == "insert_uid":
-            insert_uid_entry = player_o.insert_uid_player_entry(dict_info["u_id"])            
-            tables_o.db.session.add(insert_uid_entry)
-            tables_o.db.session.commit()
-            player_id = player_o.check_if_id_exists_in_table_player(u_id)
-            return player_id
+        player_id = player_o.check_if_id_exists_in_table_player(u_id)
         dict_fk = {}
-        for key in ["youth_team", "nhl_team_rights", "draft_team"]:
-                team_name = dict_info[key]
-                team_id = self.input_team_data(team_name=team_name)
-                key_id = key + "_id"
-                dict_fk[key_id] = team_id
+        team_id = self.input_team_uid(u_id=dict_info["u_id"])
+        key_id = "nhl_team_rights_id"
+        dict_fk[key_id] = team_id
         dict_fk["nation_id"] = self.input_nationality_data(nationality_name=dict_info["nation"])
         dict_fk["place_birth_id"] = self.input_place_data(country_name=dict_info["birth_country"], place_name=dict_info["birth_place"], region_name=dict_info["birth_region"])
-        print(dict_info["name"])
-        player_entry = player_o.create_player_entry(dictd=dict_info, dict_fkeys=dict_fk)
-        tables_o.db.session.add(player_entry)
-        tables_o.db.session.commit()
-        player_id = player_o.check_if_id_exists_in_table_player(u_id)
+        if player_id == None:
+            player_entry = player_o.create_player_entry(dictd=dict_info, dict_fkeys=dict_fk)
+            tables_o.db.session.add(player_entry)
+            tables_o.db.session.commit()
+            player_id = player_o.check_if_id_exists_in_table_player(u_id)
+        else:
+            update_entry = player_o.update_player_entry(dictd=dict_info, dict_fkeys=dict_fk)
+            tables_o.db.session.execute(update_entry)
+            tables_o.db.session.commit()
         return player_id
     
     def input_nationality_data(self, nationality_name):
@@ -91,7 +88,7 @@ class InputData:
             team_id = team_o.find_id_in_team_table(u_id_1=general_info_dict["u_id"])
         else:
             general_info_dict["id"] = team_id
-            update_entry = team_o.update_team_entry(gi_dict=general_info_dict)                                          
+            update_entry = team_o.update_team_entry(gi_dict=general_info_dict)                                        
             tables_o.db.session.execute(update_entry)
             tables_o.db.session.commit()
         return team_id
@@ -111,8 +108,8 @@ class InputData:
         return league_id
     
     def input_player_stats_data(self, dict_info, season_dict):
-        dict_info["team_id"] = self.input_team_data(team_name=dict_info["team_name"])
-        dict_info["league_id"] = self.input_league_data(league_name=dict_info["league_name"])
+        dict_info["team_id"] = self.input_team_uid(u_id=dict_info["team_id"])
+        dict_info["league_id"] = self.input_league_uid(league_uid=dict_info["league_uid"])
         dict_info["season_id"] = self.input_season_data(season_name=dict_info["season_name"])
         season_o = tables_o.CreateStatsTableEntry()
         if dict_info["is_goalie"] == True:
@@ -134,7 +131,7 @@ class InputData:
         return stat_id
     
     def input_achievement_relation(self, player_id, achievement_name, season_name):
-        achievement_id = self.input_achievement(achievement_name=achievement_name)
+        achievement_id = self.input_achievement(achievement_name=achievement_name, league_id=None)
         season_id = self.input_season_data(season_name=season_name)
         achievement_player_o = tables_o.CreateAchievementPlayerTableEntry()
         achievement_player_id = achievement_player_o.find_id_in_achievement_player_table(player_id=player_id, 
@@ -192,7 +189,6 @@ class InputData:
         place_id = self.input_place_data(place_name=place_dict["place"],
                                                          region_name=place_dict["region"],
                                                          country_name=place_dict["country"])
-        print(place_id)
         stadium_dict["place_id"] = place_id
         stadium_id = stadium_o.find_id_in_stadium_table(stadium_dict=stadium_dict)
         if stadium_id is None:
@@ -314,6 +310,27 @@ class InputData:
             tables_o.db.session.commit()
             team_season_id = team_season_o.find_id_in_team_season_table(ts_dict=ts_dict)
         return team_season_id
+    
+    def input_player_draft(self, draft_dict, player_id):
+        player_draft_o = tables_o.CreatePlayerDraftEntry()
+        team_id = self.input_team_uid(u_id=draft_dict["team_uid"])
+        player_draft_id = player_draft_o.find_id_in_player_draft_table(player_id=player_id, team_id=team_id, 
+                                                                       draft_round=draft_dict["draft_round"],
+                                                                       draft_year=draft_dict["draft_year"],
+                                                                       draft_position=draft_dict["draft_position"])
+        if player_draft_id is None:
+            player_draft_entry = player_draft_o.create_player_draft_entry(player_id=player_id, team_id=team_id, 
+                                                                       draft_round=draft_dict["draft_round"],
+                                                                       draft_year=draft_dict["draft_year"],
+                                                                       draft_position=draft_dict["draft_position"])
+            tables_o.db.session.add(player_draft_entry)
+            tables_o.db.session.commit()
+            player_draft_id = player_draft_o.find_id_in_player_draft_table(player_id=player_id, team_id=team_id, 
+                                                                       draft_round=draft_dict["draft_round"],
+                                                                       draft_year=draft_dict["draft_year"],
+                                                                       draft_position=draft_dict["draft_position"])
+        return player_draft_id
+
 
 
 

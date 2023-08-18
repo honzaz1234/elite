@@ -25,23 +25,18 @@ class Player(Base):
     signed_nhl = Column("signed_nhl", Boolean)
     date_birth = Column("date_birth", Date)
     drafted = Column("drafted", Boolean)
-    draft_round = Column("draft_round", Integer)
-    draft_position = Column("draft_position", Integer)
-    draft_year = Column("draft_year", Integer)
     height = Column("height", Integer)
     weight = Column("weight", Integer)
 
-    youth_team_id = Column("youth_team_id", Integer, ForeignKey("teams.id"))
     nhl_rights_id = Column("nhl_rights_id", Integer, ForeignKey("teams.id"))
-    draft_team_id = Column("draft_team_id", Integer,  ForeignKey("teams.id"))
     nation_id = Column("nationality_id", Integer, ForeignKey("nationalities.id"))
     place_birth_id = Column("place_birth_id", Integer, ForeignKey("places.id"))
 
 
 
     def __init__(self, u_id, name, position, active, age, shoots, catches, contract, cap_hit, 
-                 signed_nhl, date_birth, drafted, draft_round, draft_position, draft_year, 
-                 height, weight, youth_team_id, nhl_rights_id, draft_team_id, nation_id, place_birth_id):
+                 signed_nhl, date_birth, drafted, height, weight, nhl_rights_id, nation_id, 
+                 place_birth_id):
         self.u_id = u_id
         self.name = name
         self.position = position
@@ -54,19 +49,38 @@ class Player(Base):
         self.signed_nhl = signed_nhl
         self.date_birth = date_birth 
         self.drafted = drafted
-        self.draft_round = draft_round
-        self.draft_position = draft_position
-        self.draft_year = draft_year
         self.height = height
         self.weight = weight
-        self.youth_team_id = youth_team_id
         self.nhl_rights_id = nhl_rights_id
-        self.draft_team_id = draft_team_id
         self.nation_id = nation_id
         self.place_birth_id = place_birth_id
 
     def __repr__(self):
-        return f"({self.id}, {self.u_id}, {self.name}, {self.position}, {self.active}, {self.age}, {self.shoots}, {self.catches}, {self.contract}, {self.cap_hit}, {self.signed_nhl}, {self.date_birth}, {self.drafted}, {self.draft_round}, {self.draft_position}, {self.draft_year}, {self.height}, {self.weight}, {self.youth_team_id}, {self.draft_team_id}, {self.nhl_rights_id}, {self.nation_id}, {self.place_birth_id})"
+        return f"({self.id}, {self.u_id}, {self.name}, {self.position}, {self.active}, {self.age}, {self.shoots}, {self.catches}, {self.contract}, {self.cap_hit}, {self.signed_nhl}, {self.date_birth}, {self.drafted}, {self.height}, {self.weight}, {self.nhl_rights_id}, {self.nation_id}, {self.place_birth_id})"
+
+
+class PlayerDraft(Base):
+
+    __tablename__ = "players_draft"
+
+    id = Column("id", Integer, primary_key=True)
+    player_id = Column("player_id", Integer, ForeignKey("players.id"))
+    team_id = Column("team_id", Integer, ForeignKey("teams.id"))
+    draft_round = Column("draft_round", Integer)
+    draft_position = Column("draft_position", Integer)
+    draft_year = Column("draft_year", Integer)
+
+    def __init__(self, player_id, team_id, draft_round, draft_position, draft_year):
+
+        self.player_id = player_id
+        self.team_id = team_id
+        self.draft_round = draft_round
+        self.draft_position = draft_position
+        self.draft_year = draft_year
+
+    def __repr__(self):
+        return f"({self.player_id}, {self.team_id}, {self.draft_round}, {self.draft_position}, {self.draft_year})"
+
 
 class Stadium(Base):
 
@@ -463,14 +477,13 @@ class GoalieStats(Base):
         return f"({self.id}, {self.player_id}, {self.regular_season}, {self.season_id}, {self.league_id}, {self.team_id}, {self.captaincy}, {self.games_played}, {self.gd}, {self.goal_against_average}, {self.save_percentage}, {self.goal_against}, {self.shot_saved}, {self.shotouts}, {self.wins}, {self.looses}, {self.ties}, {self.toi})"
 
 
-engine = create_engine("sqlite:///C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/database/hockey_v4.db", echo=False)
+engine = create_engine("sqlite:///C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/database/hockey_v5.db", echo=False)
 Base.metadata.create_all(bind=engine)
 
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 check_data = session.query(Season).all()
-print(check_data)
 if check_data == []:
     season_list = leauge_getter.create_season_list(1886, 2024)
     for one_season in season_list:

@@ -74,6 +74,8 @@ class UpdatePlayerInfo:
             info_dict["draft_info"]={}
             return info_dict
         for ind in range(len(info_dict["Drafted"])):
+            if info_dict["Drafted"][ind] == None:
+                continue
             draft_info = info_dict["Drafted"][ind]
             one_draft = {}
             draft_year = re.findall("^([0-9]+)\s", draft_info)
@@ -215,7 +217,6 @@ class UpdatePlayerInfo:
         info_dict = self._update_key_names(info_dict)
         info_dict = self._update_missing_values(info_dict)
         info_dict = self._update_data_types(info_dict)
-        info_dict["u_id"] = int(info_dict["u_id"])
         return info_dict
 
 

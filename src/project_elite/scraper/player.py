@@ -70,7 +70,6 @@ class PlayerScraper:
         s_o = PlayerStats(selector=self.selector)
         dict_player["stats"] = s_o.get_all_stats()
         dict_player["u_id"] = re.findall("player\/([0-9]+)\/", self.url)[0]
-        print(dict_player)
         return dict_player
     
 class PlayerGeneralInfo():
@@ -82,14 +81,13 @@ class PlayerGeneralInfo():
         info_names = ["Date of Birth", "Age", "Place of Birth", 
                       "Nation", "Position", "Height", "Weight", 
                       "Shoots", "Contract", "Cap Hit", "NHL Rights",
-                        "Drafted", "Status"]
+                        "Drafted", "Status", "Catches"]
 
         def __init__(self, selector):
             self.selector = selector
 
         def _get_general_info(self):
             dict_gi = self._get_info_wraper()
-            print(dict_gi)
             dict_gi["name"] = self._get_name()
             return dict_gi
 
@@ -98,7 +96,6 @@ class PlayerGeneralInfo():
             """used to get player name"""
 
             name = self.selector.xpath(PlayerGeneralInfo.paths["player_name"]).getall()
-            print(name)
             name = [string.strip() for string in name]
             name = [string for string in name if string != ""]
             return name[0].strip()
@@ -211,7 +208,6 @@ class PlayerStats():
         orig_url = list_data[0]
         url_list = re.findall(regex, orig_url)
         url = url_list[0]
-        print(url)
         return url
     
 class PlayerAchievements():

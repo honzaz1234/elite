@@ -23,7 +23,7 @@ insert_team_data = input_dict_2.InputTeamDict()
 links_list = os.listdir(url_links)
 f =  open(dict_data_path)
 u_id_done_dict = json.load(f)
-u_id_done_list = u_id_done_dict["teams"]
+u_id_done_list = u_id_done_dict["teams_done"]
 
 try:
     for league in league_list:
@@ -47,20 +47,21 @@ try:
             ts_o = team_scraper.TeamScraper(url)
             team_data = ts_o.get_info()
             team_dict_updated = tu_o.update_team_dict_wrap(team_data)
+            print("b")
             insert_team_data.input_team_dict(team_dict=team_dict_updated)
+            print("c")
             u_id_done_list.append(u_id)
             time_end = time.time()
             time_difference = time_end - time_start
             print("duration: " + str(time_difference))
-        u_id_done_dict["teams"] = u_id_done_list
+        u_id_done_dict["teams_done"] = u_id_done_list
         with open(dict_data_path, "w") as fp:
             json.dump(u_id_done_dict, fp)
         time.sleep(120)
 except:
-        u_id_done_dict["teams"] = u_id_done_list
+        u_id_done_dict["teams_done"] = u_id_done_list
         with open(dict_data_path, "w") as fp:
             json.dump(u_id_done_dict, fp)
-        time.sleep(120)
 
 
 

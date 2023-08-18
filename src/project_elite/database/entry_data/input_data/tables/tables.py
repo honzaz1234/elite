@@ -92,7 +92,7 @@ class CreateLeagueTableEntry:
         return update_query
     
     def insert_uid_league_entry(self, league_uid):
-         team_entry = db.League(league_elite = league_uid)
+         team_entry = db.League(league_elite = league_uid, league=None)
          return team_entry
 
 class CreateNationalityTableEntry:
@@ -145,14 +145,9 @@ class CreatePlayerTableEntry:
                                  signed_nhl = dictd["signed_nhl"],
                                  date_birth = dictd["date_birth"],
                                  drafted = dictd["drafted"],
-                                 draft_round = dictd["draft_round"],
-                                 draft_position = dictd["draft_position"],
-                                 draft_year = dictd["draft_year"],
                                  height = dictd["height"],
                                  weight = dictd["weight"],
-                                 youth_team_id = dict_fkeys["youth_team_id"],
                                  nhl_rights_id = dict_fkeys["nhl_team_rights_id"],
-                                 draft_team_id = dict_fkeys["draft_team_id"],
                                  nation_id = dict_fkeys["nation_id"],
                                  place_birth_id = dict_fkeys["place_birth_id"]
                                  )
@@ -164,7 +159,7 @@ class CreatePlayerTableEntry:
             return None
         else:
             return row_data.id
-    def update_player_entry(self, dictd, dict_fkeys):
+    def update_player_entry_2(self, dictd, dict_fkeys):
         update_query = db.Player(
                                 id = dictd["id"],
                                 name = dictd["name"],
@@ -178,19 +173,14 @@ class CreatePlayerTableEntry:
                                  signed_nhl = dictd["signed_nhl"],
                                  date_birth = dictd["date_birth"],
                                  drafted = dictd["drafted"],
-                                 draft_round = dictd["draft_round"],
-                                 draft_position = dictd["draft_position"],
-                                 draft_year = dictd["draft_year"],
                                  height = dictd["height"],
                                  weight = dictd["weight"],
-                                 youth_team_id = dict_fkeys["youth_team_id"],
                                  nhl_rights_id = dict_fkeys["nhl_team_rights_id"],
-                                 draft_team_id = dict_fkeys["draft_team_id"],
                                  nation_id = dict_fkeys["nation_id"],
                                  place_birth_id = dict_fkeys["place_birth_id"])
         return update_query
         
-    def update_player_entry_2(self, dictd, dict_fkeys):
+    def update_player_entry(self, dictd, dict_fkeys):
         update_query = update(db.Player).where(db.Player.u_id == dictd["u_id"]).values(
             name = dictd["name"],
                                  position = dictd["position"], 
@@ -203,14 +193,9 @@ class CreatePlayerTableEntry:
                                  signed_nhl = dictd["signed_nhl"],
                                  date_birth = dictd["date_birth"],
                                  drafted = dictd["drafted"],
-                                 draft_round = dictd["draft_round"],
-                                 draft_position = dictd["draft_position"],
-                                 draft_year = dictd["draft_year"],
                                  height = dictd["height"],
                                  weight = dictd["weight"],
-                                 youth_team_id = dict_fkeys["youth_team_id"],
                                  nhl_rights_id = dict_fkeys["nhl_team_rights_id"],
-                                 draft_team_id = dict_fkeys["draft_team_id"],
                                  nation_id = dict_fkeys["nation_id"],
                                  place_birth_id = dict_fkeys["place_birth_id"])
         return update_query
@@ -228,14 +213,9 @@ class CreatePlayerTableEntry:
                                  signed_nhl = None,
                                  date_birth = None,
                                  drafted = None,
-                                 draft_round = None,
-                                 draft_position = None,
-                                 draft_year = None,
                                  height = None,
                                  weight = None,
-                                 youth_team_id = None,
                                  nhl_rights_id = None,
-                                 draft_team_id = None,
                                  nation_id = None,
                                  place_birth_id = None)
          return player_entry
@@ -427,7 +407,7 @@ class CreateTeamTableEntry():
     def create_team_entry(self, gi_dict):
         team_entry = db.Team(u_id=gi_dict["u_id"], 
                              team = gi_dict["short_name"],
-                              team_long_name = gi_dict["full_name"],
+                              long_name = gi_dict["full_name"],
                               active=gi_dict["active"],
                                place_id = gi_dict["place_id"], 
                                founded=gi_dict["founded"],
@@ -436,7 +416,7 @@ class CreateTeamTableEntry():
     
     def update_team_entry(self, gi_dict):
         update_query = update(db.Team).where(db.Team.u_id == gi_dict["u_id"]).values(team = gi_dict["short_name"],
-                                                                                    team_long_name = gi_dict["full_name"],
+                                                                                    long_name = gi_dict["full_name"],
                                                                                     active=gi_dict["active"],
                                                                                     place_id = gi_dict["place_id"], 
                                                                                     founded=gi_dict["founded"],
@@ -453,11 +433,12 @@ class CreateTeamTableEntry():
     def find_id_in_team_table_long(self, gi_dict):
         row_data =  db.session.query(db.Team.id).filter_by(u_id=gi_dict["u_id"], 
                              team = gi_dict["short_name"],
-                              team_long_name = gi_dict["full_name"],
+                              long_name = gi_dict["full_name"],
                               active=gi_dict["active"],
                                place_id = gi_dict["place_id"], 
                                founded=gi_dict["founded"],
                                stadium_id=gi_dict["stadium_id"]).first()
+        print(row_data)
         if row_data is None:
             return None
         else:
@@ -466,7 +447,7 @@ class CreateTeamTableEntry():
     def insert_uid_team_entry(self, u_id_1):
          team_entry = db.Team(u_id = u_id_1, 
                               team = None,
-                              team_long_name = None,
+                              long_name = None,
                               active=None,
                                place_id = None, 
                                founded=None,
@@ -505,6 +486,28 @@ class CreatePostSeasonTypeEntry():
             return None
         else:
             return row_data.id 
+        
+
+class CreatePlayerDraftEntry():
+    
+    def __init__(self):
+        pass
+
+    def create_player_draft_entry(self, player_id, team_id, draft_round, draft_position, draft_year):
+        player_draft_entry = db.PlayerDraft(player_id=player_id, team_id=team_id, draft_round=draft_round,
+                                            draft_position=draft_position, draft_year=draft_year)
+        return  player_draft_entry
+    
+    def find_id_in_player_draft_table(self, player_id,  team_id, draft_round, draft_position, draft_year):
+        row_data = db.session.query(db.PlayerDraft.id).filter_by(player_id=player_id,
+                                                                    team_id=team_id,
+                                                                    draft_round=draft_round,
+                                                                    draft_position=draft_position,
+                                                                    draft_year=draft_year).first()
+        if row_data is None:
+            return None
+        else:
+            return row_data.id         
           
         
 
