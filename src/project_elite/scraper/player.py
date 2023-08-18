@@ -183,7 +183,11 @@ class PlayerStats():
             return {}
         team_name = team_name[0]
         league_name = self.selector.xpath(path_league).getall()
-        league_name = [string.strip() for string in league_name][0]
+        league_name = [string.strip() for string in league_name]
+        if league_name == []:
+            league_name = None
+        else:
+            league_name = league_name[0]
         leadership = self.selector.xpath(path_leadership).getall()
         leadership = [string.strip() for string in leadership]
         stat_playoff = self.selector.xpath(path_playoff).getall()
@@ -191,7 +195,10 @@ class PlayerStats():
         stat_regular = self.selector.xpath(path_reg).getall()
         stat_regular = [string.strip() for string in stat_regular]
         url_team = self.extract_general_url(path=path_url_team, regex="(.+)\/[^\/]+$")
-        url_league = self.extract_general_url(path=path_url_league, regex="(.+)\/stats")
+        if league_name is not None:
+            url_league = self.extract_general_url(path=path_url_league, regex="(.+)\/stats")
+        else: 
+            url_league = None
         dict_season[league_name] = {}
         dict_season[league_name][team_name] = {}
         dict_season[league_name][team_name]["regular_season"] = stat_regular

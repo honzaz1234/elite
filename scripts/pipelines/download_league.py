@@ -44,7 +44,8 @@ try:
         u_id_done_dict["leagues_done"] = u_id_done_list
         with open(dict_data_path, "w") as fp:
             json.dump(u_id_done_dict, fp)
-    time.sleep(120)
+        time.sleep(120)
+    print("all leagues downloaded")
 except:
         u_id_done_dict["leagues_done"] = u_id_done_list
         with open(dict_data_path, "w") as fp:

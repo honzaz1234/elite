@@ -58,6 +58,7 @@ try:
         with open(dict_data_path, "w") as fp:
             json.dump(u_id_done_dict, fp)
         time.sleep(120)
+    print("all teams downloaded")
 except:
         u_id_done_dict["teams_done"] = u_id_done_list
         with open(dict_data_path, "w") as fp:

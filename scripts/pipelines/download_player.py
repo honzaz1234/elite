@@ -36,7 +36,6 @@ for league1 in dict_input:
         if file_name in links_list:
             continue
         url_season = league_url_scraper.get_player_refs(league=league1, season=season_1)
-        print(url_season)
         file_name = league1 + "_" + season_1 + ".json"
         file_path = url_links + file_name
         with open(file_path, "w") as fp:
@@ -44,8 +43,8 @@ for league1 in dict_input:
 try:
     for league in dict_input:
         season_list = dict_input[league]
-        print(season_list)
         for season_1 in season_list:
+            start_season = time.time()
             print(season_1)
             file_name = league + "_" + season_1 + ".json"
             file_path_links = url_links + file_name
@@ -64,13 +63,8 @@ try:
                 f2 = open(file_path_data)
                 season_data = json.load(f2)
             for link in all_links:
-                print("link:")
-                print(link)
                 uid = re.findall('([0-9]+)', link)[0]
-                print(uid)
                 if uid not in season_data["players_done"]:
-                    print("not downloaded:")
-                    print(uid)
                     to_download.append(link)
             print(to_download)
             for link in to_download:
@@ -80,8 +74,6 @@ try:
                     continue
                 time_start = time.time()
                 player_o = player.PlayerScraper(url=link)
-                time_end=time.time()
-                print(time_end - time_start)
                 dict_player = player_o.get_info_all()
                 dict_player_updated = update_dict1.update_player_dict(dict_player)
                 input_database.input_player_dict(dict=dict_player_updated)
@@ -92,9 +84,15 @@ try:
                 print(len(season_data["players_done"]))
             with open(file_path_data, "w") as fp:
                 json.dump(season_data, fp)
+            end_season = time.time()
+            season_duration = end_season - start_season 
+            print("Duration Season: " + str(season_duration))
+            print("n_players: " +  str(len(to_download)))
+    print("all players downloaded")
 except:
     with open(file_path_data, "w") as fp:
         json.dump(season_data, fp)
+    print("error")
 
     
     

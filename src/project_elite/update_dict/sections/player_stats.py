@@ -27,7 +27,10 @@ class UpdatePlayerStats:
         return year_dict
     
     def update_league_dict(self, league_dict):
-        league_id = re.findall("league\/(.+)$", league_dict["url"])[0]
+        if league_dict["url"] is not None:
+            league_id = re.findall("league\/(.+)$", league_dict["url"])[0]
+        else:
+            league_id = None                                               
         league_dict["league_id"] = league_id
         for team_key in list(league_dict.keys()):
             if team_key not in ["url", "league_id"]:
