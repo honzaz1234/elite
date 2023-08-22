@@ -7,19 +7,68 @@ class UpdatePlayerInfo:
                    "May": 5, "Jun": 6, "Jul": 7, "Aug": 8, 
                    "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12}
     
-    nhl_uid = {"Boston Bruins": "52", "Toronto Maple Leafs": "76", "Tampa Bay Lightning": "75", "Florida Panthers": "62", "Buffalo Sabres": "53", 
-               "Ottawa Senators": "69", "Detroit Red Wings": "60", "Montr\u00e9al Canadiens": "64", "Carolina Hurricanes": "55", "New Jersey Devils": "66", 
-               "New York Rangers": "68", "New York Islanders": "67", "Pittsburgh Penguins": "71", "Washington Capitals": "78", "Philadelphia Flyers": "70", 
-               "Columbus Blue Jackets": "58", "Colorado Avalanche": "57", "Dallas Stars": "59", "Minnesota Wild": "63", "Winnipeg Jets": "9966", 
-               "Nashville Predators": "65", "St. Louis Blues": "74", "Arizona Coyotes": "72", "Chicago Blackhawks": "56", "Vegas Golden Knights": "22211", 
-               "Edmonton Oilers": "61", "Los Angeles Kings": "79", "Seattle Kraken": "27336", "Calgary Flames": "54", "Vancouver Canucks": "77", 
-               "San Jose Sharks": "73", "Anaheim Ducks": "1580", "Phoenix Coyotes": "72", "Atlanta Thrashers": "51", "Mighty Ducks of Anaheim": "1580", 
-               "Hartford Whalers": "546", "Qu\u00e9bec Nordiques": "544", "Minnesota North Stars": "543", "Chicago Black Hawks": "56", "Colorado Rockies": "769", 
-               "Atlanta Flames": "767", "Cleveland Barons": "96", "California Golden Seals": "1815", "Kansas City Scouts": "3314", "Oakland Seals": "1815", 
-               "California/Oakland Seals": "1815", "Brooklyn Americans": "3029", "New York Americans": "3029", "Montr\u00e9al Maroons": "3284", "St. Louis Eagles": "11424", 
-               "Ottawa HC (Senators)": "69", "Detroit Falcons": "60", "Philadelphia Quakers": "5942", "Detroit Cougars": "60", "Pittsburgh Pirates": "7287", 
-               "Toronto St. Patricks/Maple Leafs": "76", "Toronto St. Patricks": "76", "Hamilton Tigers": "3196", "Qu\u00e9bec Athletic Club": "3194", 
-               "Toronto Hockey Club": "76", "Montr\u00e9al Wanderers": "3264"}
+    nhl_uid = {
+        'Boston Bruins': 52,
+        'Toronto Maple Leafs': 76,
+        'Tampa Bay Lightning': 75,
+        'Florida Panthers': 62,
+        'Buffalo Sabres': 53,
+        'Ottawa Senators': 69,
+        'Detroit Red Wings': 60,
+        'Montréal Canadiens': 64,
+        'Carolina Hurricanes': 55,
+        'New Jersey Devils': 66,
+        'New York Rangers': 68,
+        'New York Islanders': 67,
+        'Pittsburgh Penguins': 71,
+        'Washington Capitals': 78,
+        'Philadelphia Flyers': 70,
+        'Columbus Blue Jackets': 58,
+        'Colorado Avalanche': 57,
+        'Dallas Stars': 59,
+        'Minnesota Wild': 63,
+        'Winnipeg Jets': 9966,
+        'Nashville Predators': 65,
+        'St. Louis Blues': 74,
+        'Arizona Coyotes': 72,
+        'Chicago Blackhawks': 56,
+        'Vegas Golden Knights': 22211,
+        'Edmonton Oilers': 61,
+        'Los Angeles Kings': 79,
+        'Seattle Kraken': 27336,
+        'Calgary Flames': 54,
+        'Vancouver Canucks': 77,
+        'San Jose Sharks': 73,
+        'Anaheim Ducks': 1580,
+        'Phoenix Coyotes': 72,
+        'Atlanta Thrashers': 51,
+        'Mighty Ducks of Anaheim': 1580,
+        'Hartford Whalers': 546,
+        'Québec Nordiques': 544,
+        'Minnesota North Stars': 543,
+        'Chicago Black Hawks': 56,
+        'Colorado Rockies': 769,
+        'Atlanta Flames': 767,
+        'Cleveland Barons': 96,
+        'California Golden Seals': 1815,
+        'Kansas City Scouts': 3314,
+        'Oakland Seals': 1815,
+        'California/Oakland Seals': 1815,
+        'Brooklyn Americans': 3029,
+        'New York Americans': 3029,
+        'Montréal Maroons': 3284,
+        'St. Louis Eagles': 11424,
+        'Ottawa HC (Senators)': 69,
+        'Detroit Falcons': 60,
+        'Philadelphia Quakers': 5942,
+        'Detroit Cougars': 60,
+        'Pittsburgh Pirates': 7287,
+        'Toronto St. Patricks/Maple Leafs': 76,
+        'Toronto St. Patricks': 76,
+        'Hamilton Tigers': 3196,
+        'Québec Athletic Club': 3194,
+        'Toronto Hockey Club': 76,
+        'Montréal Wanderers': 3264}
 
 
     def __init__(self, is_goalie ):
@@ -28,7 +77,7 @@ class UpdatePlayerInfo:
     def _update_status(self, info_dict):
         if info_dict["Status"] is not None:
             return info_dict
-        elif "Age" in info_dict:
+        elif info_dict["Age"] is not None:
             info_dict["Status"] = "Active"
         else:
             info_dict["Status"] = "Retired"
@@ -69,8 +118,9 @@ class UpdatePlayerInfo:
     
     def _update_draft_info(self, info_dict):
         dict_draft = {}
-        if info_dict["Drafted"] == None:
-            dict_draft["Drafted"] = False
+        print(info_dict)
+        if info_dict["Drafted"] == [None]:
+            info_dict["Drafted"] = False
             info_dict["draft_info"]={}
             return info_dict
         for ind in range(len(info_dict["Drafted"])):
@@ -120,11 +170,12 @@ class UpdatePlayerInfo:
         if info_dict["NHL Rights"] is None:
             info_dict["nhl_team_rights"] = None
             info_dict["signed_nhl"] = False
+            info_dict["nr_uid"] = None
             del info_dict["NHL Rights"]
             return info_dict
         nhl_rights_list = info_dict["NHL Rights"].split(" / ")
         info_dict["nhl_team_rights"] = nhl_rights_list[0]
-        info_dict["team_uid"] = UpdatePlayerInfo.nhl_uid[info_dict["nhl_team_rights"]]
+        info_dict["nr_uid"] = UpdatePlayerInfo.nhl_uid[info_dict["nhl_team_rights"]]
         info_dict["signed_nhl"] = nhl_rights_list[1]
         if info_dict["signed_nhl"] == "Signed":
             info_dict["signed_nhl"] = True
@@ -187,7 +238,11 @@ class UpdatePlayerInfo:
         return info_dict
 
     def _update_age_to_integer(self, info_dict):
+        print(info_dict["Age"])
         if info_dict["Age"] == None:
+            return info_dict
+        elif info_dict["Age"] == "-" or info_dict["Age"] == "PREMIUM":
+            info_dict["Age"] = None
             return info_dict
         info_dict["Age"] = int(info_dict["Age"])
         return info_dict

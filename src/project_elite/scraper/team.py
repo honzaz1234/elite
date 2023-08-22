@@ -58,11 +58,12 @@ class TeamScraper():
         
     def _get_short_name(self):
         short_name = self.selector.xpath(TeamScraper.paths["short_name"]).getall()
-        if short_name != []:
-            short_name = short_name[0].strip()
+        if short_name == []:
+            raise Exception("html not downloaded")
         else:
-            short_name = None
-        return short_name        
+            short_name = short_name[0].strip()
+        return short_name
+
 
     def _get_info(self, info_name, keep_list):
             info_path_val = TeamScraper.paths["general_info_left"] + info_name + "')]]//text()"
@@ -132,6 +133,8 @@ class TeamScraper():
                 season = self.selector.xpath(path_season).getall()
                 if season != []:
                     list_years.append(season[0])
+            if list_years == []:
+                continue
             dict_titles[titles[ind-1]] = {}
             dict_titles[titles[ind-1]]["min"] = list_years[0]
             dict_titles[titles[ind-1]]["max"] = list_years[len(list_years)-1]

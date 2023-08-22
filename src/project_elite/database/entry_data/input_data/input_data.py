@@ -7,6 +7,8 @@ class InputData:
 
 
     def input_player_uid(self, u_id):
+        if u_id is None:
+            return None
         player_o = tables_o.CreatePlayerTableEntry()
         player_id = player_o.check_if_id_exists_in_table_player(u_id_1=u_id)
         if player_id is None:
@@ -17,6 +19,8 @@ class InputData:
         return player_id
     
     def input_team_uid(self, u_id):
+        if u_id is None:
+            return None
         team_o = tables_o.CreateTeamTableEntry()
         team_id = team_o.find_id_in_team_table(u_id_1=u_id)
         if team_id is None:
@@ -27,6 +31,8 @@ class InputData:
         return team_id
     
     def input_league_uid(self, league_uid):
+        if league_uid is None:
+            return None
         league_o = tables_o.CreateLeagueTableEntry()
         league_id = league_o.find_id_in_league_table(league_uid=league_uid)
         if league_id is None:
@@ -42,9 +48,9 @@ class InputData:
         player_o = tables_o.CreatePlayerTableEntry()
         player_id = player_o.check_if_id_exists_in_table_player(u_id)
         dict_fk = {}
-        team_id = self.input_team_uid(u_id=dict_info["u_id"])
+        nr_team_id = self.input_team_uid(u_id=dict_info["nr_uid"])
         key_id = "nhl_team_rights_id"
-        dict_fk[key_id] = team_id
+        dict_fk[key_id] = nr_team_id
         dict_fk["nation_id"] = self.input_nationality_data(nationality_name=dict_info["nation"])
         dict_fk["place_birth_id"] = self.input_place_data(country_name=dict_info["birth_country"], place_name=dict_info["birth_place"], region_name=dict_info["birth_region"])
         if player_id == None:
@@ -108,7 +114,7 @@ class InputData:
         return league_id
     
     def input_player_stats_data(self, dict_info, season_dict):
-        dict_info["team_id"] = self.input_team_uid(u_id=dict_info["team_id"])
+        dict_info["team_id"] = self.input_team_uid(u_id=dict_info["team_uid"])
         dict_info["league_id"] = self.input_league_uid(league_uid=dict_info["league_uid"])
         dict_info["season_id"] = self.input_season_data(season_name=dict_info["season_name"])
         season_o = tables_o.CreateStatsTableEntry()
@@ -146,6 +152,8 @@ class InputData:
         return achievement_player_id
 
     def input_achievement(self, achievement_name, league_id):
+        if achievement_name is None:
+            return None
         achievement_o = tables_o.CreateAchievementTableEntry()
         achievement_id = achievement_o.find_id_in_achievement_table(achievement_name=achievement_name)
         if achievement_id is None:
@@ -174,6 +182,8 @@ class InputData:
     
 
     def input_season_data(self, season_name):
+        if season_name is None:
+            return None
         season_o = tables_o.CreateSeasonTableEntry()
         season_id = season_o.find_id_in_season_table(season_name=season_name)
         if season_id is None:
@@ -184,6 +194,8 @@ class InputData:
         return season_id
     
     def input_stadium_data(self, stadium_dict):
+        if place_dict["place"] is None and place_dict["region"] is None and place_dict["country"] is None:
+            return None
         stadium_o =  tables_o.CreateStadiumEntry()
         place_dict = stadium_dict["place"]
         place_id = self.input_place_data(place_name=place_dict["place"],
@@ -199,6 +211,8 @@ class InputData:
         return stadium_id
     
     def input_affiliated_teams(self, main_team, affiliated_team):
+        if main_team is None or affiliated_team is None:
+            return None
         affiliated_team_o = tables_o.CreateAffiliatedTeamsTableEntry()
         a_teams_id = affiliated_team_o.find_id_in_affiliated_teams_table(team_1_id=affiliated_team,
                                                                     team_2_id=main_team)
@@ -218,6 +232,8 @@ class InputData:
     
 
     def input_retired_number_data(self, team_id, player_id, number):
+        if player_id is None or team_id is None or number is None:
+            return None
         retired_number_o =  tables_o.CreateRetiredNumberTableEntry()
         retired_number_id = retired_number_o.find_id_in_retired_number_table(team_id=team_id,
                                                                              player_id=player_id,
@@ -234,6 +250,8 @@ class InputData:
         return retired_number_id
     
     def input_team_name(self, name, min, max, team_id):
+        if name is None or team_id is None:
+            return None
         team_name_o = tables_o.CreateTeamNameEntry()
         season_id_min = self.input_season_data(season_name=min)
         season_id_max = self.input_season_data(season_name=max)
@@ -256,6 +274,8 @@ class InputData:
     
     
     def input_colour(self, colour_name):
+        if colour_name is None:
+            return None
         colour_o = tables_o.CreateColourTableEntry()
         colour_id = colour_o.find_id_in_colour_table(colour=colour_name)
         if colour_id is None:
@@ -266,6 +286,8 @@ class InputData:
         return colour_id
 
     def input_colour_team(self, team_id, colour):
+        if team_id is None or colour is None:
+            return None
         team_colour_o = tables_o.CreateTeamColourTableEntry()
         colour_id = self.input_colour(colour_name=colour)
         team_colour_id = team_colour_o.find_id_in_team_colour_table(team_id=team_id, colour_id=colour_id)
@@ -276,7 +298,9 @@ class InputData:
             team_colour_id = team_colour_o.find_id_in_team_colour_table(team_id=team_id, colour_id=colour_id)
         return team_colour_id
     
-    def input_division_id(self, division, league_id):
+    def input_division_id(self, division):
+        if division is None:
+            return None
         division_o = tables_o.CreateDivisionEntry()
         division_id = division_o.find_id_in_division_table(division=division)
         if division_id is None:
@@ -287,6 +311,8 @@ class InputData:
         return division_id
     
     def input_postseason_type_id(self, postseason_type):
+        if postseason_type is None:
+            return None
         postseason_type_o = tables_o.CreatePostSeasonTypeEntry()
         postseason_type_id = postseason_type_o.find_id_in_postseason_type_table(postseason_type=postseason_type)
         if postseason_type_id is None:
@@ -298,6 +324,8 @@ class InputData:
 
 
     def input_team_season_data(self, ts_dict):
+        if ts_dict["team_id"] is None or ts_dict["postseason"] is None or ts_dict["league_id"] is None:
+            return None
         team_season_o = tables_o.CreateTeamSeasonEntry()
         ts_dict["season_id"] = self.input_season_data(season_name=ts_dict["season"])
         ts_dict["division_id"] = self.input_division_id(division=ts_dict["type"], 
@@ -312,6 +340,8 @@ class InputData:
         return team_season_id
     
     def input_player_draft(self, draft_dict, player_id):
+        if player_id is None:
+            return None
         player_draft_o = tables_o.CreatePlayerDraftEntry()
         team_id = self.input_team_uid(u_id=draft_dict["team_uid"])
         player_draft_id = player_draft_o.find_id_in_player_draft_table(player_id=player_id, team_id=team_id, 

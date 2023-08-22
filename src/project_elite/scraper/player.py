@@ -75,7 +75,7 @@ class PlayerScraper:
 class PlayerGeneralInfo():
 
         paths = {"player_name": "//h1[@class = 'ep-entity-header__name']//text()",
-                 "general_info_left": "//div[contains(@class, 'ep-list__item--is-compact')]/div[preceding-sibling::div[contains(text(), '"}
+                 "general_info_left": "//div[contains(@class, 'ep-list__item--is-compact')]/div[2][preceding-sibling::div[1][contains(text(), '"}
         
 
         info_names = ["Date of Birth", "Age", "Place of Birth", 
@@ -110,7 +110,6 @@ class PlayerGeneralInfo():
             return dict_gi
 
         def _get_info(self, info_name, keep_list):
-            dict_val = {}
             info_path_val = PlayerGeneralInfo.paths["general_info_left"] + info_name + "')]]//text()"
             info_val = self.selector.xpath(info_path_val).getall()
             info_val = [string.strip() for string in info_val]

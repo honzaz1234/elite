@@ -56,7 +56,7 @@ class InputPlayerDict():
             dict_info["leadership"] = team_dict["leadership"]
         else:
             dict_info["leadership"] = None
-        dict_info["team_id"] = team_dict["team_id"]
+        dict_info["team_uid"] = team_dict["team_id"]
         del team_dict["url"]
         for season_type in ["play_off", "regular_season"]:
             if season_type == "play_off":

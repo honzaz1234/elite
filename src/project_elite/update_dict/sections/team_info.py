@@ -35,6 +35,10 @@ class UpdateTeamDict():
             elif list_place[1] in UpdateTeamDict.NA_region_abbrevations["CAN"]:
                 dict_place["region"] = list_place[1] 
                 dict_place["country"] = "CAN"
+            else:
+                dict_place["country"] = list_place[1]
+                dict_place["region"] = None 
+
         elif len(list_place) == 2:
             dict_place["country"] = list_place[1]
             dict_place["region"] = None
@@ -85,7 +89,6 @@ class UpdateTeamDict():
             return []
         colour_list = colour_string.split(" + ")
         return colour_list
-
 
     def update_status(self, league_names):
         if league_names == "-":
