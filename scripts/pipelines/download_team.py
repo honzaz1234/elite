@@ -10,7 +10,7 @@ import time
 get_url_o = get_url.LeagueUrlDownload()
 
 league_list = ['NHL', 'Czechia', 'AHL', 'WHL', 'OHL', 'QMJHL', 'SHL', 'Liiga', 'NL', 'KHL', 'ECHL', 'WC', 'Olympics', 'U20 WJC']
-#league_list = get_url_o.leagues_paths.keys()
+league_list = get_url_o.leagues_paths.keys()
 
 url_links = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/links/teams/"
 dict_data_path = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/data_dict/done_teams.json"
@@ -66,6 +66,7 @@ for league in league_list:
         time_end = time.time()
         time_difference = time_end - time_start
         print("duration: " + str(time_difference))
+        time.sleep(2)
     u_id_done_dict["teams_done"] = u_id_done_list
     with open(dict_data_path, "w") as fp:
         json.dump(u_id_done_dict, fp)

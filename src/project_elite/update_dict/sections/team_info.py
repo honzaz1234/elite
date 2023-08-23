@@ -26,25 +26,25 @@ class UpdateTeamDict():
             dict_place["region"] = None
             dict_place["place"] = None
             return dict_place
-        list_place = place_name.split(", ")
+        list_place = place_name.split(",")
         dict_place["place"] = list_place[0]
         if len(list_place) == 2 and len(list_place[1]) == 2:
             if list_place[1] in UpdateTeamDict.NA_region_abbrevations["USA"]:
-                dict_place["region"] = list_place[1] 
+                dict_place["region"] = list_place[1].strip()
                 dict_place["country"] = "USA"
             elif list_place[1] in UpdateTeamDict.NA_region_abbrevations["CAN"]:
-                dict_place["region"] = list_place[1] 
+                dict_place["region"] = list_place[1].strip()
                 dict_place["country"] = "CAN"
             else:
-                dict_place["country"] = list_place[1]
+                dict_place["country"] = list_place[1].strip()
                 dict_place["region"] = None 
 
         elif len(list_place) == 2:
-            dict_place["country"] = list_place[1]
+            dict_place["country"] = list_place[1].strip()
             dict_place["region"] = None
         elif len(list_place) == 3:
-                dict_place["country"] = list_place[2]
-                dict_place["region"] = list_place[1]
+                dict_place["country"] = list_place[2].strip()
+                dict_place["region"] = list_place[1].strip()
         return dict_place
     
     def update_key_names(self, dict_info):
@@ -73,15 +73,16 @@ class UpdateTeamDict():
                 if subkey in UpdateTeamDict.integer_vals:
                     if dict_info[key][subkey] is None:
                         continue
-                    old_val = dict_info[key][subkey]
-                    new_val = re.sub(" ", "", old_val)
                     if dict_info[key][subkey] == "-":
                         dict_info[key][subkey] = None
                     else:
                         new_int = (re.sub("\s","", dict_info[key][subkey]))
-                        new_int = re.findall("[0-9]+", new_int)[0]
-                        new_int = int(new_int)
-                        dict_info[key][subkey] = int(new_int)
+                        new_int = re.findall("[0-9]+", new_int)
+                        if new_int != []:
+                            new_int = int(new_int[0])
+                        else:
+                            new_int = None
+                        dict_info[key][subkey] = new_int
         return dict_info
     
     def update_colours(self, colour_string):

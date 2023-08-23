@@ -10,7 +10,7 @@ import database.entry_data.input_dict as input_dict
 
 url_links = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/links/players/"
 dict_data = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/data_dict/"
-file_path_data = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/data_dict/done_players.json"
+file_path_data = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/data_dict/update_players.json"
 file_name_done = "done_players.json"
 
 
@@ -20,7 +20,7 @@ input_database = input_dict.InputPlayerDict()
 league_url_scraper = league_url.LeagueUrlDownload()
 
 list_seasons_nhl = league_url_scraper.create_season_list(1917, 2023)
-list_seasons_czechia = league_url_scraper.create_season_list(1990, 2023)
+list_seasons_czechia = league_url_scraper.create_season_list(1993, 2023)
 list_seasons_ahl = league_url_scraper.create_season_list(1940, 2023)
 
 
@@ -31,6 +31,7 @@ print(list_seasons_nhl)
 links_list = os.listdir(url_links)
 data_list = os.listdir(dict_data)
 
+help_list = []
 
 for league1 in dict_input:
     print(league1)
@@ -61,7 +62,6 @@ for league in dict_input:
         for key in  season_links:
             all_links = season_links[key] + all_links
         to_download = []
-        file_path_data = dict_data + file_name_done
         if file_name_done not in data_list:
             season_data={}
             season_data["players_done"] = []

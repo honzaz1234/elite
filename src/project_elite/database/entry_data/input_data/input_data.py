@@ -194,7 +194,7 @@ class InputData:
         return season_id
     
     def input_stadium_data(self, stadium_dict):
-        if place_dict["place"] is None and place_dict["region"] is None and place_dict["country"] is None:
+        if stadium_dict["arena_name"] is None:
             return None
         stadium_o =  tables_o.CreateStadiumEntry()
         place_dict = stadium_dict["place"]

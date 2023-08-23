@@ -164,7 +164,11 @@ class PlayerStats():
                 dict_stats[season]={}
             path_season = path_type + PlayerStats.paths["stats_table_l"] + str(ind) +  PlayerStats.paths["stats_table_r"]
             sub_dict = self.get_season_stats_from_table(path=path_season, season=season)
-            dict_stats[season] = {**dict_stats[season], **sub_dict}
+            for league in sub_dict:
+                if league in dict_stats[season]:
+                    dict_stats[season][league] = {**dict_stats[season][league], **sub_dict[league]}
+                else:
+                    dict_stats[season][league] = sub_dict[league]
         return dict_stats
     
     def get_season_stats_from_table(self, path, season):
