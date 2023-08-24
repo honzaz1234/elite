@@ -1,4 +1,5 @@
 import database.entry_data.input_data.input_data as input_data
+import time
 
 class InputPlayerDict():
 
@@ -6,50 +7,77 @@ class InputPlayerDict():
         pass
 
     def input_player_dict(self, dict):
+        time_s = time.time()
         input_data_o = input_data.InputData()
         dict_info = dict["info"]
         dict_info["u_id"] = dict["u_id"]
+        time_s_p = time.time()
         player_id = input_data_o.input_player_data(dict_info=dict_info)
+        time_e_p = time.time()
+        print("Input Data in Player Table: " + str(time_e_p-time_s_p))
         draft_dict = dict["info"]["draft_info"]
+        time_s_d = time.time()
         for draft in draft_dict:
             one_draft = draft_dict[draft]
             input_data_o.input_player_draft(player_id=player_id, draft_dict=one_draft)
+        time_e_d = time.time()
+        print("Input Data in Draft Table: " + str(time_e_d-time_s_d))
         dict_stats = dict["stats"]
         if dict_info["position"] == "G":
             is_goalie = True
         else:
             is_goalie=False
+        time_s_s = time.time()
         self.input_stats_dict(player_id=player_id, stat_dict=dict_stats, is_goalie=is_goalie)
+        time_s_e = time.time()
+        print("Input Data in Stat Table: " + str(time_s_e-time_s_s))
         dict_achievements = dict["achievements"]
+        time_s_a = time.time()
         self.input_achievements(dict_achievements=dict_achievements, player_id=player_id)
+        time_s_e = time.time()
+        print("Input Data in achievement Table: " + str(time_s_e-time_s_a))
+        time_e = time.time()
+        print("Input Data Database: " + str(time_e-time_s))
 
     def input_stats_dict(self, stat_dict, player_id, is_goalie):
         dict_info = {}
         dict_info["is_goalie"] = is_goalie
         dict_info["player_id"] = player_id
         for competititon_type in stat_dict:
+            time_s = time.time()
             competititon_dict = stat_dict[competititon_type]
             self.input_competititon_type(dict_competititon_type=competititon_dict, dict_info=dict_info)
+            time_e = time.time()
+            print("Input Type in DB: "+ str(time_e-time_s))
 
     def input_competititon_type(self, dict_competititon_type, dict_info):
         for season_name in dict_competititon_type:
+            time_s_s = time.time()
             season_dict = dict_competititon_type[season_name]
             dict_info["season_name"] = season_name
             self.input_season_dict(season_dict=season_dict, dict_info=dict_info)
+            time_e_s = time.time()
+            print("Input Season in DB: "+ str(time_e_s-time_s_s))
     
     def input_season_dict(self, season_dict, dict_info):
         for league_name in season_dict:
+            time_s_l = time.time()
             dict_info["league_name"] = league_name
             league_dict = season_dict[league_name]
             self.input_league_dict(league_dict=league_dict, dict_info=dict_info)
+            time_e_l = time.time()
+            print("Input League in DB: "+ str(time_e_l-time_s_l))
 
     def input_league_dict(self, league_dict, dict_info):
         dict_info["league_uid"] = league_dict["league_id"]
         del league_dict["league_id"]
         del league_dict["url"]
         for team_name in league_dict:
+            time_s_t = time.time()
             team_dict = league_dict[team_name]
             self.input_team_dict(team_dict=team_dict, dict_info=dict_info)
+            time_e_t = time.time()
+            print("Input Team in DB: "+ str(time_e_t-time_s_t))
 
     def input_team_dict(self, team_dict, dict_info):
         if "leadership" in team_dict:
@@ -65,7 +93,10 @@ class InputPlayerDict():
                 dict_info["regular_season"] = True
             season_data_dict = team_dict[season_type]
             input_data_o = input_data.InputData()
+            t_s_e = time.time()
             input_data_o.input_player_stats_data(season_dict=season_data_dict, dict_info=dict_info)
+            time_e_e = time.time()
+            print("Input 1 entry in DB: " + str(time_e_e-t_s_e))
                     
     def input_achievements(self, dict_achievements, player_id):
         input_data_o = input_data.InputData()

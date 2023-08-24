@@ -1,4 +1,5 @@
 import database.entry_data.input_data.tables.tables as tables_o
+import time
               
 class InputData:
 
@@ -15,7 +16,7 @@ class InputData:
             player_entry = player_o.insert_uid_player_entry(u_id_1=u_id)
             tables_o.db.session.add(player_entry)
             tables_o.db.session.commit()
-            player_id = player_o.check_if_id_exists_in_table_player(u_id_1=u_id)
+            player_id = player_entry.id
         return player_id
     
     def input_team_uid(self, u_id):
@@ -27,7 +28,7 @@ class InputData:
             team_entry = team_o.insert_uid_team_entry(u_id_1=u_id)
             tables_o.db.session.add(team_entry)
             tables_o.db.session.commit()
-            team_id = team_o.find_id_in_team_table(u_id_1=u_id)
+            team_id = team_entry.id
         return team_id
     
     def input_league_uid(self, league_uid):
@@ -39,7 +40,7 @@ class InputData:
             league_entry = league_o.insert_uid_league_entry(league_uid=league_uid)
             tables_o.db.session.add(league_entry)
             tables_o.db.session.commit()
-            league_id = league_o.find_id_in_league_table(league_uid=league_uid)
+            league_id = league_entry.id
         return league_id
 
 
@@ -57,7 +58,7 @@ class InputData:
             player_entry = player_o.create_player_entry(dictd=dict_info, dict_fkeys=dict_fk)
             tables_o.db.session.add(player_entry)
             tables_o.db.session.commit()
-            player_id = player_o.check_if_id_exists_in_table_player(u_id)
+            player_id = player_entry.id
         else:
             update_entry = player_o.update_player_entry(dictd=dict_info, dict_fkeys=dict_fk)
             tables_o.db.session.execute(update_entry)
@@ -70,10 +71,10 @@ class InputData:
         nationality_o = tables_o.CreateNationalityTableEntry()
         nationality_id = nationality_o.find_id_in_nationality_table(nationality_name=nationality_name)
         if nationality_id is None:
-            nationality_entry= nationality_o.create_nationality_entry(nationality_name=nationality_name)
+            nationality_entry = nationality_o.create_nationality_entry(nationality_name=nationality_name)
             tables_o.db.session.add(nationality_entry)
             tables_o.db.session.commit()
-            nationality_id = nationality_o.find_id_in_nationality_table(nationality_name=nationality_name)
+            nationality_id = nationality_entry.id
         return nationality_id
     
     def input_team_data(self, general_info_dict):
@@ -91,7 +92,7 @@ class InputData:
             insert_entry = team_o.create_team_entry(gi_dict=general_info_dict)
             tables_o.db.session.add(insert_entry)
             tables_o.db.session.commit()
-            team_id = team_o.find_id_in_team_table(u_id_1=general_info_dict["u_id"])
+            team_id = insert_entry.id
         else:
             general_info_dict["id"] = team_id
             update_entry = team_o.update_team_entry(gi_dict=general_info_dict)                                        
@@ -106,7 +107,7 @@ class InputData:
             league_entry = league_o.create_league_entry(league_uid=u_id, long_name=long_name)
             tables_o.db.session.add(league_entry)
             tables_o.db.session.commit()
-            league_id = league_o.find_id_in_league_table(league_uid=u_id)
+            league_id = league_entry.id
         else:
             update_entry = league_o.update_league_entry(league_uid=u_id, long_name=long_name)
             tables_o.db.session.execute(update_entry)
@@ -117,23 +118,38 @@ class InputData:
         dict_info["team_id"] = self.input_team_uid(u_id=dict_info["team_uid"])
         dict_info["league_id"] = self.input_league_uid(league_uid=dict_info["league_uid"])
         dict_info["season_id"] = self.input_season_data(season_name=dict_info["season_name"])
+        time_s_o = time.time()
         season_o = tables_o.CreateStatsTableEntry()
+        time_e_o = time.time()
+        print("Duration Declaring O: " + str(time_e_o-time_s_o))
+        time_s_f = time.time()
         if dict_info["is_goalie"] == True:
             stat_id = season_o.find_id_in_goalie_stats_table(dict_info=dict_info)
         else:
             stat_id = season_o.find_id_in_player_stats_table(dict_info=dict_info)
+        time_e_f = time.time()
+        print("Duration finding id in stat table: " + str(time_e_f-time_s_f))
         if stat_id is not None:
             return stat_id
         if dict_info["is_goalie"] == True:
+            time_s_c = time.time()
             season_entry = season_o.create_season_goalie_entry(dict_info=dict_info, dict_season=season_dict)
             tables_o.db.session.add(season_entry)
             tables_o.db.session.commit()
-            stat_id = season_o.find_id_in_goalie_stats_table( dict_info=dict_info)
+            time_e_c = time.time()
+            print("Duration adding entry in stat table: " + str(time_e_c-time_s_c))
+            stat_id = season_entry.id
         else:
+            time_s_c = time.time()
             season_entry = season_o.create_season_player_entry(dict_info=dict_info, dict_season=season_dict)
             tables_o.db.session.add(season_entry)
             tables_o.db.session.commit()
-            stat_id = season_o.find_id_in_player_stats_table(dict_info=dict_info)
+            time_e_c = time.time()
+            print("Duration adding entry in stat table: " + str(time_e_c-time_s_c))
+            time_s_c = time.time()
+            stat_id = season_entry.id
+            time_e_c = time.time()
+            print("Duration adding id : " + str(time_e_c-time_s_c))
         return stat_id
     
     def input_achievement_relation(self, player_id, achievement_name, season_name):
@@ -147,8 +163,7 @@ class InputData:
                                                                                           achievement_id=achievement_id, season_id=season_id)
             tables_o.db.session.add(achievement_player_entry)
             tables_o.db.session.commit()
-            achievement_player_id = achievement_player_o.find_id_in_achievement_player_table(player_id=player_id, 
-                                                                                          achievement_id=achievement_id, season_id=season_id)
+            achievement_player_id = achievement_player_entry.id
         return achievement_player_id
 
     def input_achievement(self, achievement_name, league_id):
@@ -160,12 +175,11 @@ class InputData:
             achievement_entry = achievement_o.create_achievement_entry(achievement_name=achievement_name, league_id=league_id)
             tables_o.db.session.add(achievement_entry)
             tables_o.db.session.commit()
-            achievement_id = achievement_o.find_id_in_achievement_table(achievement_name=achievement_name)
+            achievement_id = achievement_entry.id
         else:
             update_entry = achievement_o.update_achievement_entry(achievement_name=achievement_name, league_id=league_id)
             tables_o.db.session.execute(update_entry)
             tables_o.db.session.commit()
-            achievement_id = achievement_o.find_id_in_achievement_table(achievement_name=achievement_name)
         return achievement_id
 
     def input_place_data(self, place_name, region_name, country_name):
@@ -177,7 +191,7 @@ class InputData:
             place_entry = place_o.create_place_entry(place_name=place_name, region_name=region_name, country_name=country_name)
             tables_o.db.session.add(place_entry)
             tables_o.db.session.commit()
-            place_id = place_o.find_id_in_place_table(place_name=place_name, region_name=region_name, country_name=country_name)
+            place_id = place_entry.id
         return place_id
     
 
@@ -190,7 +204,7 @@ class InputData:
             season_entry = season_o.create_season_entry(season_name=season_name)
             tables_o.db.session.add(season_entry)
             tables_o.db.session.commit()
-            season_id = season_o.find_id_in_season_table(season_name=season_name)
+            season_id = season_entry.id
         return season_id
     
     def input_stadium_data(self, stadium_dict):
@@ -207,7 +221,7 @@ class InputData:
             stadium_entry = stadium_o.create_stadium_entry(stadium_dict=stadium_dict)
             tables_o.db.session.add(stadium_entry)
             tables_o.db.session.commit()
-            stadium_id = stadium_o.find_id_in_stadium_table(stadium_dict=stadium_dict)
+            stadium_id = stadium_entry.id
         return stadium_id
     
     def input_affiliated_teams(self, main_team, affiliated_team):
@@ -226,8 +240,7 @@ class InputData:
                                                                                     team_affiliated=affiliated_team)
         tables_o.db.session.add(affiliated_team_entry)
         tables_o.db.session.commit()
-        a_teams_id = affiliated_team_o.find_id_in_affiliated_teams_table(team_1_id=main_team,
-                                                                    team_2_id=affiliated_team)
+        a_teams_id = affiliated_team_entry.id
         return a_teams_id
     
 
@@ -244,9 +257,7 @@ class InputData:
                                                                         number=number)
             tables_o.db.session.add(retired_number_entry)
             tables_o.db.session.commit()
-            retired_number_id = retired_number_o.find_id_in_retired_number_table(team_id=team_id,
-                                                                          player_id=player_id,
-                                                                          number=number)
+            retired_number_id = retired_number_entry.id
         return retired_number_id
     
     def input_team_name(self, name, min, max, team_id):
@@ -266,10 +277,7 @@ class InputData:
                                                               team_id=team_id)
             tables_o.db.session.add(team_name_entry)
             tables_o.db.session.commit()
-            team_name_id = team_name_o.find_id_in_team_name_table(team_name=name,
-                                                              min=season_id_min,
-                                                              max=season_id_max, 
-                                                              team_id=team_id)
+            team_name_id = team_name_entry.id
         return team_name_id
     
     
@@ -282,7 +290,7 @@ class InputData:
             colour_entry = colour_o.create_colour_entry(colour=colour_name)
             tables_o.db.session.add(colour_entry)
             tables_o.db.session.commit()
-            colour_id = colour_o.find_id_in_colour_table(colour=colour_name)
+            colour_id = colour_entry.id
         return colour_id
 
     def input_colour_team(self, team_id, colour):
@@ -295,7 +303,7 @@ class InputData:
             team_colour_entry = team_colour_o.create_team_colour_entry(team_id=team_id, colour_id=colour_id)
             tables_o.db.session.add(team_colour_entry)
             tables_o.db.session.commit()
-            team_colour_id = team_colour_o.find_id_in_team_colour_table(team_id=team_id, colour_id=colour_id)
+            team_colour_id = team_colour_entry.id
         return team_colour_id
     
     def input_division_id(self, division):
@@ -307,7 +315,7 @@ class InputData:
             division_entry = division_o.create_division_entry(division=division)
             tables_o.db.session.add(division_entry)
             tables_o.db.session.commit()
-            division_id = division_o.find_id_in_division_table(division=division)
+            division_id = division_entry.id
         return division_id
     
     def input_postseason_type_id(self, postseason_type):
@@ -319,7 +327,7 @@ class InputData:
             postseason_type_entry = postseason_type_o.create_postseason_type_entry(postseason_type=postseason_type)
             tables_o.db.session.add(postseason_type_entry)
             tables_o.db.session.commit()
-            postseason_type_id = postseason_type_o.find_id_in_postseason_type_table(postseason_type=postseason_type)
+            postseason_type_id = postseason_type_entry.id
         return postseason_type_id
 
 
@@ -336,7 +344,7 @@ class InputData:
             team_season_entry = team_season_o.create_team_season_entry(ts_dict=ts_dict)
             tables_o.db.session.add(team_season_entry)
             tables_o.db.session.commit()
-            team_season_id = team_season_o.find_id_in_team_season_table(ts_dict=ts_dict)
+            team_season_id = team_season_entry.id
         return team_season_id
     
     def input_player_draft(self, draft_dict, player_id):
@@ -355,10 +363,7 @@ class InputData:
                                                                        draft_position=draft_dict["draft_position"])
             tables_o.db.session.add(player_draft_entry)
             tables_o.db.session.commit()
-            player_draft_id = player_draft_o.find_id_in_player_draft_table(player_id=player_id, team_id=team_id, 
-                                                                       draft_round=draft_dict["draft_round"],
-                                                                       draft_year=draft_dict["draft_year"],
-                                                                       draft_position=draft_dict["draft_position"])
+            player_draft_id = player_draft_entry.id
         return player_draft_id
 
 

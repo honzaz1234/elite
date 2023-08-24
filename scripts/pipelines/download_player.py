@@ -19,14 +19,13 @@ update_dict1 = update_dict_wraper.UpdateDictWraper()
 input_database = input_dict.InputPlayerDict()
 league_url_scraper = league_url.LeagueUrlDownload()
 
-list_seasons_nhl = league_url_scraper.create_season_list(1917, 2023)
-list_seasons_czechia = league_url_scraper.create_season_list(1993, 2023)
-list_seasons_ahl = league_url_scraper.create_season_list(1940, 2023)
+list_seasons_khl = league_url_scraper.create_season_list(2008, 2023)
+list_seasons_shl = league_url_scraper.create_season_list(1975, 2023)
+list_seasons_liiga = league_url_scraper.create_season_list(1975, 2023)
 
 
 
-dict_input = {"NHL": list_seasons_nhl, "Czechia": list_seasons_czechia, "AHL": list_seasons_ahl}
-print(list_seasons_nhl)
+dict_input = {"KHL": list_seasons_khl, "SHL": list_seasons_shl, "Liiga": list_seasons_liiga}
 
 links_list = os.listdir(url_links)
 data_list = os.listdir(dict_data)
@@ -36,7 +35,6 @@ help_list = []
 for league1 in dict_input:
     print(league1)
     season_list = dict_input[league1]
-    print(season_list)
     for season_1 in season_list:
         file_name = league1 + "_" + season_1 + ".json"
         if file_name in links_list:

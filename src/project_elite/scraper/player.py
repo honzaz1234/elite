@@ -1,6 +1,7 @@
 import requests
 import scrapy
 import re
+import time
 
 
 class PlayerScraper:
@@ -43,7 +44,10 @@ class PlayerScraper:
         selector - selector object created from html code used for parsing data for individual values 
         """
         self.url = url
+        time_start = time.time()
         self.html = requests.get(self.url).content
+        time_end = time.time()
+        print("Getting Request Duration: " + str(time_end-time_start))
         self.selector = scrapy.Selector(text=self.html)
         
 
@@ -64,11 +68,20 @@ class PlayerScraper:
 
         dict_player = {}
         gi_o = PlayerGeneralInfo(selector=self.selector)
+        time_start = time.time()
         dict_player["info"] = gi_o._get_general_info()
+        time_end = time.time()
+        print("Getting General Info: " + str(time_end-time_start))
         a_o = PlayerAchievements(selector=self.selector)
+        time_start = time.time()
         dict_player["achievements"] = a_o.get_achievements()
+        time_end = time.time()
+        print("Getting Achievements: " + str(time_end-time_start))
         s_o = PlayerStats(selector=self.selector)
+        time_start = time.time()
         dict_player["stats"] = s_o.get_all_stats()
+        time_end = time.time()
+        print("Getting Stats: " + str(time_end-time_start))
         dict_player["u_id"] = re.findall("player\/([0-9]+)\/", self.url)[0]
         return dict_player
     
