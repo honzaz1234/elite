@@ -89,6 +89,7 @@ for league in dict_input:
             print("one player duration:")
             print(str(time_end-time_start))
             print(len(season_data["players_done"]))
+            time.sleep(0.5)
         with open(file_path_data, "w") as fp:
             json.dump(season_data, fp)
         end_season = time.time()
