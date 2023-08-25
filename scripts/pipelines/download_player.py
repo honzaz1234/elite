@@ -19,9 +19,9 @@ update_dict1 = update_dict_wraper.UpdateDictWraper()
 input_database = input_dict.InputPlayerDict()
 league_url_scraper = league_url.LeagueUrlDownload()
 
-list_seasons_khl = league_url_scraper.create_season_list(2008, 2023)
-list_seasons_shl = league_url_scraper.create_season_list(1975, 2023)
-list_seasons_liiga = league_url_scraper.create_season_list(1975, 2023)
+list_seasons_whl = league_url_scraper.create_season_list(1966, 2023)
+list_seasons_ohl = league_url_scraper.create_season_list(1974, 2023)
+list_seasons_qmjhl = league_url_scraper.create_season_list(1975, 2023)
 
 
 

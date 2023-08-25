@@ -102,6 +102,8 @@ class PlayerGeneralInfo():
         def _get_general_info(self):
             dict_gi = self._get_info_wraper()
             dict_gi["name"] = self._get_name()
+            f_r_o = FamilyRelations(selector=self.selector)
+            dict_gi["relations"] = f_r_o.get_relation_dict()
             return dict_gi
 
         def _get_name(self):
@@ -117,7 +119,7 @@ class PlayerGeneralInfo():
             dict_gi = {}
             for info_name in PlayerGeneralInfo.info_names:
                 keep_list = False
-                if info_name == "Drafted":
+                if info_name in ["Drafted", "Nation"]:
                     keep_list = True
                 dict_gi[info_name] = self._get_info(info_name=info_name, keep_list=keep_list)
             return dict_gi
@@ -257,6 +259,47 @@ class PlayerAchievements():
             award = self.selector.xpath(path).getall()
             dict_achiev[list_years[ind - 1]] = award
         return dict_achiev
+    
+
+class FamilyRelations():
+
+    paths = {"whole_text": "//p[@class='ep-text mb-2']"}
+    relation_string = "($|son|grandson|brother|father|uncle|cousin|paternal\sgrandfather|maternal\sgrandfather|nephew|great\smaternal\sgrandfather|great\spaternal\sgrandfather|brother\-in\-law|brothers\-in\-law|son\-in\-law|sons\-in\-law|fathers\-in\-law|father\-in\-law|uncle\-in\-law|uncles\-in\-law|cousin\-in\-law|cousins\-in\-law|great\snephew|great\suncle)s{0,1}"
+    
+    def __init__(self, selector):    
+        self.selector = selector
+        self.relations_regex = "(" + FamilyRelations.relation_string + ")" + ":"
+        self.relation_url_regex = ":(.+)(:|$)"
+
+    def _get_individual_relations(self):
+        text = self.selector.xpath(FamilyRelations.paths["whole_text"]).getall()
+        if text == []:
+            return {}
+        else:
+            text = text[0]
+        r_list = re.findall(self.relations_regex, text, flags=re.IGNORECASE)
+        print(r_list)
+        data_list = re.findall(self.relation_url_regex, text, flags=re.IGNORECASE)
+        data_list = re.split(":", text, flags=re.IGNORECASE)
+        data_list = [string_ for string_ in data_list if "a href" in string_]
+        print(data_list)
+        dict_strings = {}
+        for ind in range(len(r_list)):
+            dict_strings[r_list[ind][1]] = data_list[ind]
+        return dict_strings
+    
+    def get_relation_dict(self):
+        relations_uid = {}
+        player_string_dict = self._get_individual_relations()
+        for relation in player_string_dict:
+            list_uid = re.findall("player\=([0-9]+)", player_string_dict[relation])
+            if list_uid == []:
+                continue
+            relations_uid[relation] = re.findall("\=([0-9]+)", player_string_dict[relation])
+        return  relations_uid
+
+
+
 
     
     

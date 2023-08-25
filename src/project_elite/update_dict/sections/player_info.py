@@ -236,6 +236,23 @@ class UpdatePlayerInfo:
         new_date = datetime.date(year, month_num, day)
         info_dict["date_birth"] = new_date
         return info_dict
+    
+    def _update_relation_dict(self, info_dict):
+        relation_dict = info_dict["relations"]
+        for relation_type in list(relation_dict.keys()):
+            new_key = relation_type.lower()
+            relation_dict[new_key] = relation_dict[relation_type]
+            del relation_dict[relation_type]
+        for relation_type in relation_dict:
+            list_u_id = relation_dict[relation_type]
+            new_list = []
+            for u_id in list_u_id:
+                new_u_id = int(u_id)
+                new_list.append(new_u_id)
+            relation_dict[relation_type] = new_list
+
+
+
 
     def _update_age_to_integer(self, info_dict):
         print(info_dict["Age"])
@@ -272,6 +289,7 @@ class UpdatePlayerInfo:
         info_dict = self._update_key_names(info_dict)
         info_dict = self._update_missing_values(info_dict)
         info_dict = self._update_data_types(info_dict)
+        info_dict = self._update_relation_dict(info_dict)
         return info_dict
 
 
