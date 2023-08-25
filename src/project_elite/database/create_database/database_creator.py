@@ -217,22 +217,52 @@ class Nationality(Base):
     def __repr__(self):
         return f"({self.id}, {self.nationality})"
     
-class TeamLeague(Base):
+class PlayerNationality(Base):
 
-    __tablename__ = "teams_leagues"
+     __tablename__ = "players_nationalities"
 
+     id = Column("id", Integer, primary_key=True)
+     player_id = Column("player_id", Integer, ForeignKey("players.id"))
+     nationality_id = Column("nationality_id", Integer, ForeignKey("nationalities.id"), index=True)
+
+     def __init__(self, player_id, nationality_id):
+        self.player_id = player_id
+        self.nationality_id = nationality_id
+
+     def __repr__(self):
+        return f"({self.id}, {self.player_id}, {self.nationality_id})"
+     
+
+class Relation(Base):
+
+    __tablename__ = "relations"
+    
     id = Column("id", Integer, primary_key=True)
-    league_id = Column("league_id", Integer, ForeignKey("leagues.id"))
-    team_id = Column("team_id", Integer, ForeignKey("teams.id"))
+    relation = Column("relation", String)
 
-    def __init__(self, league_id, team_id):
-        self.league_id = league_id
-        self.team_id = team_id
+    def __init__(self, relation):
+        self.relation = relation
 
     def __repr__(self):
-        return f"({self.id}, {self.league_id}, {self.team_id})"
-    
+        return f"({self.id}, {self.relation})"   
 
+class  PlayerRelation(Base):
+
+    __tablename__ = "players_relations"
+
+    id = Column("id", Integer, primary_key=True)
+    player_from_id = Column("player_from_id", Integer, ForeignKey("players.id"))
+    player_to_id = Column("player_to_id", Integer, ForeignKey("players.id"))
+    relation_id = Column("relation_id", Integer, ForeignKey("relations.id"), index=True)
+
+    def __init__(self, player_from_id, player_to_id, relation_id):
+        self.player_from_id = player_from_id
+        self.player_to_id = player_to_id
+        self.relation_id = relation_id
+
+    def __repr__(self):
+        return f"({self.id}, {self.player_from_id}, {self.player_to_id}, {self.relation_id})"
+    
 class Place(Base):
     
     __tablename__ = "places"
@@ -481,7 +511,7 @@ class GoalieStats(Base):
 
 Index('goalie_stats_league_id_season_id_index', GoalieStats.league_id, GoalieStats.season_id)
 
-engine = create_engine("sqlite:///C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/database/hockey_v6.db", echo=False)
+engine = create_engine("sqlite:///C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/database/hockey_v7.db", echo=False)
 Base.metadata.create_all(bind=engine)
 
 DBSession = sessionmaker(bind=engine)
