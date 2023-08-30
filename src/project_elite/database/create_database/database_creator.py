@@ -30,13 +30,12 @@ class Player(Base):
     weight = Column("weight", Integer)
 
     nhl_rights_id = Column("nhl_rights_id", Integer, ForeignKey("teams.id"))
-    nation_id = Column("nationality_id", Integer, ForeignKey("nationalities.id"))
     place_birth_id = Column("place_birth_id", Integer, ForeignKey("places.id"))
 
 
 
     def __init__(self, u_id, name, position, active, age, shoots, catches, contract, cap_hit, 
-                 signed_nhl, date_birth, drafted, height, weight, nhl_rights_id, nation_id, 
+                 signed_nhl, date_birth, drafted, height, weight, nhl_rights_id, 
                  place_birth_id):
         self.u_id = u_id
         self.name = name
@@ -53,11 +52,10 @@ class Player(Base):
         self.height = height
         self.weight = weight
         self.nhl_rights_id = nhl_rights_id
-        self.nation_id = nation_id
         self.place_birth_id = place_birth_id
 
     def __repr__(self):
-        return f"({self.id}, {self.u_id}, {self.name}, {self.position}, {self.active}, {self.age}, {self.shoots}, {self.catches}, {self.contract}, {self.cap_hit}, {self.signed_nhl}, {self.date_birth}, {self.drafted}, {self.height}, {self.weight}, {self.nhl_rights_id}, {self.nation_id}, {self.place_birth_id})"
+        return f"({self.id}, {self.u_id}, {self.name}, {self.position}, {self.active}, {self.age}, {self.shoots}, {self.catches}, {self.contract}, {self.cap_hit}, {self.signed_nhl}, {self.date_birth}, {self.drafted}, {self.height}, {self.weight}, {self.nhl_rights_id}, {self.place_birth_id})"
 
 
 class PlayerDraft(Base):

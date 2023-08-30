@@ -20,6 +20,14 @@ class InputPlayerDict():
         for draft in draft_dict:
             one_draft = draft_dict[draft]
             input_data_o.input_player_draft(player_id=player_id, draft_dict=one_draft)
+        nation_list = dict["info"]["nation"]
+        for nation in nation_list:
+            input_data_o.input_player_nation(player_id=player_id, nation=nation)
+        relation_dict = dict["info"]["relations"]
+        for relation in relation_dict:
+            relation_list = relation_dict[relation]
+            for u_id in relation_list:
+                input_data_o.input_player_relation(player_from_uid=u_id, player_to_id=player_id, relation=relation)
         time_e_d = time.time()
         print("Input Data in Draft Table: " + str(time_e_d-time_s_d))
         dict_stats = dict["stats"]

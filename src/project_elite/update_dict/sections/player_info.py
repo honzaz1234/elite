@@ -95,6 +95,13 @@ class UpdatePlayerInfo:
         info_dict = self._add_active(info_dict)
         del info_dict["Status"]
         return info_dict 
+    
+    def _update_nationality(self, dict_info):
+        for nation in dict_info['nation']:
+            if nation == "/":
+                dict_info['nation'].remove(nation)
+        return dict_info
+
 
     def _update_height(self, info_dict):
         if "Height" not in info_dict:
@@ -250,6 +257,8 @@ class UpdatePlayerInfo:
                 new_u_id = int(u_id)
                 new_list.append(new_u_id)
             relation_dict[relation_type] = new_list
+        info_dict["relations"] = relation_dict
+        return info_dict
 
 
 
@@ -287,6 +296,7 @@ class UpdatePlayerInfo:
         info_dict = self._update_handedness(info_dict)
         info_dict = self._update_age_to_integer(info_dict)
         info_dict = self._update_key_names(info_dict)
+        info_dict = self._update_nationality(info_dict)
         info_dict = self._update_missing_values(info_dict)
         info_dict = self._update_data_types(info_dict)
         info_dict = self._update_relation_dict(info_dict)

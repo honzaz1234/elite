@@ -52,7 +52,6 @@ class InputData:
         nr_team_id = self.input_team_uid(u_id=dict_info["nr_uid"])
         key_id = "nhl_team_rights_id"
         dict_fk[key_id] = nr_team_id
-        dict_fk["nation_id"] = self.input_nationality_data(nationality_name=dict_info["nation"])
         dict_fk["place_birth_id"] = self.input_place_data(country_name=dict_info["birth_country"], place_name=dict_info["birth_place"], region_name=dict_info["birth_region"])
         if player_id == None:
             player_entry = player_o.create_player_entry(dictd=dict_info, dict_fkeys=dict_fk)
@@ -365,6 +364,43 @@ class InputData:
             tables_o.db.session.commit()
             player_draft_id = player_draft_entry.id
         return player_draft_id
+    
+    def input_player_nation(self, player_id, nation):
+        nation_player_o = tables_o.CreatePlayerNationalityEntry()
+        nation_id = self.input_nationality_data(nationality_name=nation)
+        print("C")
+        pair_id = nation_player_o.find_id_in_nationality_player_table(player_id=player_id, nationality_id=nation_id)
+        if pair_id is None:
+            print("D")
+            player_nation_entry = nation_player_o.create_nationality_player_entry(player_id=player_id, nationality_id=nation_id)
+            tables_o.db.session.add(player_nation_entry)
+            tables_o.db.session.commit()
+            pair_id = player_nation_entry.id
+        return pair_id
+    
+    def input_relation(self, relation):
+        relation_o = tables_o.CreateRelationEntry()
+        relation_id = relation_o.find_id_in_relation_table(relation=relation)
+        if relation_id is None:
+            relation_entry = relation_o.create_relation_entry(relation=relation)            
+            tables_o.db.session.add(relation_entry)
+            tables_o.db.session.commit()
+            relation_id = relation_entry.id
+        return relation_id
+
+    def input_player_relation(self, player_from_uid, player_to_id, relation):
+        relation_player_o = tables_o.CreatePlayerRelationEntry()
+        player_from_id = self.input_player_uid(u_id=player_from_uid)
+        relation_id = self.input_relation(relation=relation)
+        pair_id = relation_player_o.find_id_in_relation_player_table(player_from_id=player_from_id, player_to_id=player_to_id, relation_id=relation_id)
+        if pair_id is None:
+            pair_entry = relation_player_o.create_relation_player_entry(player_from_id=player_from_id, player_to_id=player_to_id, relation_id=relation_id)
+            tables_o.db.session.add(pair_entry)
+            tables_o.db.session.commit()
+            pair_id = pair_entry.id
+        return pair_id          
+
+
 
 
 

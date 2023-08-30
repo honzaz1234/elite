@@ -148,7 +148,6 @@ class CreatePlayerTableEntry:
                                  height = dictd["height"],
                                  weight = dictd["weight"],
                                  nhl_rights_id = dict_fkeys["nhl_team_rights_id"],
-                                 nation_id = dict_fkeys["nation_id"],
                                  place_birth_id = dict_fkeys["place_birth_id"]
                                  )
         return player_entry
@@ -176,7 +175,6 @@ class CreatePlayerTableEntry:
                                  height = dictd["height"],
                                  weight = dictd["weight"],
                                  nhl_rights_id = dict_fkeys["nhl_team_rights_id"],
-                                 nation_id = dict_fkeys["nation_id"],
                                  place_birth_id = dict_fkeys["place_birth_id"])
         return update_query
         
@@ -196,7 +194,6 @@ class CreatePlayerTableEntry:
                                  height = dictd["height"],
                                  weight = dictd["weight"],
                                  nhl_rights_id = dict_fkeys["nhl_team_rights_id"],
-                                 nation_id = dict_fkeys["nation_id"],
                                  place_birth_id = dict_fkeys["place_birth_id"])
         return update_query
     
@@ -216,7 +213,6 @@ class CreatePlayerTableEntry:
                                  height = None,
                                  weight = None,
                                  nhl_rights_id = None,
-                                 nation_id = None,
                                  place_birth_id = None)
          return player_entry
     
@@ -507,9 +503,59 @@ class CreatePlayerDraftEntry():
         if row_data is None:
             return None
         else:
-            return row_data.id         
-          
+            return row_data.id     
+
+class CreatePlayerNationalityEntry():
+
+    def __init__(self):
+        pass
+
+    def create_nationality_player_entry(self, player_id, nationality_id):
+        nationality_player_entry = db.PlayerNationality(player_id=player_id, nationality_id=nationality_id)
+        return nationality_player_entry
+    
+    def find_id_in_nationality_player_table(self, player_id, nationality_id):
+        row_data =  db.session.query(db.PlayerNationality.id).filter_by(player_id=player_id, 
+                                                                        nationality_id=nationality_id).first()
+        if row_data is None:
+            return None
+        else:
+            return row_data.id    
         
+
+class CreateRelationEntry():
+
+    def __init__(self):
+        pass
+
+    def create_relation_entry(self, relation):
+        realtion_entry = db.Relation(relation=relation)
+        return realtion_entry
+    
+    def find_id_in_relation_table(self, relation):
+        row_data = db.session.query(db.Relation.id).filter_by(relation=relation).first()
+        if row_data is None:
+            return None
+        else:
+            return row_data.id   
+          
+class CreatePlayerRelationEntry():
+
+    def __init__(self):
+        pass
+
+    def create_relation_player_entry(self, player_from_id, player_to_id, relation_id):
+        relation_player_entry = db.PlayerRelation(player_from_id=player_from_id, player_to_id=player_to_id, relation_id=relation_id)
+        return relation_player_entry
+    
+    def find_id_in_relation_player_table(self, player_from_id, player_to_id, relation_id):
+        row_data =  db.session.query(db.PlayerRelation.id).filter_by(player_from_id=player_from_id, 
+                                                                     player_to_id=player_to_id, 
+                                                                     relation_id=relation_id).first()
+        if row_data is None:
+            return None
+        else:
+            return row_data.id   
 
         
 
