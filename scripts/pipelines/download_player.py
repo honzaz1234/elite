@@ -24,8 +24,8 @@ list_seasons_ohl = league_url_scraper.create_season_list(1974, 2023)
 list_seasons_qmjhl = league_url_scraper.create_season_list(1975, 2023)
 
 
-
-dict_input = {"WHL": list_seasons_whl, "OHL": list_seasons_ohl, "QMJHL": list_seasons_qmjhl}
+dict_input = {"WHL": list_seasons_whl,
+              "OHL": list_seasons_ohl, "QMJHL": list_seasons_qmjhl}
 
 links_list = os.listdir(url_links)
 data_list = os.listdir(dict_data)
@@ -40,7 +40,8 @@ for league1 in dict_input:
         if file_name in links_list:
             continue
         print(season_1)
-        url_season = season_url_scraper.get_player_season_refs(league=league1, season=season_1)
+        url_season = season_url_scraper.get_player_season_refs(
+            league=league1, season=season_1)
         print(url_season)
         file_name = league1 + "_" + season_1 + ".json"
         file_path = url_links + file_name
@@ -57,11 +58,11 @@ for league in dict_input:
         f = open(file_path_links)
         season_links = json.load(f)
         all_links = []
-        for key in  season_links:
+        for key in season_links:
             all_links = season_links[key] + all_links
         to_download = []
         if file_name_done not in data_list:
-            season_data={}
+            season_data = {}
             season_data["players_done"] = []
             to_download = all_links.copy()
         else:
@@ -91,15 +92,9 @@ for league in dict_input:
         with open(file_path_data, "w") as fp:
             json.dump(season_data, fp)
         end_season = time.time()
-        season_duration = end_season - start_season 
+        season_duration = end_season - start_season
         print("Duration Season: " + str(season_duration))
-        print("n_players: " +  str(len(to_download)))
-print("all players downloaded")
-
-    
-    
-        
-
-        
-
-        
+        print("n_players: " + str(len(to_download)))
+    print("all players downloaded")
+with open(file_path_data, "w") as fp:
+    json.dump(season_data, fp)
