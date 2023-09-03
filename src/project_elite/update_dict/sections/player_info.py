@@ -68,7 +68,8 @@ class UpdatePlayerInfo:
         'Hamilton Tigers': 3196,
         'Québec Athletic Club': 3194,
         'Toronto Hockey Club': 76,
-        'Montréal Wanderers': 3264}
+        'Montréal Wanderers': 3264
+        }
 
 
     def __init__(self, is_goalie ):
@@ -259,9 +260,6 @@ class UpdatePlayerInfo:
             relation_dict[relation_type] = new_list
         info_dict["relations"] = relation_dict
         return info_dict
-
-
-
 
     def _update_age_to_integer(self, info_dict):
         print(info_dict["Age"])

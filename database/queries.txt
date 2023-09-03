@@ -14,6 +14,8 @@ insert into main.nationalities select * from old_db.nationalities;
 
 insert into main.players select * from old_db.players;
 
+insert into main.players_nationalities  select * from old_db.players_nationalities
+
 insert into main.players_draft select * from old_db.players_draft;
 insert into main.retired_numbers select * from old_db.retired_numbers;
 
@@ -24,11 +26,14 @@ insert into main.players_achievements select * from old_db.players_achievements;
 
 insert into main.player_stats select * from old_db.player_stats;
 insert into main.goalie_stats select * from old_db.goalie_stats;
-insert into ain.goalie_stats 
+
 insert into main.divisions select * from old_db.divisions;
 insert into main.postseason_types select * from old_db.postseason_types;
 
 insert into main.team_names select * from old_db.team_names;
+
+insert into main.relations select * from old_db.relations;
+insert into main.players_relations select * from old_db.players_relations;
 insert into main.team_seasons select * from old_db.team_seasons;
 
 

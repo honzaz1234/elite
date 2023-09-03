@@ -25,7 +25,7 @@ list_seasons_qmjhl = league_url_scraper.create_season_list(1975, 2023)
 
 
 
-dict_input = {"KHL": list_seasons_khl, "SHL": list_seasons_shl, "Liiga": list_seasons_liiga}
+dict_input = {"WHL": list_seasons_whl, "OHL": list_seasons_ohl, "QMJHL": list_seasons_qmjhl}
 
 links_list = os.listdir(url_links)
 data_list = os.listdir(dict_data)
