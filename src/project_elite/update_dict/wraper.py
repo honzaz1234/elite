@@ -29,15 +29,9 @@ class UpdateDictWraper():
         time_e = time.time()
         print("Update Player Dict Duration: " + str(time_e - time_s))
         return dict
-    
+
     def update_league_dict(self, dict):
         league_update = league_info.UpdateLeagueDict()
-        dict["season_tables"] = league_update._update_standing_dict(dict["season_tables"])
+        dict["season_tables"] = league_update._update_standing_dict(
+            dict["season_tables"])
         return dict
-
-
-
-
-
-    
-

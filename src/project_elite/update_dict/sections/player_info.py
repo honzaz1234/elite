@@ -1,13 +1,25 @@
 import re
 import datetime
 
+
 class UpdatePlayerInfo:
 
-    month_names = {"Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, 
-                   "May": 5, "Jun": 6, "Jul": 7, "Aug": 8, 
-                   "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12}
-    
-    nhl_uid = {
+    MONTHS = {
+        "Jan": 1, 
+        "Feb": 2, 
+        "Mar": 3, 
+        "Apr": 4,
+        "May": 5, 
+        "Jun": 6, 
+        "Jul": 7, 
+        "Aug": 8,
+        "Sep": 9, 
+        "Oct": 10, 
+        "Nov": 11, 
+        "Dec": 12
+    }
+
+    NHL_UID = {
         'Boston Bruins': 52,
         'Toronto Maple Leafs': 76,
         'Tampa Bay Lightning': 75,
@@ -69,10 +81,9 @@ class UpdatePlayerInfo:
         'Québec Athletic Club': 3194,
         'Toronto Hockey Club': 76,
         'Montréal Wanderers': 3264
-        }
+    }
 
-
-    def __init__(self, is_goalie ):
+    def __init__(self, is_goalie):
         self.is_goalie = is_goalie
 
     def _update_status(self, info_dict):
@@ -83,10 +94,10 @@ class UpdatePlayerInfo:
         else:
             info_dict["Status"] = "Retired"
         return info_dict
-    
+
     def _add_active(self, info_dict):
         if info_dict["Status"] == "Active":
-            info_dict["Active"] = True 
+            info_dict["Active"] = True
         else:
             info_dict["Active"] = False
         return info_dict
@@ -95,14 +106,13 @@ class UpdatePlayerInfo:
         info_dict = self._update_status(info_dict)
         info_dict = self._add_active(info_dict)
         del info_dict["Status"]
-        return info_dict 
-    
+        return info_dict
+
     def _update_nationality(self, dict_info):
         for nation in dict_info['nation']:
             if nation == "/":
                 dict_info['nation'].remove(nation)
         return dict_info
-
 
     def _update_height(self, info_dict):
         if "Height" not in info_dict:
@@ -111,7 +121,7 @@ class UpdatePlayerInfo:
         if updated_height != []:
             info_dict["Height"] = int(updated_height[0])
         else:
-            info_dict["Height"] =  None
+            info_dict["Height"] = None
         return info_dict
 
     def _update_weight(self, info_dict):
@@ -123,13 +133,13 @@ class UpdatePlayerInfo:
         else:
             info_dict["Weight"] = None
         return info_dict
-    
+
     def _update_draft_info(self, info_dict):
         dict_draft = {}
         print(info_dict)
         if info_dict["Drafted"] == [None]:
             info_dict["Drafted"] = False
-            info_dict["draft_info"]={}
+            info_dict["draft_info"] = {}
             return info_dict
         for ind in range(len(info_dict["Drafted"])):
             if info_dict["Drafted"][ind] == None:
@@ -144,12 +154,12 @@ class UpdatePlayerInfo:
             one_draft["draft_round"] = int(draft_round[0])
             one_draft["draft_position"] = int(draft_position[0])
             one_draft["draft_team"] = draft_team[0]
-            one_draft["team_uid"] = UpdatePlayerInfo.nhl_uid[one_draft["draft_team"]]
+            one_draft["team_uid"] = UpdatePlayerInfo.NHL_UID[one_draft["draft_team"]]
             dict_draft[ind] = one_draft
         info_dict["draft_info"] = dict_draft
         info_dict["Drafted"] = True
         return info_dict
-    
+
     def _update_place_birth(self, info_dict):
         if "Place of Birth" not in info_dict or "," not in info_dict["Place of Birth"]:
             info_dict["Birth_Country"] = None
@@ -166,14 +176,14 @@ class UpdatePlayerInfo:
             info_dict["Birth_Region"] = list_place[1]
         del info_dict["Place of Birth"]
         return info_dict
-    
+
     def _update_cap_hit(self, info_dict):
-        if info_dict["Cap Hit"]  == None:
-            return  info_dict
+        if info_dict["Cap Hit"] == None:
+            return info_dict
         updated_cap_hit = re.sub("[^0-9]", "", info_dict["Cap Hit"])
         info_dict["Cap Hit"] = int(updated_cap_hit)
         return info_dict
-    
+
     def _update_nhl_rights(self, info_dict):
         if info_dict["NHL Rights"] is None:
             info_dict["nhl_team_rights"] = None
@@ -183,7 +193,7 @@ class UpdatePlayerInfo:
             return info_dict
         nhl_rights_list = info_dict["NHL Rights"].split(" / ")
         info_dict["nhl_team_rights"] = nhl_rights_list[0]
-        info_dict["nr_uid"] = UpdatePlayerInfo.nhl_uid[info_dict["nhl_team_rights"]]
+        info_dict["nr_uid"] = UpdatePlayerInfo.NHL_UID[info_dict["nhl_team_rights"]]
         info_dict["signed_nhl"] = nhl_rights_list[1]
         if info_dict["signed_nhl"] == "Signed":
             info_dict["signed_nhl"] = True
@@ -191,19 +201,19 @@ class UpdatePlayerInfo:
             info_dict["signed_nhl"] = False
         del info_dict["NHL Rights"]
         return info_dict
-    
+
     def _update_handedness(self, info_dict):
         if self.is_goalie == True:
             info_dict["Shoots"] = "-"
         else:
             info_dict["Catches"] = "-"
         return info_dict
-    
+
     def _update_date_birth(self, info_dict):
         info_dict["date_birth"] = info_dict["Date of Birth"]
         del info_dict["Date of Birth"]
         return info_dict
-    
+
     def _update_contract(self, info_dict):
         if "Contract" not in info_dict:
             info_dict["Contract"] = None
@@ -214,10 +224,10 @@ class UpdatePlayerInfo:
         for key in info_dict:
             new_key = key.replace(" ", "_")
             new_key = new_key.lower()
-            new_dict[new_key] = info_dict[key]  
+            new_dict[new_key] = info_dict[key]
         info_dict = new_dict
         return info_dict
-    
+
     def _update_date_type(self, info_dict):
         if info_dict["date_birth"] is None:
             return info_dict
@@ -228,7 +238,7 @@ class UpdatePlayerInfo:
             return info_dict
         else:
             month_name = month_name[0]
-            month_num = UpdatePlayerInfo.month_names[month_name]
+            month_num = UpdatePlayerInfo.MONTHS[month_name]
         day = re.findall("([0-9]+),", orig_date)
         if day == []:
             info_dict["date_birth"] = None
@@ -244,7 +254,7 @@ class UpdatePlayerInfo:
         new_date = datetime.date(year, month_num, day)
         info_dict["date_birth"] = new_date
         return info_dict
-    
+
     def _update_relation_dict(self, info_dict):
         relation_dict = info_dict["relations"]
         for relation_type in list(relation_dict.keys()):
@@ -270,11 +280,11 @@ class UpdatePlayerInfo:
             return info_dict
         info_dict["Age"] = int(info_dict["Age"])
         return info_dict
-    
+
     def _update_data_types(self, info_dict):
         info_dict = self._update_date_type(info_dict)
         return info_dict
-    
+
     def _update_missing_values(self, info_dict):
         for key in info_dict:
             if info_dict[key] == "-" or info_dict[key] == "":
@@ -299,8 +309,3 @@ class UpdatePlayerInfo:
         info_dict = self._update_data_types(info_dict)
         info_dict = self._update_relation_dict(info_dict)
         return info_dict
-
-
-
-
-

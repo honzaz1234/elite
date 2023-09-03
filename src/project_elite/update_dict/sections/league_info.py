@@ -1,32 +1,41 @@
 import re
 
+
 class UpdateLeagueDict():
+
+    NOT_INT = ["postseason", "team", "url"]
+    NA = "-"
+    UID_REGEX = "team\/([0-9]+)\/"
 
     def __init__(self):
         pass
 
     def _update_standing_dict(self, league_dict):
-        new_dict={}
-        for league_section in league_dict:
-            new_dict[league_section] = {}
-            for season in league_dict[league_section]:
-                new_dict[league_section][season] = {}
-                for position in league_dict[league_section][season]:
-                    new_key_name = int(re.findall("([0-9]+).", position)[0])
-                    row_dict = league_dict[league_section][season][position]
+        """wraper function for updating dict with team standings for individual seasons
+        """
+
+        new_dict = {}
+        for section in league_dict:
+            new_dict[section] = {}
+            for season in league_dict[section]:
+                new_dict[section][season] = {}
+                for position in league_dict[section][season]:
+                    new_key = int(re.findall("([0-9]+).", position)[0])
+                    row_dict = league_dict[section][season][position]
                     new_row_dict = self._update_row(row_dict)
-                    new_dict[league_section][season][new_key_name] = new_row_dict
+                    new_dict[section][season][new_key] = new_row_dict
         return new_dict
 
     def _update_row(self, row_dict):
+        """function for updating one team entry in season data dict"""
+        
         for stat in list(row_dict.keys()):
-            if row_dict[stat] == "-":
+            if row_dict[stat] == UpdateLeagueDict.NA:
                 row_dict[stat] = None
-            elif stat not in ["postseason", "team", "url"]:
+            elif stat not in UpdateLeagueDict.NOT_INT:
                 row_dict[stat] = int(row_dict[stat])
             elif stat == "url":
-                u_id = re.findall("team\/([0-9]+)\/", row_dict[stat])[0]
+                u_id = re.findall(
+                    UpdateLeagueDict.UID_REGEX, row_dict[stat])[0]
                 row_dict["u_id"] = u_id
         return row_dict
-
-

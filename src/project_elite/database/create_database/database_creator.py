@@ -5,15 +5,15 @@ from sqlalchemy import Index
 import get_urls.player.league as league_url
 
 
-
 leauge_getter = league_url.LeagueUrlDownload()
 Base = declarative_base()
+
 
 class Player(Base):
 
     __tablename__ = "players"
 
-    id = Column("id", Integer, primary_key = True)
+    id = Column("id", Integer, primary_key=True)
     u_id = Column("u_id", Integer)
     name = Column("name", String)
     position = Column("position", String)
@@ -32,11 +32,10 @@ class Player(Base):
     nhl_rights_id = Column("nhl_rights_id", Integer, ForeignKey("teams.id"))
     place_birth_id = Column("place_birth_id", Integer, ForeignKey("places.id"))
 
-
-
-    def __init__(self, u_id, name, position, active, age, shoots, catches, contract, cap_hit, 
-                 signed_nhl, date_birth, drafted, height, weight, nhl_rights_id, 
-                 place_birth_id):
+    def __init__(self, u_id, name, position, active, age, shoots, 
+                catches, contract, cap_hit, signed_nhl, date_birth, 
+                drafted, height, weight, nhl_rights_id,
+                place_birth_id):
         self.u_id = u_id
         self.name = name
         self.position = position
@@ -47,7 +46,7 @@ class Player(Base):
         self.contract = contract
         self.cap_hit = cap_hit
         self.signed_nhl = signed_nhl
-        self.date_birth = date_birth 
+        self.date_birth = date_birth
         self.drafted = drafted
         self.height = height
         self.weight = weight
@@ -69,8 +68,8 @@ class PlayerDraft(Base):
     draft_position = Column("draft_position", Integer)
     draft_year = Column("draft_year", Integer, index=True)
 
-    def __init__(self, player_id, team_id, draft_round, draft_position, draft_year):
-
+    def __init__(self, player_id, team_id, draft_round, 
+                draft_position, draft_year):
         self.player_id = player_id
         self.team_id = team_id
         self.draft_round = draft_round
@@ -100,6 +99,7 @@ class Stadium(Base):
     def __repr__(self):
         return f"({self.id}, {self.stadium}, {self.capacity}, {self.construction_year}, {self.place_id})"
 
+
 class Team(Base):
 
     __tablename__ = "teams"
@@ -113,7 +113,8 @@ class Team(Base):
     place_id = Column("place_id", ForeignKey("places.id"))
     stadium_id = Column("stadium_id", ForeignKey("stadiums.id"))
 
-    def __init__(self, u_id,  team, long_name, active, founded, place_id, stadium_id):
+    def __init__(self, u_id,  team, long_name, active, 
+                 founded, place_id, stadium_id):
         self.u_id = u_id
         self.team = team
         self.long_name = long_name
@@ -121,10 +122,11 @@ class Team(Base):
         self.founded = founded
         self.place_id = place_id
         self.stadium_id = stadium_id
-    
+
     def __repr__(self):
         return f"({self.id}, {self.u_id}, {self.team}, {self.long_name}, {self.active}, {self.founded} {self.place_id}, {self.stadium_id})"
-    
+
+
 class Colour(Base):
 
     __tablename__ = "colours"
@@ -137,6 +139,7 @@ class Colour(Base):
 
     def __repr__(self):
         return f"({self.id}, {self.colour})"
+
 
 class TeamColour(Base):
 
@@ -152,7 +155,8 @@ class TeamColour(Base):
 
     def __repr__(self):
         return f"({self.id}, {self.team_id}, {self.colour_id})"
-    
+
+
 class AffiliatedTeam(Base):
 
     __tablename__ = "affiliated_teams"
@@ -167,7 +171,7 @@ class AffiliatedTeam(Base):
 
     def __repr__(self):
         return f"({self.id}, {self.team_1_id}, {self.team_2_id})"
-    
+
 
 class RetiredNumber(Base):
 
@@ -202,8 +206,9 @@ class League(Base):
     def __repr__(self):
         return f"({self.id}, {self.league_elite}, {self.league})"
 
+
 class Nationality(Base):
-    
+
     __tablename__ = "nationalities"
 
     id = Column("id", Integer, primary_key=True)
@@ -211,30 +216,32 @@ class Nationality(Base):
 
     def __init__(self, nationality):
         self.nationality = nationality
-    
+
     def __repr__(self):
         return f"({self.id}, {self.nationality})"
-    
+
+
 class PlayerNationality(Base):
 
-     __tablename__ = "players_nationalities"
+    __tablename__ = "players_nationalities"
 
-     id = Column("id", Integer, primary_key=True)
-     player_id = Column("player_id", Integer, ForeignKey("players.id"))
-     nationality_id = Column("nationality_id", Integer, ForeignKey("nationalities.id"), index=True)
+    id = Column("id", Integer, primary_key=True)
+    player_id = Column("player_id", Integer, ForeignKey("players.id"))
+    nationality_id = Column("nationality_id", Integer,
+                            ForeignKey("nationalities.id"), index=True)
 
-     def __init__(self, player_id, nationality_id):
+    def __init__(self, player_id, nationality_id):
         self.player_id = player_id
         self.nationality_id = nationality_id
 
-     def __repr__(self):
+    def __repr__(self):
         return f"({self.id}, {self.player_id}, {self.nationality_id})"
-     
+
 
 class Relation(Base):
 
     __tablename__ = "relations"
-    
+
     id = Column("id", Integer, primary_key=True)
     relation = Column("relation", String)
 
@@ -242,16 +249,19 @@ class Relation(Base):
         self.relation = relation
 
     def __repr__(self):
-        return f"({self.id}, {self.relation})"   
+        return f"({self.id}, {self.relation})"
 
-class  PlayerRelation(Base):
+
+class PlayerRelation(Base):
 
     __tablename__ = "players_relations"
 
     id = Column("id", Integer, primary_key=True)
-    player_from_id = Column("player_from_id", Integer, ForeignKey("players.id"))
+    player_from_id = Column("player_from_id", Integer,
+                            ForeignKey("players.id"))
     player_to_id = Column("player_to_id", Integer, ForeignKey("players.id"))
-    relation_id = Column("relation_id", Integer, ForeignKey("relations.id"), index=True)
+    relation_id = Column("relation_id", Integer,
+                         ForeignKey("relations.id"), index=True)
 
     def __init__(self, player_from_id, player_to_id, relation_id):
         self.player_from_id = player_from_id
@@ -260,9 +270,10 @@ class  PlayerRelation(Base):
 
     def __repr__(self):
         return f"({self.id}, {self.player_from_id}, {self.player_to_id}, {self.relation_id})"
-    
+
+
 class Place(Base):
-    
+
     __tablename__ = "places"
 
     id = Column("id", Integer, primary_key=True)
@@ -270,14 +281,14 @@ class Place(Base):
     region = Column("region", String)
     country_s = Column("country_s", String, index=True)
 
-
     def __init__(self, place, region, country_s):
         self.place = place
         self.region = region
         self.country_s = country_s
-    
+
     def __repr__(self):
         return f"({self.id}, {self.place}, {self.region}, {self.country_s})"
+
 
 class Season(Base):
 
@@ -291,10 +302,10 @@ class Season(Base):
 
     def __repr__(self):
         return f"({self.id, self.season})"
-    
+
 
 class TeamName(Base):
-    
+
     __tablename__ = "team_names"
 
     id = Column("id", Integer, primary_key=True)
@@ -312,10 +323,11 @@ class TeamName(Base):
     def __repr__(self):
         return f"({self.id}, {self.team_name}, {self.year_from}, {self.year_to}, {self.team_id})"
 
+
 class Divison(Base):
-    
+
     __tablename__ = "divisions"
-    
+
     id = Column("id", Integer, primary_key=True)
     division = Column("division", String)
 
@@ -323,18 +335,20 @@ class Divison(Base):
         self.division = division
 
     def __repr__(self):
-        return  f"({self.id}, {self.division})"
+        return f"({self.id}, {self.division})"
+
 
 class TeamSeason(Base):
 
-    __tablename__= "team_seasons"
+    __tablename__ = "team_seasons"
 
     id = Column("id", Integer, primary_key=True)
     position = Column("position", Integer)
     league_id = Column("league_id", Integer, ForeignKey("leagues.id"))
     team_id = Column("team_id", Integer, ForeignKey("teams.id"), index=True)
     division_id = Column("division_id", Integer, ForeignKey("divisions.id"))
-    conference_id = Column("conference_id", Integer, ForeignKey("divisions.id"))
+    conference_id = Column("conference_id", Integer,
+                           ForeignKey("divisions.id"))
     season_id = Column("season_id", Integer, ForeignKey("seasons.id"))
     gp = Column("gp", Integer)
     w = Column("w", Integer)
@@ -346,13 +360,13 @@ class TeamSeason(Base):
     ga = Column("ga", Integer)
     plus_minus = Column("plus_minus", Integer)
     tp = Column("tp", Integer)
-    postseason_type_id = Column("postseason_type_id", Integer, ForeignKey("postseason_types.id"))
+    postseason_type_id = Column(
+        "postseason_type_id", Integer, ForeignKey("postseason_types.id"))
 
+    def __init__(self, position, league_id, team_id, division_id, 
+                conference_id, season_id, gp, w, t, l, otw, otl, gf, 
+                ga, plus_minus, tp, postseason_type_id):
 
-    def __init__(self, position, league_id, team_id, division_id, conference_id,
-                 season_id, gp, w, t, l, otw, otl, gf, ga, plus_minus,
-                 tp, postseason_type_id):
-        
         self.position = position
         self.league_id = league_id
         self.team_id = team_id
@@ -374,13 +388,16 @@ class TeamSeason(Base):
     def __repr__(self):
         return f"({self.id}, {self.position}, {self.league_id}, {self.team_id}, {self.divison_id}, {self.conference_id}, {self.season_id}, {self.gp}, {self.w}, {self.t}, {self.l}, {self.otw}, {self.otl}, {self.gf}, {self.ga}, {self.plus_minus}, {self.tp}, {self.postseason_type_id})"
 
-Index('team_season_league_id_season_id_index', TeamSeason.league_id, TeamSeason.season_id)
+
+Index('team_season_league_id_season_id_index',
+      TeamSeason.league_id, TeamSeason.season_id)
+
 
 class PostseasonType(Base):
 
     __tablename__ = "postseason_types"
 
-    id = Column("id", Integer, primary_key = True)
+    id = Column("id", Integer, primary_key=True)
     postseason_type = Column("postseason_type", String)
 
     def __init__(self, postseason_type):
@@ -405,13 +422,15 @@ class Achievement(Base):
     def __repr__(self):
         return f"({self.id}, {self.achievement}, {self.league_id})"
 
+
 class PlayerAchievement(Base):
 
     __tablename__ = "players_achievements"
 
     id = Column("id", Integer, primary_key=True)
     player_id = Column("player_id", Integer, ForeignKey("players.id"))
-    achievement_id = Column("achievement_id", Integer, ForeignKey("achievements.id"))
+    achievement_id = Column("achievement_id", Integer,
+                            ForeignKey("achievements.id"))
     season_id = Column("season_id", Integer, ForeignKey("seasons.id"))
 
     def __init__(self, player_id, achievement_id, season_id):
@@ -422,12 +441,14 @@ class PlayerAchievement(Base):
     def __repr__(self):
         return f"({self.id}, {self.player_id}, {self.achievement_id}, {self.season_id})"
 
+
 class PlayerStats(Base):
 
     __tablename__ = "player_stats"
 
     id = Column("id", Integer, primary_key=True)
-    player_id = Column("player_id", Integer, ForeignKey("players.id"), index=True)
+    player_id = Column("player_id", Integer,
+                       ForeignKey("players.id"), index=True)
     regular_season = Column("regular_season", Boolean)
     season_id = Column("season_id", Integer, ForeignKey("seasons.id"))
     league_id = Column("league_id", Integer, ForeignKey("leagues.id"))
@@ -440,8 +461,8 @@ class PlayerStats(Base):
     PM = Column("pm", Integer)
     plus_minus = Column("plus_minus", Float)
 
-    def __init__(self,  player_id, regular_season, season_id, league_id, team_id,
-                 captaincy, games_played, goals, assists, total_points, PM, plus_minus):
+    def __init__(self,  player_id, regular_season, season_id, league_id, 
+                 team_id, captaincy, games_played, goals, assists, total_points, PM, plus_minus):
         self.player_id = player_id
         self.regular_season = regular_season
         self.season_id = season_id
@@ -458,14 +479,18 @@ class PlayerStats(Base):
     def __repr__(self):
         return f"({self.id}, {self.player_id}, {self.regular_season}, {self.season_id}, {self.league_id}, {self.team_id}, {self.captaincy}, {self.games_played}, {self.goals}, {self.assists}, {self.total_points}, {self.PM}, {self.plus_minus})"
 
-Index('player_stats_league_id_season_id_index', PlayerStats.league_id, PlayerStats.season_id)
+
+Index('player_stats_league_id_season_id_index',
+      PlayerStats.league_id, PlayerStats.season_id)
+
 
 class GoalieStats(Base):
 
     __tablename__ = "goalie_stats"
 
     id = Column("id", Integer, primary_key=True)
-    player_id = Column("player_id", Integer, ForeignKey("players.id"), index=True)
+    player_id = Column("player_id", Integer,
+                       ForeignKey("players.id"), index=True)
     regular_season = Column("regular_season", Boolean)
     season_id = Column("season_id", ForeignKey("seasons.id"))
     league_id = Column("league_id", Integer, ForeignKey("leagues.id"))
@@ -483,9 +508,9 @@ class GoalieStats(Base):
     ties = Column("t", Integer)
     toi = Column("toi", Integer)
 
-    def __init__(self,  player_id, regular_season, season_id, league_id, team_id, captaincy, games_played, gd, 
-                 goal_against_average, save_percentage, goal_against, shot_saved, shotouts, 
-                 wins, looses, ties, toi):
+    def __init__(self,  player_id, regular_season, season_id, league_id, 
+                team_id, captaincy, games_played, gd, goal_against_average, save_percentage, goal_against, shot_saved, shotouts,
+                wins, looses, ties, toi):
         self.player_id = player_id
         self.regular_season = regular_season
         self.season_id = season_id
@@ -507,9 +532,12 @@ class GoalieStats(Base):
     def __repr__(self):
         return f"({self.id}, {self.player_id}, {self.regular_season}, {self.season_id}, {self.league_id}, {self.team_id}, {self.captaincy}, {self.games_played}, {self.gd}, {self.goal_against_average}, {self.save_percentage}, {self.goal_against}, {self.shot_saved}, {self.shotouts}, {self.wins}, {self.looses}, {self.ties}, {self.toi})"
 
-Index('goalie_stats_league_id_season_id_index', GoalieStats.league_id, GoalieStats.season_id)
 
-engine = create_engine("sqlite:///C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/database/hockey_v7.db", echo=False)
+Index('goalie_stats_league_id_season_id_index',
+      GoalieStats.league_id, GoalieStats.season_id)
+
+engine = create_engine(
+    "sqlite:///C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/database/hockey_v7.db", echo=False)
 Base.metadata.create_all(bind=engine)
 
 DBSession = sessionmaker(bind=engine)
@@ -527,16 +555,3 @@ if check_data == []:
         season_entry = Season(season=year)
         session.add(season_entry)
         session.commit()
-
-
-    
-
-
-
-
-
-
-
-
-
-
