@@ -1,4 +1,2 @@
-/database/hockey_v2.db
-/database/hockey_v3.db
-/database/hockey_v4.db
-/database/hockey*
+*.json
+*.db
