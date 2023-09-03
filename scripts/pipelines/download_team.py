@@ -9,45 +9,45 @@ import time
 
 get_url_o = get_url.LeagueUrlDownload()
 
-league_list = ['NHL', 'Czechia', 'AHL', 'WHL', 'OHL', 'QMJHL', 'SHL', 'Liiga', 'NL', 'KHL', 'ECHL', 'WC', 'Olympics', 'U20 WJC']
-league_list = get_url_o.leagues_paths.keys()
+league_list = ['LJHL']
+#league_list = get_url_o.leagues_paths.keys()
 
-url_links = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/links/teams/"
+url_links_path = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/links/teams.json"
 dict_data_path = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/data_dict/done_teams.json"
-file_name_done = "done_teams.json"
 
 print(league_list)
 
 tu_o = team_updater.UpdateTeamDict()
 insert_team_data = input_dict_2.InputTeamDict()
 
-links_list = os.listdir(url_links)
 f =  open(dict_data_path)
 u_id_done_dict = json.load(f)
 u_id_done_list = u_id_done_dict["teams_done"]
+f = open(url_links_path)
+links_dict = json.load(f)
 
 is_created = False
 
-for league in league_list:
-    print(league)
+for league_ in league_list:
+    print(league_)
     dict_league = {}
-    file_name = league + ".json"
-    file_path = url_links + file_name
-    if file_name not in links_list:
-        url_list = get_url_o.get_team_refs(league=league)
+    if (league_ not in links_dict
+        or len(links_dict[league_])==0
+        ):
+        url_list = get_url_o.get_team_refs(league=league_)
         if url_list ==[]:
             print("no data downloaded")
             break
-        time.sleep(60)
-        dict_league[league] = url_list
-        with open(file_path, "w") as fp:
-            json.dump(dict_league, fp)
+        links_dict[league_] = url_list
+        with open(url_links_path, "w") as fp:
+            json.dump(links_dict, fp)
         is_created = True
-    f = open(file_path)
-    dict_league = json.load(f)
+        time.sleep(60)
+    f = open(url_links_path)
+    links_dict = json.load(f)
+    url_list = links_dict[league_]
     print(dict_league)
     print(type(dict_league))
-    url_list = dict_league[league]
     count_requests = 0      
     for url in url_list:
         print(url)
