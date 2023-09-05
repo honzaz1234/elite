@@ -187,14 +187,7 @@ class PlayerStats():
         "stats_table_l": "//table[contains(@class,'table table-"
                          "condensed table-sortable')]//tr[",
         "stats_table_r": "]/td",
-        "stat_years": "//table[contains(@class,'table table-condensed table-sortable')]/tbody/tr/@data-season",
-        "url_league": "[@class = 'league']/a/@href",
-        "url_team": "[@class = 'team']//a[1]/@href",
-        "stat_team": "[@class = 'team']/span/a[1]/text()",
-        "stat_leadership": "[@class = 'team']/span/a[2]/text()",
-        "stat_league": "[@class = 'league']/a/text()",
-        "stat_regular": "[contains(@class,'regular')]/text()",
-        "stat_playoff": "[contains(@class,'postseason ')]/text()"
+        "stat_years": "//table[contains(@class,'table table-condensed table-sortable')]/tbody/tr/@data-season"
     }
 
     def __init__(self, selector):
@@ -233,7 +226,9 @@ class PlayerStats():
                            + PlayerStats.PATHS["stats_table_l"]
                            + str(ind)
                            + PlayerStats.PATHS["stats_table_r"])
-            sub_dict = self._get_season_stats_from_table(path=path_season)
+            row_o = OneRowStat(path=path_season, selector=self.selector)
+            sub_dict = row_o._get_stat_dictionary()
+            print(sub_dict)
             for league in sub_dict:
                 if league in dict_stats[season]:
                     dict_stats[season][league] = {
@@ -242,7 +237,74 @@ class PlayerStats():
                     dict_stats[season][league] = sub_dict[league]
         return dict_stats
 
-    def _get_season_stats_from_table(self, path):
+class OneRowStat():
+
+    PATHS = {
+            "team": "[@class = 'team']/span/a[1]/text()",
+            "leadership": "[@class = 'team']/span/a[2]/text()",
+            "league": "[@class = 'league']/a/text()",
+            "stats_regular": "[contains(@class,'regular')]/text()",
+            "stats_playoff": "[contains(@class,'postseason ')]/text()",
+            "url_league": "[@class = 'league']/a/@href",
+            "url_team": "[@class = 'team']//a[1]/@href",
+    }
+
+    REGEX = {
+        "team": "(.+)\/[^\/]+$",
+        "league": "(.+)\/stats"
+    }
+
+    def __init__(self, path, selector):
+        self.path_to_row = path
+        self.selector = selector
+
+    def _get_stat_dictionary(self):
+        team = self._get_stat_atribute(key="team")
+        if team is None:
+            return {}
+        league = self._get_stat_atribute(key="league")
+        leadership = self._get_stat_atribute(key="leadership")
+        stat_play_off = self._get_stat_atribute(
+            key="stats_regular", keep_list=True)
+        stat_regular = self._get_stat_atribute(
+            key="stats_playoff", keep_list=True)
+        if league is not None:
+            league_url = self._extract_general_url(
+                key_path="url_league", key_regex="league")
+        else:
+            league_url = None
+        team_url = self._extract_general_url(
+             key_path="url_team", key_regex="team")
+        dict_row = {}
+        dict_row[league] = {}
+        dict_row[league][team] = {}
+        dict_row[league][team]["regular_season"] = stat_regular
+        dict_row[league][team]["play_off"] = stat_play_off
+        dict_row[league][team]["leadership"] = leadership
+        dict_row[league]["url"] = league_url
+        dict_row[league][team]["url"] = team_url
+        return dict_row
+
+    def _get_stat_atribute(self, key, keep_list=False):
+        path_stat = self.path_to_row + OneRowStat.PATHS[key]
+        stat_list = self.selector.xpath(path_stat).getall()
+        stat_list = [string.strip() for string in stat_list]
+        if stat_list == [] or set(stat_list)=={""}:
+            return None
+        elif keep_list==True:
+            return stat_list
+        else:
+            return stat_list[0]
+        
+    def _extract_general_url(self, key_path, key_regex):
+        path_url = self.path_to_row + OneRowStat.PATHS[key_path]
+        list_data = self.selector.xpath(path_url).getall()
+        orig_url = list_data[0]
+        url_list = re.findall(OneRowStat.REGEX[key_regex], orig_url)
+        url = url_list[0]
+        return url
+
+    def _get_season_stats_from_table_2(self, path):
         """get data for one line in the table"""
 
         dict_season = {}
@@ -287,13 +349,6 @@ class PlayerStats():
             leadership = leadership[0]
             dict_season[league_name][team_name]["leadership"] = leadership
         return dict_season
-
-    def _extract_general_url(self, path, regex):
-        list_data = self.selector.xpath(path).getall()
-        orig_url = list_data[0]
-        url_list = re.findall(regex, orig_url)
-        url = url_list[0]
-        return url
 
 
 class PlayerAchievements():
