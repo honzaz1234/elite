@@ -205,6 +205,7 @@ class PlayerStats():
         return dict_stats
 
     def _get_stats(self, type, years=None):
+        
         """function for downloading data from the whole table (league, tournament) with the player season statistics
         """
 
@@ -259,6 +260,9 @@ class OneRowStat():
         self.selector = selector
 
     def _get_stat_dictionary(self):
+
+        """creates stat dicitonary from one row in stat table"""
+
         team = self._get_stat_atribute(key="team")
         if team is None:
             return {}
@@ -286,6 +290,10 @@ class OneRowStat():
         return dict_row
 
     def _get_stat_atribute(self, key, keep_list=False):
+
+        """method for extracting one attribute from stat row(team, league, capitancy, season stats
+        """
+
         path_stat = self.path_to_row + OneRowStat.PATHS[key]
         stat_list = self.selector.xpath(path_stat).getall()
         stat_list = [string.strip() for string in stat_list]
@@ -297,6 +305,11 @@ class OneRowStat():
             return stat_list[0]
         
     def _extract_general_url(self, key_path, key_regex):
+
+        """method for extracting url of team and league
+        to which the statistics are related
+        """
+
         path_url = self.path_to_row + OneRowStat.PATHS[key_path]
         list_data = self.selector.xpath(path_url).getall()
         orig_url = list_data[0]
@@ -304,54 +317,10 @@ class OneRowStat():
         url = url_list[0]
         return url
 
-    def _get_season_stats_from_table_2(self, path):
-        """get data for one line in the table"""
-
-        dict_season = {}
-        path_reg = path + PlayerStats.PATHS["stat_regular"]
-        path_playoff = path + PlayerStats.PATHS["stat_playoff"]
-        path_team = path + PlayerStats.PATHS["stat_team"]
-        path_leadership = path + PlayerStats.PATHS["stat_leadership"]
-        path_league = path + PlayerStats.PATHS["stat_league"]
-        path_url_team = path + PlayerStats.PATHS["url_team"]
-        path_url_league = path + PlayerStats.PATHS["url_league"]
-        team_name = self.selector.xpath(path_team).getall()
-        team_name = [string.strip() for string in team_name]
-        if team_name == []:
-            return {}
-        team_name = team_name[0]
-        league_name = self.selector.xpath(path_league).getall()
-        league_name = [string.strip() for string in league_name]
-        if league_name == []:
-            league_name = None
-        else:
-            league_name = league_name[0]
-        leadership = self.selector.xpath(path_leadership).getall()
-        leadership = [string.strip() for string in leadership]
-        stat_playoff = self.selector.xpath(path_playoff).getall()
-        stat_playoff = [string.strip() for string in stat_playoff]
-        stat_regular = self.selector.xpath(path_reg).getall()
-        stat_regular = [string.strip() for string in stat_regular]
-        url_team = self._extract_general_url(path=path_url_team,
-                                             regex="(.+)\/[^\/]+$")
-        if league_name is not None:
-            url_league = self._extract_general_url(path=path_url_league,
-                                                   regex="(.+)\/stats")
-        else:
-            url_league = None
-        dict_season[league_name] = {}
-        dict_season[league_name][team_name] = {}
-        dict_season[league_name][team_name]["regular_season"] = stat_regular
-        dict_season[league_name][team_name]["play_off"] = stat_playoff
-        dict_season[league_name]["url"] = url_league
-        dict_season[league_name][team_name]["url"] = url_team
-        if leadership != []:
-            leadership = leadership[0]
-            dict_season[league_name][team_name]["leadership"] = leadership
-        return dict_season
-
-
 class PlayerAchievements():
+
+
+    """class grouping methods for extracting achieviements of player"""
 
     PATHS = {
         "achievements_l": "//li[",
@@ -363,6 +332,7 @@ class PlayerAchievements():
         self.selector = selector
 
     def get_achievements(self, years=None):
+
         """method for downloading achievements of player into dictionary"""
 
         dict_achiev = {}

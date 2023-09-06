@@ -8,15 +8,18 @@ class TeamScraper():
     there are methods available for downloading general info, stadium info, affiliated teams, retired numbers and historic names
     """
 
-    GI_PATHS = {
+    INFO_PATHS = {
 
         "short_name": "//h1[@class='semi-logo']/text()",
         "gi_left": "//div[@class='league-title clearfix']"
                              "//*[@class='value' and preceding-sibling::"
                              "span[contains(text(),'",
-        "gi_right": "')]]//text()"
+        "gi_right": "')]]//text()",
+        "si_left": "//strong[preceding::span[1]"
+                      "[contains(text(), '",
+        "si_right": "')]]/text()"
     }
-
+    
     HN_PATHS = {
         "season_l": "(//div[@class='content_left']//"
                             "table[@class ='table table-striped "
@@ -37,19 +40,6 @@ class TeamScraper():
         "name_right": "]/following-sibling::tr)"
     }
 
-    STADIUM_PATHS = {
-        "arena_name": "//strong[preceding::span[1]"
-                      "[contains(text(), 'Arena Name')]]/text()",
-        "place": "//strong[preceding::span[1]"
-                 "[contains(text(), 'Location')]]/text()",
-        "capacity": "//strong[preceding::span[1]"
-                    "[contains(text(), 'Capacity')]]/text()",
-        "construction_year": "//strong[preceding::span[1]"
-                             "[contains(text(), 'Construction Year')]]"
-                             "/text()"
-    }
-
-
     OTHER_PATHS = {
         "affiliated_teams": "//strong[@class='value'"
                                   " and preceding-sibling::span"
@@ -63,6 +53,8 @@ class TeamScraper():
     }
 
     INFO_NAMES = ["Plays in", "Team colours", "Town", "Founded", "Full name"]
+    STADIUM_INFO_NAMES = ["Arena Name", "Location", "Capacity", 
+                          "Construction Year"]
 
 
     def __init__(self, url):
@@ -74,9 +66,15 @@ class TeamScraper():
         """ wrapper function for downloading all of the info from one team webpage"""
 
         dict_info = {}
-        dict_info["general_info"] = self.get_general_info()
+        dict_info["general_info"] = self.get_dict_info(
+            list_info=TeamScraper.INFO_NAMES,
+            key_left="gi_left",
+            key_right="gi_right")
         dict_info["general_info"]["short_name"] = self._get_short_name()
-        dict_info["stadium_info"] = self.get_stadium_info_wrapper()
+        dict_info["stadium_info"] = self.get_dict_info(
+            list_info=TeamScraper.STADIUM_INFO_NAMES,
+            key_left="si_left",
+            key_right="si_right")
         dict_info["affiliated_teams"] = self.get_affiliated_teams()
         dict_info["retired_numbers"] = self.get_retired_numbers()
         dict_info["titles"] = self.get_historic_names()
@@ -84,13 +82,13 @@ class TeamScraper():
                                                            self.url)[0])
         return dict_info
 
-    def get_general_info(self):
+    def get_dict_info(self, list_info, key_left, key_right):
         """wrapper function for downloading all of the general info """
-        dict_gi = {}
-        for info_name in TeamScraper.INFO_NAMES:
-            dict_gi[info_name] = self._get_info(info_name=info_name,
-                                                keep_list=False)
-        return dict_gi
+        dict_ = {}
+        for info in list_info:
+            dict_[info] = self._get_info(
+                info=info, key_left=key_left, key_right=key_right)
+        return dict_
 
     def _get_short_name(self):
         """wrapper function for downloading short name of team - must be always present on the webpage"""
@@ -104,43 +102,18 @@ class TeamScraper():
             short_name = short_name[0].strip()
         return short_name
 
-    def _get_info(self, info_name, keep_list):
+    def _get_info(self, info, key_left, key_right):
         """general function for downloading individual general info values"""
 
-        info_path_val = (TeamScraper.GI_PATHS["gi_left"] 
-                         + info_name 
-                         + TeamScraper.GI_PATHS["gi_right"])
+        info_path_val = (TeamScraper.INFO_PATHS[key_left] 
+                         + info 
+                         + TeamScraper.INFO_PATHS[key_right])
         info_val = self.selector.xpath(info_path_val).getall()
         info_val = [string.strip() for string in info_val]
         info_val = [string for string in info_val if string != ""]
         if info_val == []:
             info_val = [None]
-        if keep_list == False:
-            return info_val[0]
-        else:
-            return info_val
-
-    def get_stadium_info_wrapper(self):
-        """wrapper function for accessing info from stadium info table"""
-
-        dict_si = {}
-        for path_name in ["arena_name", "place", "capacity", "construction_year"]:
-            sub_dic = self.get_stadium_info(path_name=path_name)
-            dict_si = {**dict_si, **sub_dic}
-        return dict_si
-
-    
-    def get_stadium_info(self, path_name):
-        """method for accessing individual info from stadium table"""
-
-        sub_dict = {}
-        value = (self.selector
-                 .xpath(TeamScraper.STADIUM_PATHS[path_name]).getall())
-        if value == []:
-            sub_dict[path_name] = None
-        else:
-            sub_dict[path_name] = value[0]
-        return sub_dict
+        return info_val[0]
 
     def get_affiliated_teams(self):
         dict_at = {}
