@@ -78,29 +78,42 @@ class LeagueSeasonScraper():
         n_rows = len(self.selector.xpath(path_section).getall())
         dict_section = {}
         for row_ind in range(1, n_rows + 1):
-            dict_row = {}
-            one_row_path = (path_section 
-                            + "[" 
-                            + str(row_ind) 
-                            + "]" 
-                            + "/td//text()")
-            one_row_html = (path_section 
-                            + "[" 
-                            + str(row_ind) 
-                            + "]" 
-                            + "/td[@class='team']//a/@href")
-            row_data = self.selector.xpath(one_row_path).getall()
-            url_team_season = self.selector.xpath(one_row_html).getall()[0]
-            url_team_general = re.findall(
-                "(.+)\/[0-9]{4}\-[0-9]{4}$", url_team_season)[0]
-            row_data = [value.strip()
-                        for value in row_data if value.strip() != ""]
-            for ind in range(1, len(row_data)):
-                dict_row[LeagueSeasonScraper.header_names[ind]
-                         ] = row_data[ind].strip()
-            dict_row["url"] = url_team_general
-            dict_section[row_data[0]] = dict_row
+            row_dict = self.get_one_row(
+                path_section=path_section, row_ind=row_ind)
+            dict_section[row_data[0]] = row_dict
         return dict_section
+    
+    def get_one_row(self, path_section, row_ind):
+        dict_row = {}
+        dict_row["url"] = self.get_team_url(
+            path_section=path_section, row_ind=row_ind)
+        row_stats = self.get_row_stats(path_section=path_section, row_ind=row_ind)
+        for ind in range(1, len(row_stats)):
+            dict_row[LeagueSeasonScraper.header_names[ind]
+                        ] = row_stats[ind].strip()
+        return dict_row
+
+    def get_row_stats(self, path_section, row_ind):
+         one_row_path = (path_section 
+                        + "[" 
+                        + str(row_ind) 
+                        + "]" 
+                        + "/td//text()")
+         row_data = self.selector.xpath(one_row_path).getall()
+         row_data = [value.strip()
+                    for value in row_data if value.strip() != ""]
+         return row_data
+    
+    def get_team_url(self, path_section, row_ind):
+        path_url = (path_section 
+                        + "[" 
+                        + str(row_ind) 
+                        + "]" 
+                        + "/td[@class='team']//a/@href")
+        url_season = self.selector.xpath(path_url).getall()[0]
+        url_general = re.findall(
+            "(.+)\/[0-9]{4}\-[0-9]{4}$", url_season)[0]
+        return url_general
 
     def get_season_standings(self):
         section_names = self.selector.xpath(
