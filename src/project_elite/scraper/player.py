@@ -75,7 +75,7 @@ class PlayerGeneralInfo():
     PROJECT_MAPPING = {
         "Date of Birth": BIRTH_DATE, 
         "Age": AGE,
-        "Place of Birth": BIRTH_PLACE, 
+        "Place of Birth": BIRTH_STRING, 
         "Nation": NATIONALITY, 
         "Position": LONG_NAME,
         "Height": HEIGHT,
