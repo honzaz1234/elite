@@ -15,8 +15,6 @@ class PlayerScraper:
        c) player achievements 
     """
 
-    PLAYER_UID_REGEX = "player\/([0-9]+)\/"
-
     def __init__(self, url):
         """Arguments:
         url - url of player profile
@@ -49,7 +47,7 @@ class PlayerScraper:
         dict_player[ACHIEVEMENTS] = a_o.get_achievements()
         s_o = PlayerStats(selector=self.selector)
         dict_player[SEASON_STATS] = s_o.get_all_stats(years=years)
-        dict_player[PLAYER_UID] = re.findall(PlayerScraper.PLAYER_UID_REGEX,
+        dict_player[PLAYER_UID] = re.findall(PLAYER_UID_REGEX,
                                          self.url)[0]
         return dict_player
 
@@ -75,7 +73,7 @@ class PlayerGeneralInfo():
     PROJECT_MAPPING = {
         "Date of Birth": BIRTH_DATE, 
         "Age": AGE,
-        "Place of Birth": BIRTH_STRING, 
+        "Place of Birth": BIRTH_PLACE_STRING, 
         "Nation": NATIONALITY, 
         "Position": LONG_NAME,
         "Height": HEIGHT,
@@ -85,7 +83,7 @@ class PlayerGeneralInfo():
         "Contract": CONTRACT_END,
         "Cap Hit": CAP_HIT,
         "NHL Rights": NHL_RIGHTS,
-        "Drafted": DRAFTED,
+        "Drafted": DRAFT_LIST,
         "Status": ACTIVE,
     } 
     
@@ -310,7 +308,6 @@ class OneRowStat():
         self.selector = selector
 
     def _get_stat_dictionary(self):
-
         """creates stat dicitonary from one row in stat table"""
 
         team = self._get_stat_atribute(key="team")

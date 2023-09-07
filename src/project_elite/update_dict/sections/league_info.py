@@ -1,11 +1,11 @@
 import re
+from constants import *
 
 
 class UpdateLeagueDict():
 
     NOT_INT = ["postseason", "team", "url"]
     NA = "-"
-    UID_REGEX = "team\/([0-9]+)\/"
 
     def __init__(self):
         pass
@@ -36,6 +36,6 @@ class UpdateLeagueDict():
                 row_dict[stat] = int(row_dict[stat])
             elif stat == "url":
                 u_id = re.findall(
-                    UpdateLeagueDict.UID_REGEX, row_dict[stat])[0]
+                    TEAM_UID_REGEX, row_dict[stat])[0]
                 row_dict["u_id"] = u_id
         return row_dict
