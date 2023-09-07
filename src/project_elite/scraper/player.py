@@ -2,6 +2,8 @@ import requests
 import scrapy
 import re
 
+from constants import *
+
 
 class PlayerScraper:
 
@@ -42,12 +44,12 @@ class PlayerScraper:
             """
         dict_player = {}
         gi_o = PlayerGeneralInfo(selector=self.selector)
-        dict_player["info"] = gi_o.get_general_info()
+        dict_player[GENERAL_INFO] = gi_o.get_general_info()
         a_o = PlayerAchievements(selector=self.selector)
-        dict_player["achievements"] = a_o.get_achievements()
+        dict_player[ACHIEVEMENTS] = a_o.get_achievements()
         s_o = PlayerStats(selector=self.selector)
-        dict_player["stats"] = s_o.get_all_stats(years=years)
-        dict_player["u_id"] = re.findall(PlayerScraper.PLAYER_UID_REGEX,
+        dict_player[SEASON_STATS] = s_o.get_all_stats(years=years)
+        dict_player[PLAYER_UID] = re.findall(PlayerScraper.PLAYER_UID_REGEX,
                                          self.url)[0]
         return dict_player
 
@@ -70,6 +72,24 @@ class PlayerGeneralInfo():
 
     KEEP_LIST = ["Drafted", "Nation"]
 
+    PROJECT_MAPPING = {
+        "Date of Birth": BIRTH_DATE, 
+        "Age": AGE,
+        "Place of Birth": BIRTH_PLACE, 
+        "Nation": NATIONALITY, 
+        "Position": LONG_NAME,
+        "Height": HEIGHT,
+        "Weight": WEIGHT,
+        "Shoots": SHOOTS,
+        "Catches": CATCHES,
+        "Contract": CONTRACT_END,
+        "Cap Hit": CAP_HIT,
+        "NHL Rights": NHL_RIGHTS,
+        "Drafted": DRAFTED,
+        "Status": ACTIVE,
+    } 
+    
+
     def __init__(self, selector):
         """attribute: selector - selector created from html of whole player webpage"""
 
@@ -77,9 +97,9 @@ class PlayerGeneralInfo():
 
     def get_general_info(self):
         dict_gi = self._get_info_wraper()
-        dict_gi["name"] = self._get_name()
+        dict_gi[PLAYER_NAME] = self._get_name()
         f_r_o = FamilyRelations(selector=self.selector)
-        dict_gi["relations"] = f_r_o._get_relation_dict()
+        dict_gi[RELATIONS] = f_r_o._get_relation_dict()
         return dict_gi
 
     def _get_name(self):
@@ -98,9 +118,10 @@ class PlayerGeneralInfo():
         dict_gi = {}
         for info_name in PlayerGeneralInfo.INFO_NAMES:
             keep_list = False
+            key_name = PlayerGeneralInfo.PROJECT_MAPPING[info_name]
             if info_name in PlayerGeneralInfo.KEEP_LIST:
                 keep_list = True
-            dict_gi[info_name] = self._get_info(info_name=info_name,
+            dict_gi[key_name] = self._get_info(info_name=info_name,
                                                 keep_list=keep_list)
         return dict_gi
 
@@ -221,22 +242,51 @@ class PlayerStats():
             if years is not None:
                 if list_years[ind - 1] not in years:
                     continue
+            print(season)
             if season not in dict_stats:
                 dict_stats[season] = {}
-            path_season = (path_type
-                           + PlayerStats.PATHS["stats_table_l"]
-                           + str(ind)
-                           + PlayerStats.PATHS["stats_table_r"])
-            row_o = OneRowStat(path=path_season, selector=self.selector)
-            sub_dict = row_o._get_stat_dictionary()
-            print(sub_dict)
-            for league in sub_dict:
-                if league in dict_stats[season]:
-                    dict_stats[season][league] = {
-                        **dict_stats[season][league], **sub_dict[league]}
-                else:
-                    dict_stats[season][league] = sub_dict[league]
+            dict_stats[season] = self._update_season_stats(
+                season_dict=dict_stats[season], path_type=path_type, ind=ind)
         return dict_stats
+    
+    def _update_season_stats(self, season_dict, path_type, ind):
+
+        """adds one row from stat table to stat dictionary"""
+
+        new_season_dict = {}
+        path_season = (path_type
+                        + PlayerStats.PATHS["stats_table_l"]
+                        + str(ind)
+                        + PlayerStats.PATHS["stats_table_r"])
+        row_o = OneRowStat(path=path_season, selector=self.selector)
+        sub_dict = row_o._get_stat_dictionary()
+        print("sub_dict:")
+        print(sub_dict)
+        new_season_dict = self._merge_season_dict(
+                old_dict=season_dict, new_dict=sub_dict)
+        print("update_season_stats: ")
+        print(new_season_dict)
+        return new_season_dict
+
+    def _merge_season_dict(self, old_dict, new_dict):
+        
+        """merges season dictionary with new stat row dictionary - needed because sometimes player changes team in one competition over the season
+        """
+
+        new_merged_dict = old_dict.copy()
+        print("old_dict:")
+        print(old_dict)
+        for league in new_dict:
+            if  league in old_dict:
+                new_merged_dict[league] = {
+                    **old_dict[league], **new_dict[league]
+                }
+            else:
+                new_merged_dict[league] = new_dict[league]
+        print("new merged dict:")
+        print(new_merged_dict)
+        return new_merged_dict
+        
 
 class OneRowStat():
 
@@ -281,13 +331,64 @@ class OneRowStat():
              key_path="url_team", key_regex="team")
         dict_row = {}
         dict_row[league] = {}
+        dict_row[league][LEAGUE_URL] = league_url
         dict_row[league][team] = {}
-        dict_row[league][team]["regular_season"] = stat_regular
-        dict_row[league][team]["play_off"] = stat_play_off
-        dict_row[league][team]["leadership"] = leadership
-        dict_row[league]["url"] = league_url
-        dict_row[league][team]["url"] = team_url
+        dict_row[league][team][REGULAR_SEASON] = stat_regular
+        dict_row[league][team][PLAY_OFF] = stat_play_off
+        dict_row[league][team][LEADERSHIP] = leadership
+        dict_row[league][team][TEAM_URL] = team_url
         return dict_row
+    
+    def _get_stat_dictionary(self):
+        """method for getting stat dictionary of one row of stat table"""
+
+        dict_stat = {}
+        league = self._get_stat_atribute(key="league")
+        if league is None:
+            return {}
+        dict_stat[league] = self._get_league_dict(league=league)
+        if dict_stat[league] == {}:
+            return {}
+        else:
+            return dict_stat
+    
+    def _get_league_dict(self, league):
+        """method for getting league dictionary of one row of stat table"""
+
+        league_dict = {}
+        team = self._get_stat_atribute(key="team")
+        if team is None:
+            return {}
+        league_dict[team] = self._get_team_dict()
+        league_dict[LEAGUE_URL] = self._get_league_url(league=league)
+        return league_dict
+
+    def _get_league_url(self, league):
+        """wrapper method for getting league url"""
+
+        if league is not None:
+            league_url = self._extract_general_url(
+                key_path="url_league", key_regex="league")
+        else:
+            league_url = None
+        return league_url
+    
+    def _get_team_dict(self):
+        """get dict with information regarding the team from one row of stat table"""
+
+        dict_team = {}
+        stat_play_off = self._get_stat_atribute(
+            key="stats_playoff", keep_list=True)
+        stat_regular = self._get_stat_atribute(
+            key="stats_regular", keep_list=True)
+        leadership = self._get_stat_atribute(key="leadership")
+        team_url = self._extract_general_url(
+             key_path="url_team", key_regex="team")
+        dict_team[REGULAR_SEASON] = stat_regular
+        dict_team[PLAY_OFF] = stat_play_off
+        dict_team[LEADERSHIP] = leadership
+        dict_team[TEAM_URL] = team_url
+        return dict_team
 
     def _get_stat_atribute(self, key, keep_list=False):
 
@@ -332,7 +433,6 @@ class PlayerAchievements():
         self.selector = selector
 
     def get_achievements(self, years=None):
-
         """method for downloading achievements of player into dictionary"""
 
         dict_achiev = {}
@@ -343,9 +443,18 @@ class PlayerAchievements():
             if years is not None:
                 if list_years[ind - 1] not in years:
                     continue
-            path = (PlayerAchievements.PATHS["achievements_l"]
+            dict_achiev[list_years[ind - 1]] = self.get_season_achievements(
+                ind=ind)
+        return dict_achiev
+    
+
+    def get_season_achievements(self, ind):
+        """method for getting list of achievements in one season"""
+
+        path = (PlayerAchievements.PATHS["achievements_l"]
                     + str(ind)
                     + PlayerAchievements.PATHS["achievements_r"])
-            award = self.selector.xpath(path).getall()
-            dict_achiev[list_years[ind - 1]] = award
-        return dict_achiev
+        award = self.selector.xpath(path).getall()
+        return award
+
+
