@@ -41,9 +41,8 @@ class PlayerScraper:
             Arguments: years - 
             """
         dict_player = {}
-        dict_player[PLAYER_UID] = re.findall(PLAYER_UID_REGEX,
-                                         self.url)[0]
-        gi_o = PlayerGeneralInfo(selector=self.selector)
+        gi_o = PlayerGeneralInfo(selector=self.selector,
+                                 url=self.url)
         dict_player[GENERAL_INFO] = gi_o.get_general_info()
         a_o = PlayerAchievements(selector=self.selector)
         f_r_o = FamilyRelations(selector=self.selector)
@@ -90,14 +89,17 @@ class PlayerGeneralInfo():
     } 
     
 
-    def __init__(self, selector):
+    def __init__(self, selector, url):
         """attribute: selector - selector created from html of whole player webpage"""
 
         self.selector = selector
+        self.url = url
 
     def get_general_info(self):
         dict_gi = self._get_info_wraper()
         dict_gi[PLAYER_NAME] = self._get_name()
+        dict_gi[PLAYER_UID] = re.findall(PLAYER_UID_REGEX,
+                                         self.url)[0]
         return dict_gi
 
     def _get_name(self):
