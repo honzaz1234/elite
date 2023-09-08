@@ -5,23 +5,40 @@ from constants import *
 
 class UpdatePlayer:
 
-    def __init__(self, is_goalie):
-        self.is_goalie = is_goalie
+    """class used for updating values in dictionary in order to prepare them for inserting into DB
+    """
 
+    def __init__(self):
+        self.is_goalie = None
 
+    def set_is_goalie(self, dict):
+
+        """method for establishing if the player is goalie or field player; important because of different statistical categories
+        """
+
+        position = dict[GENERAL_INFO][POSITION]
+        if position == "G":
+            self.is_goalie =  True
+        else:
+            self.is_goalie = False
 
     def update_player_dict(self, dict):
-        is_goalie = self.check_goalie(dict)
-        info_updater = player_info.UpdatePlayerInfo(is_goalie=is_goalie)
-        dict_info = dict["info"]
-        dict["info"] = info_updater.update_info_dict(dict_info)
-        stats_updater = player_stats.UpdatePlayerStats(is_goalie=is_goalie)
-        dict_stats = dict["stats"]
-        dict["stats"] = stats_updater.update_stats_dict(dict_stats)
-        dict["u_id"] = int(dict["u_id"])
-        return dict
-    
+        """wraper method for updating whole player dict"""
 
+        new_dict = dict.copy()
+        self.set_is_goalie(new_dict)
+        player_info = UpdatePlayerInfo(is_goalie=self.is_goalie)
+        new_dict[GENERAL_INFO] = player_info._update_info_dict(
+            info_dict=new_dict[GENERAL_INFO])
+        player_stats = UpdatePlayerStats(is_goalie=self.is_goalie)
+        new_dict[SEASON_STATS] = player_stats.update_stats_dict(
+            dict_stats= new_dict[SEASON_STATS])
+        player_relation = UpdateRelations()
+        new_dict[RELATIONS] = player_relation._update_relation_dict(
+            relation_dict=new_dict[RELATIONS])
+        new_dict[PLAYER_UID] = int(new_dict[PLAYER_UID])
+        return new_dict
+    
 class UpdatePlayerInfo():
 
     HEIGHT_REGEX = "([0-9]+)\scm"
@@ -31,7 +48,13 @@ class UpdatePlayerInfo():
     MONTH_REGEX = "^([A-Za-z]+)\s"
     YEAR_REGEX = "[0-9]+$"
 
-    DELETE_KEYS = [BIRTH_PLACE_STRING, DRAFTED, NHL_RIGHTS]
+    DRAFT_YEAR_REGEX = "^([0-9]+)\s"
+    DRAFT_ROUND_REGEX = "round\s([0-9]+)\s"
+    DRAFT_POSITION_REGEX = "#([0-9]+)\s"
+    DRAFT_TEAM_REGEX = "by\s(.+)$"
+    
+
+    DELETE_KEYS = [BIRTH_PLACE_STRING, DRAFTED, NHL_RIGHTS, DRAFT_LIST]
 
     NHL_UID = {
         'Boston Bruins': 52,
@@ -128,7 +151,6 @@ class UpdatePlayerInfo():
         else:
             return False
         
-
     def _update_nationality(self, nation_list):
         """method for filtering out the / from the list of nationalities"""
 
@@ -137,7 +159,6 @@ class UpdatePlayerInfo():
                 nation_list.remove(nation)
         return nation_list
 
-    
     def _update_physical_char(self, char, regex):
         """method for updating value of height and weight; in both cases there 2 different metrics availaible on the website (kg/lbs) and (cm/inch);
         this methods keeps the kg and cm values
@@ -147,7 +168,7 @@ class UpdatePlayerInfo():
             return None
         updated_char = re.findall(regex, char)
         if updated_char != []:
-            return updated_char[0]
+            return int(updated_char[0])
         else:
             return None
 
@@ -175,16 +196,19 @@ class UpdatePlayerInfo():
             """method for creating dict with draft info"""
 
             draft_dict = {}
-            draft_dict[DRAFT_YEAR] = re.findall(
-                "^([0-9]+)\s", draft_string)
-            draft_dict[DRAFT_ROUND] = re.findall(
-                "round\s([0-9]+)\s", draft_string)
-            draft_dict[DRAFT_POSITION] = re.findall(
-                "#([0-9]+)\s", draft_string)
+            draft_year = re.findall(
+                UpdatePlayerInfo.DRAFT_YEAR_REGEX, draft_string)
+            draft_dict[DRAFT_YEAR] = int(draft_year[0])
+            draft_round = re.findall(
+                UpdatePlayerInfo.DRAFT_ROUND_REGEX, draft_string)
+            draft_dict[DRAFT_ROUND] = int(draft_round[0])
+            draft_position = re.findall(
+                UpdatePlayerInfo.DRAFT_POSITION_REGEX, draft_string)
+            draft_dict[DRAFT_POSITION]  = int(draft_position[0])
             draft_dict[DRAFT_TEAM] = re.findall(
-                "by\s(.+)$", draft_string)
+                UpdatePlayerInfo.DRAFT_TEAM_REGEX, draft_string)[0]
             draft_dict[TEAM_UID] = (UpdatePlayerInfo
-            .NHL_UID[draft_string[DRAFT_TEAM]])
+                                    .NHL_UID[draft_dict[DRAFT_TEAM]])
             return draft_dict
     
     def _create_place_birth_dict(self, birth_string):
@@ -214,11 +238,12 @@ class UpdatePlayerInfo():
         if cap_hit == None:
             return None
         updated_cap_hit = re.sub(UpdatePlayerInfo.CAP_HIT_REGEX, "", cap_hit)
-        return updated_cap_hit
+        return int(updated_cap_hit)
 
     def _get_nhl_rights_uid(self, nhl_rights):
         """attain uid of team that owns player nhl rights"""
-
+        if nhl_rights is None:
+            return None
         team_rights = self._get_nhl_rights_info(
                 nhl_rights=nhl_rights, ind=0)
         team_uid = UpdatePlayerInfo.NHL_UID[team_rights]
@@ -273,6 +298,8 @@ class UpdatePlayerInfo():
             return None
         elif age == "-" or age == "PREMIUM":
             age = None
+        else:
+            return int(age)
 
     def _update_info_dict_individual_vals(self, info_dict):
         """wraper for all methods updating single values in dict"""
@@ -294,7 +321,8 @@ class UpdatePlayerInfo():
             draft_list=info_dict[DRAFT_LIST])
         info_dict_updated[BIRTH_PLACE_DICT] = self._create_place_birth_dict(
             birth_string=info_dict[BIRTH_PLACE_STRING])
-        info_dict_updated[CAP_HIT] = self._update_cap_hit(cap_hit=info_dict[CAP_HIT])
+        info_dict_updated[CAP_HIT] = self._update_cap_hit(
+            cap_hit=info_dict[CAP_HIT])
         info_dict_updated[NHL_RIGHTS_UID] = self._get_nhl_rights_uid(
             nhl_rights=info_dict[NHL_RIGHTS])
         info_dict_updated[SIGNED_NHL] = self._get_nhl_signed_status(
@@ -316,7 +344,7 @@ class UpdatePlayerInfo():
     def _delete_redundant_keys(self, info_dict):
         """delete keys that are unecessary to keep in the dict"""
 
-        new_info_dict = info_dict.copy
+        new_info_dict = info_dict.copy()
         for key in UpdatePlayerInfo.DELETE_KEYS:
             del  new_info_dict[key]
         return new_info_dict
@@ -344,10 +372,11 @@ class UpdateRelations():
         return new_relation_dict_2  
 
     def _relations_to_lower(self, relation_dict):
-        for relation_type in relation_dict:
+        new_dict = {}
+        for relation_type in list(relation_dict.keys()):
             new_key = relation_type.lower()
-            relation_dict[new_key] = relation_dict[relation_type]
-        return relation_dict
+            new_dict[new_key] = relation_dict[relation_type]
+        return new_dict
     
     def _relation_uids_to_int(self, relation_dict):
         for relation_type in relation_dict:
@@ -360,5 +389,168 @@ class UpdateRelations():
         return relation_dict
 
     
+class UpdatePlayerStats:
 
+    """class for updating dict with player seasonal stats"""
+
+    CAPTAINCY_REGEX = "[AC]"
+
+    def __init__(self, is_goalie):
+        self.is_goalie = is_goalie
+
+    def update_stats_dict(self, dict_stats):
+        """method for updating whole dict with player season statistics"""
+
+        new_dict_stats = dict_stats.copy()
+        for competition_type in list(new_dict_stats.keys()):
+            comptetition_dict = new_dict_stats[competition_type]
+            new_competition_dict = self._update_competition_dict(
+                competition_dict=comptetition_dict)
+            new_dict_stats[competition_type] = new_competition_dict
+        return new_dict_stats
+
+    def _update_competition_dict(self, competition_dict):
+        """method for updating dict for one competition
+        (league/tournament)
+        """
+        competition_dict_new = competition_dict.copy()
+        for year_key in list(competition_dict_new.keys()):
+            year_dict = competition_dict_new[year_key]
+            year_dict_new = self._update_year_dict(year_dict=year_dict)
+            competition_dict_new[year_key] = year_dict_new
+        return competition_dict_new
+
+    def _update_year_dict(self, year_dict):
+        """method for updating dict for one season"""
+
+        new_year_dict = year_dict.copy()
+        for league_key in list(new_year_dict.keys()):
+            league_dict = new_year_dict[league_key]
+            league_dict_new = self._update_league_dict(league_dict=league_dict)
+            new_year_dict[league_key] = league_dict_new
+        return new_year_dict
+
+    def _update_league_dict(self, league_dict):
+        """method for updating dict for one league"""
+        new_league_dict = league_dict.copy()
+        if new_league_dict[LEAGUE_URL] is not None:
+            league_id = re.findall(LEAGUE_UID_REGEX, 
+                                   new_league_dict[LEAGUE_URL])[0]
+        else:
+            league_id = None
+        new_league_dict[LEAGUE_UID] = league_id
+        for team_key in list(new_league_dict.keys()):
+            if team_key not in [LEAGUE_URL, LEAGUE_UID]:
+                team_dict = new_league_dict[team_key]
+                new_team_dict = self._update_team_dict(team_dict=team_dict)
+                new_league_dict[team_key] = new_team_dict
+        return new_league_dict
+
+    def _update_team_dict(self, team_dict):
+        """method for updating dict for one team"""
+        new_team_dict = team_dict.copy()
+        team_id = re.findall(
+            TEAM_UID_REGEX, new_team_dict[TEAM_URL])[0]
+        new_team_dict[TEAM_UID] = int(team_id)
+        new_team_dict[LEADERSHIP] = self.update_leadership(
+                new_team_dict[LEADERSHIP])
+        for season_type in [REGULAR_SEASON, PLAY_OFF]:
+            if season_type not in new_team_dict:
+                continue
+            list_season = new_team_dict[season_type]
+            if list_season is None:
+                continue
+            season_dict = SeasonDict(is_goalie=self.is_goalie)
+            stat_dict = season_dict.update_season(season_list=list_season)
+            new_team_dict[season_type] = stat_dict
+        return new_team_dict
+
+    def update_leadership(self, lead_value):
+        """get rid of quotation marks around A or C letter"""
+
+        if lead_value is None:
+            return None
+        new_lead_value = re.findall(
+            UpdatePlayerStats.CAPTAINCY_REGEX, lead_value)[0]
+        return new_lead_value
+
+
+class SeasonDict():
+
+    PLAYER_ATT = [GP, G, A, TP, PIM, PLUS_MINUS]
+    GOALIE_ATT = [GP, GD, GAA,
+                  SVP, GA, SVS, SO, WLT, TOI]
+    WLT = [G_W, G_L, G_T]
+
+    def __init__(self, is_goalie):
+        self.is_goalie = is_goalie
+
+
+    def update_season(self, season_list):
+        """wraper method for updating season stats of a player"""
+
+        if self.is_goalie == True:
+            n_att = len(SeasonDict.GOALIE_ATT)
+        else:
+            n_att = len(SeasonDict.PLAYER_ATT)
+        if (
+            set(season_list) == {"-"} 
+            or set(season_list) == {"-", ""} 
+            or set(season_list) == set()
+            ):
+            season_list = [None] * n_att
+        if self.is_goalie == True:
+            dict_stats = self._update_season_goalkeeper(
+                season_list=season_list)
+        else:
+            dict_stats = self._update_season_player(
+                season_list=season_list)
+        return dict_stats
+
+
+    def _update_season_goalkeeper(self, season_list):
+        """update seasonal stat for goalkeeper
+        two attributes SVP - save percentage and GAA - goal against average are float number, otherwise all statistics are integers 
+        """
+
+        dict_stats = {}
+        for ind in range(len(season_list)):
+            if season_list[ind] == "-":
+                    season_list[ind] = None
+            if ind == 7:
+                dic_wlt = self._w_l_t_to_dict(season_list[ind])
+                dict_stats = {**dict_stats, **dic_wlt}
+            elif season_list[ind] == None:
+                dict_stats[SeasonDict.GOALIE_ATT[ind]
+                           ] = season_list[ind]
+            elif ind in [2, 3]:
+                stat = float(season_list[ind])
+                dict_stats[SeasonDict.GOALIE_ATT[ind]] = stat
+            else:
+                stat = re.sub(" ", "", season_list[ind])
+                stat = int(stat)
+                dict_stats[SeasonDict.GOALIE_ATT[ind]] = stat
+        return dict_stats
+
+    def _update_season_player(self, season_list):
+        """method for updating stats of player"""
+        dict_stats = {}
+        for ind in range(len(season_list)):
+            if season_list[ind] == "-" or season_list[ind] is None:
+                stat = None
+            else:
+                stat = int(stat)
+            dict_stats[SeasonDict.PLAYER_ATT[ind]] = stat
+        return dict_stats
+
+    def _w_l_t_to_dict(self, wlt_string):
+        """method for updating stats of goalie"""
+
+        if wlt_string is None:
+            return {G_W: None, G_L: None, G_T: None}
+        dic_wlt = {}
+        stat_list = wlt_string.split("-")
+        for ind in range(len(SeasonDict.WLT)):
+            dic_wlt[SeasonDict.WLT[ind]] = int(stat_list[ind])
+        return dic_wlt
 

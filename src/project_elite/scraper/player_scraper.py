@@ -41,14 +41,16 @@ class PlayerScraper:
             Arguments: years - 
             """
         dict_player = {}
+        dict_player[PLAYER_UID] = re.findall(PLAYER_UID_REGEX,
+                                         self.url)[0]
         gi_o = PlayerGeneralInfo(selector=self.selector)
         dict_player[GENERAL_INFO] = gi_o.get_general_info()
         a_o = PlayerAchievements(selector=self.selector)
+        f_r_o = FamilyRelations(selector=self.selector)
+        dict_player[RELATIONS] = f_r_o._get_relation_dict()
         dict_player[ACHIEVEMENTS] = a_o.get_achievements()
         s_o = PlayerStats(selector=self.selector)
         dict_player[SEASON_STATS] = s_o.get_all_stats(years=years)
-        dict_player[PLAYER_UID] = re.findall(PLAYER_UID_REGEX,
-                                         self.url)[0]
         return dict_player
 
 
@@ -75,7 +77,7 @@ class PlayerGeneralInfo():
         "Age": AGE,
         "Place of Birth": BIRTH_PLACE_STRING, 
         "Nation": NATIONALITY, 
-        "Position": LONG_NAME,
+        "Position": POSITION,
         "Height": HEIGHT,
         "Weight": WEIGHT,
         "Shoots": SHOOTS,
@@ -96,8 +98,6 @@ class PlayerGeneralInfo():
     def get_general_info(self):
         dict_gi = self._get_info_wraper()
         dict_gi[PLAYER_NAME] = self._get_name()
-        f_r_o = FamilyRelations(selector=self.selector)
-        dict_gi[RELATIONS] = f_r_o._get_relation_dict()
         return dict_gi
 
     def _get_name(self):
@@ -150,6 +150,8 @@ class FamilyRelations():
 
     RELATION_REGEX = ("($|son|grandson|brother|father|uncle|"
                       "cousin|paternal\sgrandfather|maternal\sgrandfather|" "nephew|great\smaternal\sgrandfather|" "great\spaternal\sgrandfather|brother\-in\-law|" "brothers\-in\-law|son\-in\-law|sons\-in\-law|" "fathers\-in\-law|father\-in\-law|uncle\-in\-law|" "uncles\-in\-law|cousin\-in\-law|cousins\-in\-law|" "great\snephew|great\suncle)s{0,1}")
+    
+    URL_UID_REGEX = "player\=([0-9]+)"
 
     def __init__(self, selector):
         self.selector = selector
@@ -190,8 +192,7 @@ class FamilyRelations():
                                   player_string_dict[relation])
             if list_uid == []:
                 continue
-            relations_uid[relation] = re.findall("\=([0-9]+)",
-                                                 player_string_dict[relation])
+            relations_uid[relation] = list_uid
         return relations_uid
 
 
@@ -240,7 +241,6 @@ class PlayerStats():
             if years is not None:
                 if list_years[ind - 1] not in years:
                     continue
-            print(season)
             if season not in dict_stats:
                 dict_stats[season] = {}
             dict_stats[season] = self._update_season_stats(
@@ -258,12 +258,8 @@ class PlayerStats():
                         + PlayerStats.PATHS["stats_table_r"])
         row_o = OneRowStat(path=path_season, selector=self.selector)
         sub_dict = row_o._get_stat_dictionary()
-        print("sub_dict:")
-        print(sub_dict)
         new_season_dict = self._merge_season_dict(
                 old_dict=season_dict, new_dict=sub_dict)
-        print("update_season_stats: ")
-        print(new_season_dict)
         return new_season_dict
 
     def _merge_season_dict(self, old_dict, new_dict):
@@ -272,8 +268,6 @@ class PlayerStats():
         """
 
         new_merged_dict = old_dict.copy()
-        print("old_dict:")
-        print(old_dict)
         for league in new_dict:
             if  league in old_dict:
                 new_merged_dict[league] = {
@@ -281,8 +275,6 @@ class PlayerStats():
                 }
             else:
                 new_merged_dict[league] = new_dict[league]
-        print("new merged dict:")
-        print(new_merged_dict)
         return new_merged_dict
         
 
@@ -451,7 +443,8 @@ class PlayerAchievements():
         path = (PlayerAchievements.PATHS["achievements_l"]
                     + str(ind)
                     + PlayerAchievements.PATHS["achievements_r"])
-        award = self.selector.xpath(path).getall()
-        return award
+        awards = self.selector.xpath(path).getall()
+        awards = [award.strip() for award in awards]
+        return awards
 
 

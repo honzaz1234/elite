@@ -1,11 +1,9 @@
 #regexes
-PLAYER_UID_REGEX = "player\/([0-9]+)\/"
 LEAGUE_UID_REGEX = "league\/(.+)$"
 TEAM_UID_REGEX = "team\/([0-9]+)\/"
+PLAYER_UID_REGEX = "player\/([0-9]+)\/"
 
-
-
-
+#common key names
 GENERAL_INFO = "general_info"
 UID = "uid"
 
