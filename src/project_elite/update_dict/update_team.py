@@ -1,175 +1,176 @@
 import re
 
+from constants import * 
+
 
 class UpdateTeamDict():
 
-    NA_REGION_ABB = {
-        "USA": ["NJ", "CA", "AZ", "OH", "MI", 
-                "NY", "NE", "WI", "MA", "FL", "CO", "SC", "MO", "MN", "PA", "TX", "CT", "IN", "WA", "IL", "ME", "AL", "OK", "UT", "OR", "NC", "RI", "NH", "VA", "AK", "IA", "MS", "SD", "ND", "MD",	"DE", "NV", "MT", "TN", "VT", "DC", "GA", "ID", "KY", "LA"],
-        "CAN": ["AB", "BC", "MB", "NB", "NL", "NS", "NT", "ON", "ONT", 
-                "PE", "QC", "SK", "YT", "NU", "WV"]}
-    INT_KEYS = ["founded", "construction_year", "capacity"]
-    GI_KEYS = ["short_name", "plays_in", "full_name",
-               "team_colours", "founded", "active", "u_id", "place"]
-    SI_KEYS = ["construction_year", "capacity",
-               "construction_year", "arena_name", "place"]
 
+    INT_KEYS = [YEAR_FOUNDED, CAPACITY, CONSTRUCTION_YEAR]
+    RETIRED_NUM_REGEX = "#([0-9]+)"
+    
     def __init__(self):
         pass
 
-    def update_place(self, place_name):
-        dict_place = {}
-        if place_name is None:
-            dict_place["country"] = None
-            dict_place["region"] = None
-            dict_place["place"] = None
-            return dict_place
-        if "," not in place_name:
-            dict_place["country"] = None
-            dict_place["region"] = None
-            dict_place["place"] = None
-            return dict_place
-        list_place = place_name.split(",")
-        dict_place["place"] = list_place[0]
-        if len(list_place) == 2 and len(list_place[1]) == 2:
-            if list_place[1] in UpdateTeamDict.NA_REGION_ABB["USA"]:
-                dict_place["region"] = list_place[1].strip()
-                dict_place["country"] = "USA"
-            elif list_place[1] in UpdateTeamDict.NA_REGION_ABB["CAN"]:
-                dict_place["region"] = list_place[1].strip()
-                dict_place["country"] = "CAN"
-            else:
-                dict_place["country"] = list_place[1].strip()
-                dict_place["region"] = None
+    def update_team_dict(self, dict):
+        """wraper function for updating team dict in order to prepared it for insertion into the database
+        """
 
+        new_dict = dict.copy()
+        new_dict[GENERAL_INFO] = self._update_general_info(
+            gi_dict=new_dict[GENERAL_INFO])
+        new_dict[HISTORIC_NAMES] = self._update_historic_name(
+            dict_titles=new_dict[HISTORIC_NAMES], 
+            short_name=new_dict[GENERAL_INFO][SHORT_NAME])
+        new_dict[STADIUM_INFO] = self._update_stadium_info(
+            si_dict=new_dict[STADIUM_INFO])
+        new_dict[RETIRED_NUMBERS] = self._update_retired_numbers(
+            num_dict=new_dict[RETIRED_NUMBERS])
+        new_dict[AFFILIATED_TEAMS] = self.update_urls(
+            list_url=new_dict[AFFILIATED_TEAMS], regex=TEAM_UID_REGEX)
+        return new_dict
+        
+    def _update_general_info(self, gi_dict):
+        """wraper method for updating general info dict in order to prepare for insertion into db
+        """
+
+        gi_dict_new = gi_dict.copy()
+        gi_dict_new[PLACE_DICT] = self._create_place_birth_dict(
+            place_string=gi_dict_new[PLACE])
+        gi_dict_new[TEAM_COLOURS] = self._update_colours(
+            colour_string=gi_dict_new[TEAM_COLOURS])
+        gi_dict_new[ACTIVE] = self._update_status(
+            leagues=gi_dict_new[PLAYS_IN])
+        gi_dict_new = self._update_missing_values(
+            dict=gi_dict_new)
+        gi_dict_new = self._update_numbers(dict=gi_dict_new)
+        del gi_dict_new[PLACE]
+        return gi_dict_new
+    
+    def _update_stadium_info(self, si_dict):
+        """wraper method for updating stadium info dict in order to prepare for insertion into db"""
+
+
+        si_dict_new = si_dict.copy()
+        si_dict_new[PLACE_DICT] = self._create_place_birth_dict(
+            place_string=si_dict_new[LOCATION])
+        si_dict_new = self._update_missing_values(dict=si_dict_new)
+        si_dict_new = self._update_numbers(dict=si_dict_new)
+        del si_dict_new[LOCATION]
+        return si_dict_new
+        
+
+    def _create_place_birth_dict(self, place_string):
+        """place of birth string scraped from player webpage consists of 2 or 3 values; town and country or town region and country in case Canada or USA; the ranking of these 3 values is always the same:
+        on the first position is place, followed by region and finally country all separated by , 
+        on a rare occasions, only a name of (US or CAN) region is mentioned with the country being explicitly stated
+        """
+
+        dict_place = {}
+        no_val = False
+        if place_string is None:
+            no_val = True
+        elif "," not in place_string:
+            no_val = True
+        if no_val == True:
+            dict_place[COUNTRY] = None
+            dict_place[REGION] = None
+            dict_place[PLACE] = None
+            return dict_place
+        list_place = place_string.split(",")
+        dict_place[PLACE] = list_place[0]
+        if len(list_place) == 2 and len(list_place[1]) == 2:
+            if list_place[1] in NA_REGION_ABB["USA"]:
+                dict_place[REGION] = list_place[1].strip()
+                dict_place[COUNTRY] = "USA"
+            elif list_place[1] in NA_REGION_ABB["CAN"]:
+                dict_place[REGION] = list_place[1].strip()
+                dict_place[COUNTRY] = "CAN"
+            else:
+                dict_place[COUNTRY] = list_place[1].strip()
+                dict_place[REGION] = None
         elif len(list_place) == 2:
-            dict_place["country"] = list_place[1].strip()
-            dict_place["region"] = None
+            dict_place[COUNTRY] = list_place[1].strip()
+            dict_place[REGION] = None
         elif len(list_place) == 3:
-            dict_place["country"] = list_place[2].strip()
-            dict_place["region"] = list_place[1].strip()
+            dict_place[COUNTRY] = list_place[2].strip()
+            dict_place[REGION] = list_place[1].strip()
         return dict_place
 
-    def update_key_names(self, dict_info):
-        for key in ["general_info", "stadium_info"]:
-            for subkey in list(dict_info[key].keys()):
-                new_key = subkey.strip()
-                new_key = new_key.lower()
-                new_key = re.sub(" ", "_", new_key)
-                if new_key != subkey:
-                    dict_info[key][new_key] = dict_info[key][subkey]
-                    del dict_info[key][subkey]
-        return dict_info
-
     def update_urls(self, list_url, regex):
+        """creates dict from list where keys are regex matches and values are original values
+        """
+
         dict_url = {}
         for url in list_url:
             u_id = re.findall(regex, url)[0]
             dict_url[u_id] = url
         return dict_url
 
-    def update_numbers(self, dict_info):
-        for key in dict_info:
-            if key == "u_id":
-                continue
-            for subkey in dict_info[key]:
-                if subkey in UpdateTeamDict.INT_KEYS:
-                    if dict_info[key][subkey] is None:
-                        continue
-                    if dict_info[key][subkey] == "-":
-                        dict_info[key][subkey] = None
-                    else:
-                        new_int = (re.sub("\s", "", dict_info[key][subkey]))
-                        new_int = re.findall("[0-9]+", new_int)
-                        if new_int != []:
-                            new_int = int(new_int[0])
-                        else:
-                            new_int = None
-                        dict_info[key][subkey] = new_int
-        return dict_info
+    def _update_numbers(self, dict):
+        """method for updating string integers to integers"""
 
-    def update_colours(self, colour_string):
+        for key in dict:
+            if key in UpdateTeamDict.INT_KEYS:
+                if dict[key] is None:
+                    continue
+                else:
+                    new_int = (re.sub("\s", "", dict[key]))
+                    new_int = re.findall("[0-9]+", new_int)
+                    if new_int != []:
+                        new_int = int(new_int[0])
+                    else:
+                        new_int = None
+                    dict[key] = new_int
+        return dict
+
+    def _update_colours(self, colour_string):
+        """method for creating list of colours from string"""
+
         if colour_string == None:
             return []
         colour_list = colour_string.split(" + ")
         return colour_list
 
-    def update_status(self, league_names):
-        if league_names == "-":
+    def _update_status(self, leagues):
+        """method for asserting if team is active (participates in some competition or not)
+        """
+
+        if leagues == NA:
             return 0
         else:
             return 1
 
-    def update_NA(self, dict):
+    def _update_missing_values(self, dict):
+        """method for updating values equal to - to None"""
         for key in dict:
-            if dict[key] == "-":
+            if dict[key] == NA:
                 dict[key] = None
         return dict
 
-    def update_historic_name(self, dict_info):
-        hist_names_dict = dict_info["titles"]
-        if len(hist_names_dict) == 1:
-            for key in list(hist_names_dict.keys()):
-                if key == "-":
-                    hist_names_dict[dict_info["general_info"]
-                                    ["short_name"]] = hist_names_dict[key]
-                    del hist_names_dict[key]
-        dict_info["titles"] = hist_names_dict
-        return dict_info
+    def _update_historic_name(self, dict_titles, short_name):
+        """in case team had only one name throught the history, the name is not mentioned in the table with historical standings from which the names are taken; in that case, the name is set to the short name from general info dict
+        """
 
-    def update_team_url(self, list_url):
-        new_list = []
-        for url in list_url:
-            u_id = re.findall("team\/([0-9]+)\/", url)[0]
-            new_list.append(u_id)
-        return new_list
+        dict_titles_new = dict_titles.copy()
+        if len(dict_titles_new) == 1:
+            for key in list(dict_titles_new.keys()):
+                if key == NA:
+                    dict_titles_new[short_name] = dict_titles_new[key]
+                    del dict_titles_new[key]
+        return dict_titles_new
 
-    def update_retired_numbers(self, player_dict):
-        for url_key in list(player_dict.keys()):
-            u_id = int(re.findall("player\/([0-9]+)\/", url_key)[0])
-            new_number = int(re.findall("#([0-9]+)", player_dict[url_key])[0])
+    def _update_retired_numbers(self, num_dict):
+        """method for creating dict where keys are players uids and values are list where on the first position is the number and on the second position is player uid
+        """
+
+        new_num_dict = num_dict.copy()
+        for url_key in list(new_num_dict.keys()):
+            u_id = int(re.findall(PLAYER_UID_REGEX, url_key)[0])
+            new_number = int(re.findall(
+                UpdateTeamDict.RETIRED_NUM_REGEX, new_num_dict[url_key])[0])
             new_dict = [new_number, url_key]
-            player_dict[u_id] = new_dict
-            del player_dict[url_key]
-        return player_dict
+            new_num_dict[u_id] = new_dict
+            del new_num_dict[url_key]
+        return new_num_dict
 
-    def update_info(self, info_dict, list_keys):
-        for key in list(info_dict.keys()):
-            if key not in list_keys:
-                del info_dict[key]
-        for key in list_keys:
-            if key not in info_dict:
-                info_dict[key] = None
-            elif type(info_dict[key]) == str:
-                info_dict[key] = info_dict[key].strip()
-        return info_dict
-
-    def update_team_dict_wrap(self, dict_info):
-        dict_info = self.update_key_names(dict_info)
-        for key in ["stadium_info", "general_info"]:
-            if "town" in dict_info[key]:
-                subkey = "town"
-            elif "place" in dict_info[key]:
-                subkey = "place"
-            else:
-                continue
-            place_dict = self.update_place(place_name=dict_info[key][subkey])
-            dict_info[key]["place"] = place_dict
-        dict_info["affiliated_teams"] = self.update_urls(
-            list_url=dict_info["affiliated_teams"], regex="team\/([0-9]+)")
-        dict_info = self.update_NA(dict_info)
-        dict_info = self.update_numbers(dict_info=dict_info)
-        dict_info["general_info"]["active"] = self.update_status(
-            league_names=dict_info["general_info"]["plays_in"])
-        dict_info = self.update_historic_name(dict_info)
-        dict_info["retired_numbers"] = self.update_retired_numbers(
-            player_dict=dict_info["retired_numbers"])
-        dict_info["general_info"] = self.update_info(
-            info_dict=dict_info["general_info"], 
-            list_keys=UpdateTeamDict.GI_KEYS)
-        dict_info["stadium_info"] = self.update_info(
-            info_dict=dict_info["stadium_info"], 
-            list_keys=UpdateTeamDict.SI_KEYS)
-        dict_info["colour_list"] = self.update_colours(
-            colour_string=dict_info["general_info"]["team_colours"])
-        return dict_info

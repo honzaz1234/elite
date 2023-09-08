@@ -211,26 +211,42 @@ class UpdatePlayerInfo():
                                     .NHL_UID[draft_dict[DRAFT_TEAM]])
             return draft_dict
     
-    def _create_place_birth_dict(self, birth_string):
+    def _create_place_birth_dict(self, place_string):
         """place of birth string scraped from player webpage consists of 2 or 3 values; town and country or town region and country in case Canada or USA; the ranking of these 3 values is always the same:
         on the first position is place, followed by region and finally country all separated by ,
+        on a rare occasions, only a name of (US or CAN) region is mentioned with the country being explicitly stated
         """
 
-        birthplace_dict = {}
-        if  "," not in birth_string:
-            birthplace_dict[BIRTH_COUNTRY] = None
-            birthplace_dict[BIRTH_REGION] = None
-            birthplace_dict[BIRTH_PLACE] = None
-            return birthplace_dict
-        list_place = birth_string.split(", ")
-        birthplace_dict[BIRTH_PLACE] = list_place[0]
-        if len(list_place) == 2:
-            birthplace_dict[BIRTH_COUNTRY] = list_place[1]
-            birthplace_dict[BIRTH_REGION] = None
-        if len(list_place) == 3:
-            birthplace_dict[BIRTH_COUNTRY] = list_place[2]
-            birthplace_dict[BIRTH_REGION] = list_place[1]
-        return birthplace_dict
+        dict_place = {}
+        no_val = False
+        if place_string is None:
+            no_val = True
+        elif "," not in place_string:
+            no_val = True
+        if no_val == True:
+            dict_place[COUNTRY] = None
+            dict_place[REGION] = None
+            dict_place[PLACE] = None
+            return dict_place
+        list_place = place_string.split(",")
+        dict_place[PLACE] = list_place[0]
+        if len(list_place) == 2 and len(list_place[1]) == 2:
+            if list_place[1] in NA_REGION_ABB["USA"]:
+                dict_place[REGION] = list_place[1].strip()
+                dict_place[COUNTRY] = "USA"
+            elif list_place[1] in NA_REGION_ABB["CAN"]:
+                dict_place[REGION] = list_place[1].strip()
+                dict_place[COUNTRY] = "CAN"
+            else:
+                dict_place[COUNTRY] = list_place[1].strip()
+                dict_place[REGION] = None
+        elif len(list_place) == 2:
+            dict_place[COUNTRY] = list_place[1].strip()
+            dict_place[REGION] = None
+        elif len(list_place) == 3:
+            dict_place[COUNTRY] = list_place[2].strip()
+            dict_place[REGION] = list_place[1].strip()
+        return dict_place
 
     def _update_cap_hit(self, cap_hit):
         """update player cap hit to number"""
@@ -296,7 +312,7 @@ class UpdatePlayerInfo():
 
         if age == None:
             return None
-        elif age == "-" or age == "PREMIUM":
+        elif age == NA or age == "PREMIUM":
             age = None
         else:
             return int(age)
@@ -319,7 +335,7 @@ class UpdatePlayerInfo():
             draft_list=info_dict[DRAFT_LIST])
         info_dict_updated[DRAFTS] = self._create_draft_info_dict(
             draft_list=info_dict[DRAFT_LIST])
-        info_dict_updated[BIRTH_PLACE_DICT] = self._create_place_birth_dict(
+        info_dict_updated[PLACE_DICT] = self._create_place_birth_dict(
             birth_string=info_dict[BIRTH_PLACE_STRING])
         info_dict_updated[CAP_HIT] = self._update_cap_hit(
             cap_hit=info_dict[CAP_HIT])
@@ -337,7 +353,7 @@ class UpdatePlayerInfo():
         """update missing values in dict to None"""
 
         for key in info_dict:
-            if info_dict[key] == "-" or info_dict[key] == "":
+            if info_dict[key] == NA or info_dict[key] == "":
                 info_dict[key] = None
         return info_dict
     
@@ -494,8 +510,8 @@ class SeasonDict():
         else:
             n_att = len(SeasonDict.PLAYER_ATT)
         if (
-            set(season_list) == {"-"} 
-            or set(season_list) == {"-", ""} 
+            set(season_list) == {NA} 
+            or set(season_list) == {NA, ""} 
             or set(season_list) == set()
             ):
             season_list = [None] * n_att
@@ -515,7 +531,7 @@ class SeasonDict():
 
         dict_stats = {}
         for ind in range(len(season_list)):
-            if season_list[ind] == "-":
+            if season_list[ind] == NA:
                     season_list[ind] = None
             if ind == 7:
                 dic_wlt = self._w_l_t_to_dict(season_list[ind])
@@ -536,7 +552,7 @@ class SeasonDict():
         """method for updating stats of player"""
         dict_stats = {}
         for ind in range(len(season_list)):
-            if season_list[ind] == "-" or season_list[ind] is None:
+            if season_list[ind] == NA or season_list[ind] is None:
                 stat = None
             else:
                 stat = int(stat)

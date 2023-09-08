@@ -1,3 +1,5 @@
+NA = "-"
+
 #regexes
 LEAGUE_UID_REGEX = "league\/(.+)$"
 TEAM_UID_REGEX = "team\/([0-9]+)\/"
@@ -6,13 +8,20 @@ PLAYER_UID_REGEX = "player\/([0-9]+)\/"
 #common key names
 GENERAL_INFO = "general_info"
 UID = "uid"
+PLAYER_UID = "player_uid"
+TEAM_UID = "team_uid"
+LEAGUE_UID = "league_uid"
+
+##places
+COUNTRY = "country"
+REGION = "region"
+TOWN = "town"
+PLACE_DICT = "place_dict"
 
 # player dicitonary keys
 ACHIEVEMENTS = "achievements"
 SEASON_STATS = "season_stats"
-PLAYER_UID = "player_uid"
-TEAM_UID = "team_uid"
-LEAGUE_UID = "league_uid"
+
 
 ## general info
 PLAYER_NAME = "player_name"
@@ -20,7 +29,6 @@ RELATIONS = "relations"
 BIRTH_DATE = "birth_date"
 AGE = "age"
 BIRTH_PLACE_STRING = "birth_string"
-BIRTH_PLACE_DICT = "birth_place_dict"
 NATIONALITY = "nationality"
 POSITION = "position"
 HEIGHT = "height"
@@ -42,11 +50,6 @@ DRAFT_YEAR = "draft_year"
 DRAFT_ROUND = "draft_round"
 DRAFT_POSITION = "draft_position"
 DRAFT_TEAM = "draft_team"
-
-##birthplace dict
-BIRTH_COUNTRY = "birth_country"
-BIRTH_REGION = "birth_region"
-BIRTH_PLACE = "birth_place"
 
 ##season stats
 TEAM_URL = "team_url"
@@ -88,10 +91,12 @@ HISTORIC_NAMES = "titles"
 ## general info
 PLAYS_IN = "plays_in"
 TEAM_COLOURS = "team_colours"
+COLOUR_LIST = "colour_list"
 PLACE = "place"
 YEAR_FOUNDED = "year_founded"
 LONG_NAME = "long_name"
 SHORT_NAME = "short_name"
+ACTIVE = "active"
 ##stadium info
 ARENA_NAME = "arena_name"
 LOCATION = "location"
@@ -121,3 +126,9 @@ POSTSEASON = "postseason"
 
 
 
+
+NA_REGION_ABB = {
+    "USA": ["NJ", "CA", "AZ", "OH", "MI", 
+            "NY", "NE", "WI", "MA", "FL", "CO", "SC", "MO", "MN", "PA", "TX", "CT", "IN", "WA", "IL", "ME", "AL", "OK", "UT", "OR", "NC", "RI", "NH", "VA", "AK", "IA", "MS", "SD", "ND", "MD",	"DE", "NV", "MT", "TN", "VT", "DC", "GA", "ID", "KY", "LA"],
+    "CAN": ["AB", "BC", "MB", "NB", "NL", "NS", "NT", "ON", "ONT", 
+            "PE", "QC", "SK", "YT", "NU", "WV"]}

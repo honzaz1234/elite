@@ -75,12 +75,13 @@ class TeamScraper():
             list_info=TeamScraper.INFO_NAMES,
             key_left="gi_left", key_right="gi_right")
         gi_dict[SHORT_NAME] = self._get_short_name()
-        gi_dict[UID] = int(re.findall("team\/([0-9]+)\/",
+        gi_dict[TEAM_UID] = int(re.findall(TEAM_UID_REGEX,
                                         self.url)[0])
         return gi_dict
            
     def get_dict_info(self, list_info, key_left, key_right):
-        """wrapper method for downloading all of the general info """
+        """wrapper method for downloading all of the general info"""
+
         dict_ = {}
         for info in list_info:
             dict_key = TeamScraper.WEB_MAPPING[info]
@@ -89,7 +90,8 @@ class TeamScraper():
         return dict_
 
     def _get_short_name(self):
-        """wrapper method for downloading short name of team - must be always present on the webpage"""
+        """wrapper method for downloading short name of team - must be always present on the webpage
+        """
 
         short_name = (self.selector
                       .xpath(TeamScraper.INFO_PATHS["short_name"])
@@ -123,7 +125,8 @@ class TeamScraper():
         return list_at
 
     def get_retired_numbers(self):
-        """returns dicitonary where keys are urls of pages of players which number was retired for the given team and values are the number that was retired"""
+        """returns dicitonary where keys are urls of pages of players which number was retired for the given team and values are the number that was retired
+        """
 
         dict_num = {}
         path_url = TeamScraper.OTHER_PATHS["retired_num"] + "@href"
@@ -158,7 +161,6 @@ class HistoricNames():
         "name_right": "]/following-sibling::tr)"
     }
 
-
     def __init__(self, selector):
         self.selector = selector
         pass
@@ -186,7 +188,6 @@ class HistoricNames():
 
         names = self.selector.xpath(HistoricNames.HN_PATHS["titles"]).getall()
         names = [name.strip() for name in names]
-        print(names)
         return names
     
     def get_title_position(self, n, n_lines):
@@ -226,8 +227,6 @@ class HistoricNames():
 
         n_names = self.get_num_names()
         n_lines = self.get_num_lines()
-        print(n_names)
-        print(n_lines)
         names_positions = self.get_title_positions(
             n_lines=n_lines, n_names=n_names)
         if names_positions == []:
@@ -245,7 +244,6 @@ class HistoricNames():
                 if row_ind in names_positions:
                     break
                 season = self.get_season(n=row_ind)
-                print(season)
                 if season != []:
                     list_years.append(season[0])
             if list_years == []:

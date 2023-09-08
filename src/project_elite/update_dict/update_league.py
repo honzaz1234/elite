@@ -4,8 +4,7 @@ from constants import *
 
 class UpdateLeagueDict():
 
-    NOT_INT = ["postseason", "team", "url"]
-    NA = "-"
+    NOT_INT = [POSTSEASON, TEAM, TEAM_URL]
 
     def __init__(self):
         pass
@@ -37,5 +36,5 @@ class UpdateLeagueDict():
             elif stat == "url":
                 u_id = re.findall(
                     TEAM_UID_REGEX, row_dict[stat])[0]
-                row_dict["u_id"] = u_id
+                row_dict[TEAM_UID] = u_id
         return row_dict
