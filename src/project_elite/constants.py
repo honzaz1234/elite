@@ -58,6 +58,12 @@ REGULAR_SEASON = "regular_season"
 PLAY_OFF = "play_off"
 LEADERSHIP = "leadership"
 
+## input one season stats dict
+PLAYER_ID = "player_id"
+SEASON_NAME = "season_name"
+LEAGUE_NAME = "league_name"
+IS_GOALIE = "is_goalie"
+
 ##stat attributes
 ###common
 GP = "gp"
@@ -79,6 +85,8 @@ TOI = "toi"
 G_W = "w"
 G_L = "l"
 G_T = "t"
+
+## input one season dict
 
 
 
@@ -102,6 +110,8 @@ ARENA_NAME = "arena_name"
 LOCATION = "location"
 CAPACITY = "capacity"
 CONSTRUCTION_YEAR = "construction_year"
+##input dict
+STADIUM_ID = "stadium_id"
 
 #league
 ##genral info
@@ -123,6 +133,10 @@ GOALS_AGAINST = "ga"
 PLUS_MINUS = "plu_minus"
 TOTAL_POINTS = "tp"
 POSTSEASON = "postseason"
+
+#input league_dict
+SECTION_TYPE = "section_type"
+LEAGUE_ID = "league_id"
 
 
 
