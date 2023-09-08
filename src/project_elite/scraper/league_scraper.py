@@ -18,7 +18,6 @@ class LeagueScrapper():
                      "/text()"
     }
 
-    UID_REGEX = "league\/(.+)"
     SEASON_URL_REGEX = "standings/(.+)"
 
     def __init__(self, url):
@@ -42,7 +41,7 @@ class LeagueScrapper():
     def _get_uid(self):
         """method for accessing uid of league from url"""
 
-        u_id = re.findall(LeagueScrapper.UID_REGEX, self.url)[0]
+        u_id = re.findall(LEAGUE_UID_REGEX, self.url)[0]
         return u_id
 
     def get_name(self):
