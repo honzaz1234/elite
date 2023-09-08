@@ -152,7 +152,7 @@ class LeagueSeasonScraper():
         """method for downloading one row from season stadndings table"""
 
         dict_row = {}
-        dict_row["url"] = self.get_team_url(
+        dict_row[TEAM_URL] = self.get_team_url(
             path_section=path_section, row_ind=row_ind)
         row_stats = self.get_row_stats(path_section=path_section, row_ind=row_ind)
         for ind in range(len(row_stats)):

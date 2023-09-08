@@ -441,7 +441,7 @@ class LeagueUrlDownload():
     def create_season_string(self, year):
 
         """creates season from year
-            2011 => 2011-2012"""
+            2011 => 2011-2012 etc."""
 
         year_plus = year + 1
         season_string = str(year) + "-" +  str(year_plus)
