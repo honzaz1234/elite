@@ -35,7 +35,7 @@ class UpdateTeamDict():
         """
 
         gi_dict_new = gi_dict.copy()
-        gi_dict_new[PLACE_DICT] = self._create_place_birth_dict(
+        gi_dict_new[PLACE_DICT] = self._create_place_dict(
             place_string=gi_dict_new[PLACE])
         gi_dict_new[TEAM_COLOURS] = self._update_colours(
             colour_string=gi_dict_new[TEAM_COLOURS])
@@ -60,7 +60,7 @@ class UpdateTeamDict():
         return si_dict_new
         
 
-    def _create_place_birth_dict(self, place_string):
+    def _create_place_dict(self, place_string):
         """place of birth string scraped from player webpage consists of 2 or 3 values; town and country or town region and country in case Canada or USA; the ranking of these 3 values is always the same:
         on the first position is place, followed by region and finally country all separated by , 
         on a rare occasions, only a name of (US or CAN) region is mentioned with the country being explicitly stated

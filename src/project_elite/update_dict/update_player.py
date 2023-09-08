@@ -36,7 +36,6 @@ class UpdatePlayer:
         player_relation = UpdateRelations()
         new_dict[RELATIONS] = player_relation._update_relation_dict(
             relation_dict=new_dict[RELATIONS])
-        new_dict[PLAYER_UID] = int(new_dict[PLAYER_UID])
         return new_dict
     
 class UpdatePlayerInfo():
@@ -211,7 +210,7 @@ class UpdatePlayerInfo():
                                     .NHL_UID[draft_dict[DRAFT_TEAM]])
             return draft_dict
     
-    def _create_place_birth_dict(self, place_string):
+    def _create_place_dict(self, place_string):
         """place of birth string scraped from player webpage consists of 2 or 3 values; town and country or town region and country in case Canada or USA; the ranking of these 3 values is always the same:
         on the first position is place, followed by region and finally country all separated by ,
         on a rare occasions, only a name of (US or CAN) region is mentioned with the country being explicitly stated
@@ -322,31 +321,32 @@ class UpdatePlayerInfo():
 
         info_dict_updated = info_dict.copy()
         info_dict_updated[ACTIVE] = self._update_status(
-            active=info_dict[ACTIVE], age=info_dict[AGE])
+            active=info_dict[ACTIVE], age=info_dict_updated[AGE])
         info_dict_updated[NATIONALITY] = self._update_nationality(
-            info_dict[NATIONALITY])
+            info_dict_updated[NATIONALITY])
         info_dict_updated[HEIGHT] = self._update_physical_char(
-            char=info_dict[HEIGHT], 
+            char=info_dict_updated[HEIGHT], 
             regex=UpdatePlayerInfo.HEIGHT_REGEX)
         info_dict_updated[WEIGHT] = self._update_physical_char(
-            char=info_dict[WEIGHT], 
+            char=info_dict_updated[WEIGHT], 
             regex=UpdatePlayerInfo.WEIGHT_REGEX)
         info_dict_updated[DRAFTED] = self._update_draft_status(
-            draft_list=info_dict[DRAFT_LIST])
+            draft_list=info_dict_updated[DRAFT_LIST])
         info_dict_updated[DRAFTS] = self._create_draft_info_dict(
-            draft_list=info_dict[DRAFT_LIST])
-        info_dict_updated[PLACE_DICT] = self._create_place_birth_dict(
-            birth_string=info_dict[BIRTH_PLACE_STRING])
+            draft_list=info_dict_updated[DRAFT_LIST])
+        info_dict_updated[PLACE_DICT] = self._create_place_dict(
+            place_string=info_dict_updated[BIRTH_PLACE_STRING])
         info_dict_updated[CAP_HIT] = self._update_cap_hit(
-            cap_hit=info_dict[CAP_HIT])
+            cap_hit=info_dict_updated[CAP_HIT])
         info_dict_updated[NHL_RIGHTS_UID] = self._get_nhl_rights_uid(
-            nhl_rights=info_dict[NHL_RIGHTS])
+            nhl_rights=info_dict_updated[NHL_RIGHTS])
         info_dict_updated[SIGNED_NHL] = self._get_nhl_signed_status(
-            nhl_rights=info_dict[NHL_RIGHTS])
+            nhl_rights=info_dict_updated[NHL_RIGHTS])
         info_dict_updated[BIRTH_DATE] = self._update_birth_date(
-            date_string=info_dict[BIRTH_DATE])
+            date_string=info_dict_updated[BIRTH_DATE])
         info_dict_updated[AGE] = self._update_age(
-            age=info_dict[AGE])
+            age=info_dict_updated[AGE])
+        info_dict_updated[PLAYER_UID] = int(info_dict_updated[PLAYER_UID])
         return info_dict_updated
     
     def _update_missing_values(self, info_dict):
@@ -555,7 +555,7 @@ class SeasonDict():
             if season_list[ind] == NA or season_list[ind] is None:
                 stat = None
             else:
-                stat = int(stat)
+                stat = int(season_list[ind])
             dict_stats[SeasonDict.PLAYER_ATT[ind]] = stat
         return dict_stats
 
