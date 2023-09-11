@@ -1,119 +1,144 @@
 import database.entry_data.input_data.input_data as input_data
 import time
 
+from constants import *
+
 class InputPlayerDict():
 
-    def __init__(self):
+    def __init__(self, is_goalie):
+        self.is_goalie = is_goalie
         pass
 
-    def input_player_dict(self, dict):
-        time_s = time.time()
-        input_data_o = input_data.InputData()
-        dict_info = dict["info"]
-        dict_info["u_id"] = dict["u_id"]
-        time_s_p = time.time()
-        player_id = input_data_o.input_player_data(dict_info=dict_info)
-        time_e_p = time.time()
-        print("Input Data in Player Table: " + str(time_e_p-time_s_p))
-        draft_dict = dict["info"]["draft_info"]
-        time_s_d = time.time()
+    def input_player_dict(self, player_dict):
+        player_id = self.input_player_info_dict(
+            info_dict=player_dict[GENERAL_INFO])
+        self.input_relation_dict(info_dict=player_dict[RELATIONS],
+                                 player_id=player_id)
+        self.input_stats_dict(stat_dict=player_dict[SEASON_STATS],
+                              player_id=player_id)
+        self.input_achievement_dict(achiev_dict=player_dict[ACHIEVEMENTS],
+                                    player_id=player_id)
+
+    def input_player_info_dict(self, info_dict):
+        player_info = InputPlayerInfo()
+        player_id = player_info.input_player(
+            info_dict=info_dict)
+        player_info.input_draft_dict(draft_dict=info_dict[DRAFTS])
+        player_info.input_nationalities(nation_list=info_dict[NATIONALITY])
+        return player_id
+
+
+    def input_relation_dict(self, relation_dict, player_id):
+        relation_info = InputRelationDict()
+        relation_info.input_relation_dict(
+            relation_dict=relation_dict, player_id=player_id)
+        
+    def input_stats_dict(self, stat_dict, player_id):
+        stats_info = InputStatsDict()
+        stats_info.input_stats_dict(stat_dict=stat_dict, 
+                                    player_id=player_id,
+                                    is_goalie=self.is_goalie)
+
+
+    def input_achievement_dict(self, achiev_dict, player_id):
+        achiev_info = InputAchievementDict()
+        achiev_info.input_achievements(
+            dict_achievements=achiev_dict, player_id=player_id)
+        
+class InputPlayerInfo():
+
+
+    def __init__(self):
+        self.input_data = input_data.InputData()
+        pass
+
+    def input_player(self, info_dict):
+        player_id = self.input_data.input_player_data(dict_info=info_dict)
+        return player_id
+
+    def input_draft_dict(self, draft_dict, player_id):
         for draft in draft_dict:
             one_draft = draft_dict[draft]
-            input_data_o.input_player_draft(player_id=player_id, draft_dict=one_draft)
-        nation_list = dict["info"]["nation"]
+            self.input_data.input_player_draft(player_id=player_id, draft_dict=one_draft)
+
+    def input_nationalities(self, nation_list, player_id):
         for nation in nation_list:
-            input_data_o.input_player_nation(player_id=player_id, nation=nation)
-        relation_dict = dict["info"]["relations"]
+            self.input_data.input_player_nation(player_id=player_id, nation=nation)
+
+
+class InputRelationDict():
+
+    def __init__(self):
+        self.input_data = input_data.InputData()
+        pass
+
+    def input_relation_dict(self, relation_dict, player_id):
         for relation in relation_dict:
             relation_list = relation_dict[relation]
             for u_id in relation_list:
-                input_data_o.input_player_relation(player_from_uid=u_id, player_to_id=player_id, relation=relation)
-        time_e_d = time.time()
-        print("Input Data in Draft Table: " + str(time_e_d-time_s_d))
-        dict_stats = dict["stats"]
-        if dict_info["position"] == "G":
-            is_goalie = True
-        else:
-            is_goalie=False
-        time_s_s = time.time()
-        self.input_stats_dict(player_id=player_id, stat_dict=dict_stats, is_goalie=is_goalie)
-        time_s_e = time.time()
-        print("Input Data in Stat Table: " + str(time_s_e-time_s_s))
-        dict_achievements = dict["achievements"]
-        time_s_a = time.time()
-        self.input_achievements(dict_achievements=dict_achievements, player_id=player_id)
-        time_s_e = time.time()
-        print("Input Data in achievement Table: " + str(time_s_e-time_s_a))
-        time_e = time.time()
-        print("Input Data Database: " + str(time_e-time_s))
+                self.input_data.input_player_relation(player_from_uid=u_id, player_to_id=player_id, relation=relation)
+
+
+class InputStatsDict():
+
+    def __init__(self):
+        self.input_data = input_data.InputData()
+        pass
 
     def input_stats_dict(self, stat_dict, player_id, is_goalie):
         dict_info = {}
-        dict_info["is_goalie"] = is_goalie
-        dict_info["player_id"] = player_id
+        dict_info[IS_GOALIE] = is_goalie
+        dict_info[PLAYER_ID] = player_id
         for competititon_type in stat_dict:
-            time_s = time.time()
             competititon_dict = stat_dict[competititon_type]
-            self.input_competititon_type(dict_competititon_type=competititon_dict, dict_info=dict_info)
-            time_e = time.time()
-            print("Input Type in DB: "+ str(time_e-time_s))
+            self.input_competititon_type(
+                dict_competititon_type=competititon_dict, dict_info=dict_info)
 
     def input_competititon_type(self, dict_competititon_type, dict_info):
         for season_name in dict_competititon_type:
-            time_s_s = time.time()
             season_dict = dict_competititon_type[season_name]
-            dict_info["season_name"] = season_name
+            dict_info[SEASON_NAME] = season_name
             self.input_season_dict(season_dict=season_dict, dict_info=dict_info)
-            time_e_s = time.time()
-            print("Input Season in DB: "+ str(time_e_s-time_s_s))
     
     def input_season_dict(self, season_dict, dict_info):
         for league_name in season_dict:
-            time_s_l = time.time()
             dict_info["league_name"] = league_name
             league_dict = season_dict[league_name]
             self.input_league_dict(league_dict=league_dict, dict_info=dict_info)
-            time_e_l = time.time()
-            print("Input League in DB: "+ str(time_e_l-time_s_l))
 
     def input_league_dict(self, league_dict, dict_info):
-        dict_info["league_uid"] = league_dict["league_id"]
-        del league_dict["league_id"]
-        del league_dict["url"]
+        dict_info[LEAGUE_UID] = league_dict[LEAGUE_UID]
+        del league_dict[LEAGUE_UID]
+        del league_dict[LEAGUE_URL]
         for team_name in league_dict:
-            time_s_t = time.time()
             team_dict = league_dict[team_name]
             self.input_team_dict(team_dict=team_dict, dict_info=dict_info)
-            time_e_t = time.time()
-            print("Input Team in DB: "+ str(time_e_t-time_s_t))
 
     def input_team_dict(self, team_dict, dict_info):
-        if "leadership" in team_dict:
-            dict_info["leadership"] = team_dict["leadership"]
-        else:
-            dict_info["leadership"] = None
-        dict_info["team_uid"] = team_dict["team_id"]
-        del team_dict["url"]
-        for season_type in ["play_off", "regular_season"]:
-            if season_type == "play_off":
-                dict_info["regular_season"] = False
+        dict_info[TEAM_UID] = team_dict[TEAM_UID]
+        del team_dict[TEAM_URL]
+        for season_type in [PLAY_OFF, REGULAR_SEASON]:
+            if season_type == PLAY_OFF:
+                dict_info[REGULAR_SEASON] = False
             else:
-                dict_info["regular_season"] = True
+                dict_info[REGULAR_SEASON] = True
             season_data_dict = team_dict[season_type]
-            input_data_o = input_data.InputData()
-            t_s_e = time.time()
-            input_data_o.input_player_stats_data(season_dict=season_data_dict, dict_info=dict_info)
-            time_e_e = time.time()
-            print("Input 1 entry in DB: " + str(time_e_e-t_s_e))
-                    
+            self.input_data.input_player_stats_data(
+                season_dict=season_data_dict, dict_info=dict_info)
+
+class InputAchievementDict():
+
+    def __init__(self):
+        self.input_data = input_data.InputData()
+        pass
+
     def input_achievements(self, dict_achievements, player_id):
-        input_data_o = input_data.InputData()
         for season in dict_achievements:
             dict_achiev_season = dict_achievements[season]
             for achievement_name in dict_achiev_season:
-                input_data_o.input_achievement_relation(achievement_name=achievement_name, season_name=season, player_id=player_id)
-
-
+                self.input_data.input_achievement_relation(
+                    achievement_name=achievement_name, season_name=season, player_id=player_id)
+                    
 class InputTeamDict():
 
     def __init__(self):

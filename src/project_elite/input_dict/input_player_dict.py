@@ -1,5 +1,5 @@
-import database.entry_data.input_data.input_data as input_data
-
+import insert_db.insert_db as insert_db
+import database.create_database.database_creator as db
 from constants import *
 
 class InputPlayerDict():
@@ -75,14 +75,15 @@ class InputPlayerInfo():
     """
 
     def __init__(self):
-        self.input_data = input_data.InputData()
+        self.insert_db = insert_db.DatabasPipeline(db_Session=db.session)
         pass
 
     def _input_player(self, info_dict):
         """method for puting general info into player DB and the related tables
         """
 
-        player_id = self.input_data.input_player_data(dict_info=info_dict)
+        player_id = self.insert_db.input_data_in_player_table(
+            dict_info=info_dict)
         return player_id
 
     def _input_draft_dict(self, draft_dict, player_id):
@@ -90,14 +91,16 @@ class InputPlayerInfo():
 
         for draft in draft_dict:
             one_draft = draft_dict[draft]
-            self.input_data.input_player_draft(player_id=player_id, draft_dict=one_draft)
+            self.insert_db._input_player_draft(
+                player_id=player_id, draft_dict=one_draft)
 
     def _input_nationalities(self, nation_list, player_id):
         """method for puting relation between player and his nationalites into DB
         """
 
         for nation in nation_list:
-            self.input_data.input_player_nation(player_id=player_id, nation=nation)
+            self.insert_db._input_player_nation(
+                player_id=player_id, nation=nation)
 
 
 class InputRelationDict():
@@ -106,7 +109,7 @@ class InputRelationDict():
     """
 
     def __init__(self):
-        self.input_data = input_data.InputData()
+        self.insert_db = insert_db.DatabasPipeline(db_session=db.session)
         pass
 
     def _input_relation_dict(self, relation_dict, player_id):
@@ -122,7 +125,8 @@ class InputRelationDict():
             """method for uploading relations of one type into DB"""
 
             for u_id in list_uid:
-                self.input_data.input_player_relation(player_from_uid=u_id, player_to_id=player_id, relation=type_)
+                self.insert_db._input_player_relation(
+                    player_from_uid=u_id, player_to_id=player_id, relation=type_)
 
 class InputStatsDict():
 
@@ -130,7 +134,7 @@ class InputStatsDict():
     """
 
     def __init__(self):
-        self.input_data = input_data.InputData()
+        self.insert_db = insert_db.DatabasPipeline()
         pass
 
     def _input_stats_dict(self, stat_dict, player_id, is_goalie):
@@ -185,8 +189,8 @@ class InputStatsDict():
             else:
                 dict_info[REGULAR_SEASON] = True
             season_data_dict = team_dict[season_type]
-            self.input_data.input_player_stats_data(
-                season_dict=season_data_dict, dict_info=dict_info)
+            self.insert_db._input_player_stats(
+                season_dict=season_data_dict)
 
 class InputAchievementDict():
 
@@ -194,7 +198,7 @@ class InputAchievementDict():
     """
 
     def __init__(self):
-        self.input_data = input_data.InputData()
+        self.insert_db = insert_db.DatabasPipeline(db_session=db.session)
         pass
 
     def _input_achievements(self, dict_achievements, player_id):
@@ -210,7 +214,7 @@ class InputAchievementDict():
         """method for uploading achievements from one season into DB"""
         
         for achiev_name in season_dict:
-                self.input_data.input_achievement_relation(
+                self.insert_db._input_achievement_relation(
                     achievement_name=achiev_name, season_name=season, player_id=player_id)
 
                 

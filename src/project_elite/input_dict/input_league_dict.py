@@ -1,4 +1,5 @@
-import database.entry_data.input_data.input_data as input_data
+import insert_db.insert_db as insert_db
+import database.create_database.database_creator as db
 
 from constants import *
 
@@ -15,7 +16,8 @@ class InputLeagueDict():
             info_dict=league_dict[GENERAL_INFO])
         self.input_league_achievements(
             achiev_dict=league_dict[LEAGUE_ACHIEVEMENTS], league_id=league_id)
-        self.input_league_standings_dict(
+        league_standings = InputLeagueStandings()
+        league_standings.input_league_standings_dict(
             stat_dict=league_dict[SEASON_STANDINGS],
             league_id=league_id)
         
@@ -23,17 +25,26 @@ class InputLeagueDict():
     def input_league_info_dict(self, info_dict):
         """method for inputing general info abour league in DB"""
 
-        data_input = input_data.InputData()
-        league_id = data_input.input_league_data(
-            u_id=info_dict[LEAGUE_UID], long_name=info_dict[LONG_NAME])
+        db_pipe = insert_db.DatabasPipeline()
+        league_id = db_pipe._input_data_in_league_table(
+            table=db.League, league_uid=info_dict[LEAGUE_UID],long_name=info_dict[LONG_NAME])
         return league_id
     
     def input_league_achievements(self, achiev_dict, league_id):
         """method for inputing league achievements into DB"""
 
-        data_input = input_data.InputData()
+        db_pipe = insert_db.DatabasPipeline()
         for achiev in achiev_dict:
-            data_input.input_achievement(achievement_name=achiev, league_id=league_id)    
+            db_pipe._input_achievement(
+                achievement=achiev, league_id=league_id)    
+
+
+class InputLeagueStandings():
+
+    """class grouping methods for inputing league standings into DB"""
+
+    def __init__(self):
+        pass
 
     def input_league_standings_dict(self, stat_dict, league_id):
         """method for inputing season standings dict into DB"""
@@ -69,5 +80,5 @@ class InputLeagueDict():
         del position_dict[TEAM_URL]
         for stat in position_dict:
             row_dict[stat] = position_dict[stat]
-        input_data_o = input_data.InputData()
-        input_data_o.input_team_season_data(ts_dict=row_dict)
+        db_pipe = insert_db.DatabasPipeline()
+        db_pipe._input_player_stats(ts_dict=row_dict)

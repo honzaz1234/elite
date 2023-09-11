@@ -1,7 +1,7 @@
 import get_urls.player.league as get_url
-import scraper.team as team_scraper
-import update_dict.sections.team_info as team_updater
-import database.entry_data.input_dict as input_dict_2
+import scraper.team_scraper as scraper_team
+import update_dict.update_team as team_updater
+import input_dict.input_team_dict as input_dict_2
 import re
 import json
 import os
@@ -56,9 +56,9 @@ for league_ in league_list:
         if u_id in u_id_done_list:
             continue
         count_requests += 1
-        ts_o = team_scraper.TeamScraper(url)
+        ts_o = scraper_team.TeamScraper(url)
         team_data = ts_o.get_info()
-        team_dict_updated = tu_o.update_team_dict_wrap(team_data)
+        team_dict_updated = tu_o.update_team_dict(team_data)
         print("b")
         insert_team_data.input_team_dict(team_dict=team_dict_updated)
         print("c")

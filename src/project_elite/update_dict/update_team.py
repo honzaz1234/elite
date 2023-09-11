@@ -52,7 +52,7 @@ class UpdateTeamDict():
 
 
         si_dict_new = si_dict.copy()
-        si_dict_new[PLACE_DICT] = self._create_place_birth_dict(
+        si_dict_new[PLACE_DICT] = self._create_place_dict(
             place_string=si_dict_new[LOCATION])
         si_dict_new = self._update_missing_values(dict=si_dict_new)
         si_dict_new = self._update_numbers(dict=si_dict_new)

@@ -1,7 +1,11 @@
 import database.entry_data.input_data.tables.tables as tables_o
 import time
+
+from constants import *
               
 class InputData:
+
+    """class of methods for inputing  data into DB"""
 
     def __init__(self):
         pass
@@ -45,14 +49,14 @@ class InputData:
 
 
     def input_player_data(self, dict_info):
-        u_id = dict_info["u_id"]
+        u_id = dict_info[PLAYER_UID]
         player_o = tables_o.CreatePlayerTableEntry()
         player_id = player_o.check_if_id_exists_in_table_player(u_id)
         dict_fk = {}
-        nr_team_id = self.input_team_uid(u_id=dict_info["nr_uid"])
+        nr_team_id = self.input_team_uid(u_id=dict_info[NHL_RIGHTS_UID])
         key_id = "nhl_team_rights_id"
         dict_fk[key_id] = nr_team_id
-        dict_fk["place_birth_id"] = self.input_place_data(country_name=dict_info["birth_country"], place_name=dict_info["birth_place"], region_name=dict_info["birth_region"])
+        dict_fk["place_birth_id"] = self.input_place_data(country_name=dict_info[COUNTRY], place_name=dict_info[TOWN], region_name=dict_info[REGION])
         if player_id == None:
             player_entry = player_o.create_player_entry(dictd=dict_info, dict_fkeys=dict_fk)
             tables_o.db.session.add(player_entry)
@@ -114,41 +118,28 @@ class InputData:
         return league_id
     
     def input_player_stats_data(self, dict_info, season_dict):
-        dict_info["team_id"] = self.input_team_uid(u_id=dict_info["team_uid"])
-        dict_info["league_id"] = self.input_league_uid(league_uid=dict_info["league_uid"])
-        dict_info["season_id"] = self.input_season_data(season_name=dict_info["season_name"])
-        time_s_o = time.time()
+        dict_info["team_id"] = self.input_team_uid(u_id=dict_info[TEAM_UID])
+        dict_info["league_id"] = self.input_league_uid(league_uid=dict_info[LEAGUE_UID])
+        dict_info["season_id"] = self.input_season_data(season_name=dict_info[SEASON_NAME])
         season_o = tables_o.CreateStatsTableEntry()
-        time_e_o = time.time()
-        print("Duration Declaring O: " + str(time_e_o-time_s_o))
-        time_s_f = time.time()
         if dict_info["is_goalie"] == True:
             stat_id = season_o.find_id_in_goalie_stats_table(dict_info=dict_info)
         else:
             stat_id = season_o.find_id_in_player_stats_table(dict_info=dict_info)
-        time_e_f = time.time()
-        print("Duration finding id in stat table: " + str(time_e_f-time_s_f))
         if stat_id is not None:
             return stat_id
-        if dict_info["is_goalie"] == True:
-            time_s_c = time.time()
-            season_entry = season_o.create_season_goalie_entry(dict_info=dict_info, dict_season=season_dict)
+        if dict_info[IS_GOALIE] == True:
+            season_entry = season_o.create_season_goalie_entry(
+                dict_info=dict_info, dict_season=season_dict)
             tables_o.db.session.add(season_entry)
             tables_o.db.session.commit()
-            time_e_c = time.time()
-            print("Duration adding entry in stat table: " + str(time_e_c-time_s_c))
             stat_id = season_entry.id
         else:
-            time_s_c = time.time()
-            season_entry = season_o.create_season_player_entry(dict_info=dict_info, dict_season=season_dict)
+            season_entry = season_o.create_season_player_entry(
+                dict_info=dict_info, dict_season=season_dict)
             tables_o.db.session.add(season_entry)
             tables_o.db.session.commit()
-            time_e_c = time.time()
-            print("Duration adding entry in stat table: " + str(time_e_c-time_s_c))
-            time_s_c = time.time()
             stat_id = season_entry.id
-            time_e_c = time.time()
-            print("Duration adding id : " + str(time_e_c-time_s_c))
         return stat_id
     
     def input_achievement_relation(self, player_id, achievement_name, season_name):

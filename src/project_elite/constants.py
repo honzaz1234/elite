@@ -64,6 +64,10 @@ SEASON_NAME = "season_name"
 LEAGUE_NAME = "league_name"
 IS_GOALIE = "is_goalie"
 
+##input player dict
+NHL_RIGHTS_ID = "nhl_rights_id"
+PLACE_BIRTH_ID = "place_birth_id"
+
 ##stat attributes
 ###common
 GP = "gp"
