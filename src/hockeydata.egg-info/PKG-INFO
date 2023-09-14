@@ -1,0 +1,9 @@
+Metadata-Version: 2.1
+Name: hockeydata
+Version: 0.1
+Summary: Package for scraping data from eliteprospect website and transfering it in SQL database
+Home-page: https://github.com/honzaz1234/elite
+Author: jz
+Author-email: jan.ziacik@gmail.com
+License: MIT
+Requires-Python: ~=3.10
