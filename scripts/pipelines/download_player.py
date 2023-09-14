@@ -2,22 +2,22 @@ import json
 import os
 import re
 import time
-import scraper.player as player
-import get_urls.player.season.season_url as season_url
-import get_urls.player.league as league_url
-import update_dict.wraper as update_dict_wraper
-import database.entry_data.input_dict as input_dict
+import hockeydata.scraper.player_scraper as player
+import hockeydata.get_urls.get_urls as get_url
+import hockeydata.update_dict.update_player as update_player
+import hockeydata.input_dict.input_player_dict as input_dict
+import hockeydata.database_creator.database_creator as db
 
 url_links = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/links/players.json"
 dict_data = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/data_dict/"
-done_players_path = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/data_dict/update_players.json"
+done_players_path = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/data_dict/done_players.json"
 file_name_done = "done_players.json"
 
 
-season_url_scraper = season_url.SeasonUrlDownload()
-update_dict1 = update_dict_wraper.UpdateDictWraper()
-input_database = input_dict.InputPlayerDict()
-league_url_scraper = league_url.LeagueUrlDownload()
+season_url_scraper = get_url.SeasonUrlDownload()
+update_dict = update_player.UpdatePlayer()
+input_database = input_dict.InputPlayerDict(db_session=db.session)
+league_url_scraper = get_url.LeagueUrlDownload()
 
 list_seasons_whl = league_url_scraper.create_season_list(1966, 2023)
 list_seasons_ohl = league_url_scraper.create_season_list(1974, 2023)
@@ -40,7 +40,7 @@ for league_ in dict_input:
     for season_ in season_list:
         if (season_ not in player_links[league_]
             or len(player_links[league_]["goalies"])==0
-            or len(player_links[league_]["goalies"])==0
+            or len(player_links[league_]["players"])==0
             ):
             url_season = season_url_scraper.get_player_season_refs(
                 league=league_, season=season_)
@@ -77,8 +77,9 @@ for league_ in dict_input:
             time_start = time.time()
             player_o = player.PlayerScraper(url=link)
             dict_player = player_o.get_info_all()
-            dict_player_updated = update_dict1.update_player_dict(dict_player)
-            input_database.input_player_dict(dict=dict_player_updated)
+            dict_player_updated = update_dict.update_player_dict(dict_player)
+            print(dict_player_updated)
+            input_database.input_player_dict(player_dict=dict_player_updated)
             players_done["players_done"].append(uid)
             time_end = time.time()
             print("one player duration:")
