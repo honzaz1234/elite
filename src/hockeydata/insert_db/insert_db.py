@@ -84,24 +84,24 @@ class DatabasePipeline():
         query_object = Query(db_session=self.db_session)
         database_method = DatabaseMethods(db_session=self.db_session)
         league_id = query_object._find_id_in_table(
-            table=db.League, league_uid=league_uid)
+            table=db.League, uid=league_uid)
         if league_id is None:
             league_id = database_method._input_unique_data(
-                long_name=long_name, league_uid=league_uid)
+                table=db.League, league=long_name, uid=league_uid)
         else:
             database_method._update_data(
                 table=db.League, where_col=db.League.uid, where_val=league_uid,
-                long_name=long_name)
+                league=long_name)
         return league_id
     
     def _input_achievement(self, achiev, league_id):
         query_object = Query(db_session=self.db_session)
         database_method = DatabaseMethods(db_session=self.db_session)
         achiev_id = query_object._find_id_in_table(
-            table=db.Achievement, achievement=achiev)
+            table=db.Achievement, uid=achiev)
         if achiev_id is None:
             database_method._input_unique_data(
-                table=db.Achievement, achievement=achiev,
+                table=db.Achievement, uid=achiev,
                 league_id=league_id)
         else:
             database_method._update_data(
@@ -113,7 +113,7 @@ class DatabasePipeline():
     def _input_achievement_relation(self, player_id, achiev, season):
         database_method = DatabaseMethods(db_session=self.db_session)
         achiev_id = database_method._input_uid(
-            table=db.Achievement, uid_val=achiev, uid=achiev, league_id=None)
+            table=db.Achievement, uid_val=achiev, league_id=None)
         season_id = database_method._input_unique_data(
             table=db.Season, season=season)
         relation_id = database_method._input_unique_data(
@@ -295,6 +295,30 @@ class DatabasePipeline():
             table=db.TeamName, team_name=name, year_from=min, year_to=max, 
             team_id=team_id)
         return teamname_id
+    
+    def _input_team_position(self, dict_):
+        database_method = DatabaseMethods(db_session=self.db_session)
+        team_id = database_method._input_uid(
+            table=db.Team, uid_val=dict_[TEAM_UID],
+             uid=dict_[TEAM_UID], team=None, long_name=None, active=None, founded=None, place_id=None, stadium_id=None
+            )
+        division_id = database_method._input_unique_data(
+            table=db.Divison, division=dict_[SECTION_TYPE])
+        season_id = database_method._input_unique_data(
+            table=db.Season, season=dict_[SEASON_NAME])
+        postseason_type_id = database_method._input_unique_data(
+            table=db.PostseasonType, postseason_type=dict_[POSTSEASON]
+        )
+        position_id = database_method._input_unique_data(
+            table=db.TeamSeason, position=dict_[LEAGUE_POSITION], 
+            league_id=dict_[LEAGUE_ID], team_id=team_id, division_id=division_id, conference_id=None, 
+            season_id=season_id, gp=dict_[GP],
+            w=dict_[W], t=dict_[T], l=dict_[L], otw=dict_[OTW],
+            otl=dict_[OTL], gf=dict_[GOALS_FOR], ga=dict_[GOALS_AGAINST],
+            plus_minus=dict_[PLUS_MINUS], tp=dict_[TOTAL_POINTS], 
+            postseason_type_id=postseason_type_id
+            )
+        return position_id
                                                          
 
 

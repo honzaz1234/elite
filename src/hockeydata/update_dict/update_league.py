@@ -39,8 +39,9 @@ class UpdateLeagueDict():
                 row_dict[stat] = None
             elif stat not in UpdateLeagueDict.NOT_INT:
                 row_dict[stat] = int(row_dict[stat])
-            elif stat == "url":
+            elif stat == TEAM_URL:
                 u_id = re.findall(
                     TEAM_UID_REGEX, row_dict[stat])[0]
+                print(u_id)
                 row_dict[TEAM_UID] = u_id
         return row_dict

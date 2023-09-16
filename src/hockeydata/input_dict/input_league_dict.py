@@ -1,7 +1,7 @@
 import hockeydata.insert_db.insert_db as insert_db
 import hockeydata.database_creator.database_creator as db
 
-from constants import *
+from hockeydata.constants import *
 
 class InputLeagueDict():
     """class used for inputing league information in to the DB"""
@@ -14,7 +14,7 @@ class InputLeagueDict():
         """wraper method for inputing all scraped data from dict to DB"""
 
         league_id = self.input_league_info_dict(
-            info_dict=league_dict[GENERAL_INFO])
+            info_dict=league_dict)
         self.input_league_achievements(
             achiev_dict=league_dict[LEAGUE_ACHIEVEMENTS], league_id=league_id)
         league_standings = InputLeagueStandings(db_session=self.db_session)
@@ -28,7 +28,7 @@ class InputLeagueDict():
 
         db_pipe = insert_db.DatabasePipeline(db_session=self.db_session)
         league_id = db_pipe._input_data_in_league_table(
-            table=db.League, league_uid=info_dict[LEAGUE_UID],long_name=info_dict[LONG_NAME])
+            league_uid=info_dict[LEAGUE_UID],long_name=info_dict[LEAGUE_NAME])
         return league_id
     
     def input_league_achievements(self, achiev_dict, league_id):
@@ -37,7 +37,7 @@ class InputLeagueDict():
         db_pipe = insert_db.DatabasePipeline(db_session=self.db_session)
         for achiev in achiev_dict:
             db_pipe._input_achievement(
-                achievement=achiev, league_id=league_id)    
+                achiev=achiev, league_id=league_id)    
 
 
 class InputLeagueStandings():
@@ -83,4 +83,4 @@ class InputLeagueStandings():
         for stat in position_dict:
             row_dict[stat] = position_dict[stat]
         db_pipe = insert_db.DatabasePipeline(db_session=self.db_session)
-        db_pipe._input_player_stats(ts_dict=row_dict)
+        db_pipe._input_team_position(dict_=row_dict)

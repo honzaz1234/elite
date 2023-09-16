@@ -3,6 +3,7 @@ import requests
 import re
 
 from hockeydata.constants import *
+from hockeydata.get_urls.get_urls import LeagueUrlDownload
 
 
 class LeagueScrapper():
@@ -16,7 +17,9 @@ class LeagueScrapper():
         "league_refs": "//a[contains(@class,'" 
                         "ListOfChampionsAndLeagueAwards_yearLink__rVDt0')]"
                         "/@href",
-        "long_name": "//h1/text()"
+        "long_name": "//h1/text()",
+        "season": "//a[@class='TextLink_link__3JbdQ"
+                  " ListOfChampionsAndLeagueAwards_yearLink__rVDt0']/text()"
     }
 
     SEASON_URL_REGEX = "standings/(.+)"
@@ -33,7 +36,7 @@ class LeagueScrapper():
         """
 
         league_dict = {}
-        league_dict[UID] = self._get_uid()
+        league_dict[LEAGUE_UID] = self._get_uid()
         league_dict[LEAGUE_NAME] = self.get_name()
         league_dict[LEAGUE_ACHIEVEMENTS] = self.get_achievements()
         league_dict[SEASON_STANDINGS] = self.get_season_data()
@@ -66,15 +69,18 @@ class LeagueScrapper():
     def get_season_data(self):
         """method for creating dictionary with season standings of teams for all years that are availiable on the website
         """
+        get_season =  LeagueUrlDownload()
 
-        ref_list = self.selector.xpath(
-            LeagueScrapper.PATHS["league_refs"]).getall()
+        year_list = self.selector.xpath(
+            LeagueScrapper.PATHS["season"]).getall()
         league_standings_dict = {}
-        for link in ref_list:
-            season_name = re.findall(LeagueScrapper.SEASON_URL_REGEX, link)[0]
-            league_season_o = LeagueSeasonScraper(url=link)
+        for year in year_list:
+            season = get_season.create_season_string(
+            year=year, preceeding=False)
+            season_link = self.url + STANDINGS_URL + season
+            league_season_o = LeagueSeasonScraper(url=season_link)
             season_dict = league_season_o.get_season_standings()
-            league_standings_dict[season_name] = season_dict
+            league_standings_dict[season] = season_dict
         return league_standings_dict
 
 
@@ -145,7 +151,6 @@ class LeagueSeasonScraper():
         for row_ind in range(1, n_rows + 1):
             row_dict = self.get_one_row(
                 path_section=path_section, row_ind=row_ind)
-            print(row_dict)
             dict_section[row_dict[LEAGUE_POSITION]] = row_dict
         return dict_section
     
