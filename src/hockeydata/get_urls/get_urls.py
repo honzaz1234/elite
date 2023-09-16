@@ -35,13 +35,16 @@ class LeagueUrlDownload():
             dict_leagues[leagues_names[ind]] = leagues_ref[ind]
         return dict_leagues
     
-    def create_season_string(self, year):
+    def create_season_string(self, year, preceeding=True):
 
         """creates season from year
             2011 => 2011-2012 etc."""
-
-        year_plus = year + 1
-        season_string = str(year) + "-" +  str(year_plus)
+        if preceeding == True:
+            year_plus = int(year) + 1
+            season_string = str(year) + "-" +  str(year_plus)
+        else:
+            year_minus = int(year) - 1
+            season_string = str(year_minus) + "-" + str(year)
         return season_string
     
     def create_season_list(self, min, max):

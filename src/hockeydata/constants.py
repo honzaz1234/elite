@@ -144,7 +144,7 @@ LEAGUE_ID = "league_id"
 
 
 
-
+STANDINGS_URL = "/standings/"
 NA_REGION_ABB = {
     "USA": ["NJ", "CA", "AZ", "OH", "MI", 
             "NY", "NE", "WI", "MA", "FL", "CO", "SC", "MO", "MN", "PA", "TX", "CT", "IN", "WA", "IL", "ME", "AL", "OK", "UT", "OR", "NC", "RI", "NH", "VA", "AK", "IA", "MS", "SD", "ND", "MD",	"DE", "NV", "MT", "TN", "VT", "DC", "GA", "ID", "KY", "LA"],

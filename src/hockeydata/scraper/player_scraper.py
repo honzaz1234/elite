@@ -180,8 +180,6 @@ class FamilyRelations():
                                flags=re.IGNORECASE)
         data_list = re.split(":", text, flags=re.IGNORECASE)
         data_list.pop(0)
-        print(r_list)
-        print(data_list)
         dict_strings = {}
         for ind in range(len(r_list)):
             dict_strings[r_list[ind][1]] = data_list[ind]
@@ -196,7 +194,6 @@ class FamilyRelations():
             if list_uid == []:
                 continue
             relations_uid[relation] = list_uid
-        print(relations_uid)
         return relations_uid
 
 
@@ -247,11 +244,11 @@ class PlayerStats():
                     continue
             if season not in dict_stats:
                 dict_stats[season] = {}
-            dict_stats[season] = self._update_season_stats(
+            dict_stats[season] = self._get_season_stats(
                 season_dict=dict_stats[season], path_type=path_type, ind=ind)
         return dict_stats
     
-    def _update_season_stats(self, season_dict, path_type, ind):
+    def _get_season_stats(self, season_dict, path_type, ind):
 
         """adds one row from stat table to stat dictionary"""
 
@@ -262,15 +259,14 @@ class PlayerStats():
                         + PlayerStats.PATHS["stats_table_r"])
         row_o = OneRowStat(path=path_season, selector=self.selector)
         sub_dict = row_o._get_stat_dictionary()
-        new_season_dict = self._merge_season_dict(
+        new_season_dict = self._merge_league_dict(
                 old_dict=season_dict, new_dict=sub_dict)
         return new_season_dict
 
-    def _merge_season_dict(self, old_dict, new_dict):
+    def _merge_league_dict(self, old_dict, new_dict):
         
         """merges season dictionary with new stat row dictionary - needed because sometimes player changes team in one competition over the season
         """
-
         new_merged_dict = old_dict.copy()
         for league in new_dict:
             if  league in old_dict:
@@ -299,11 +295,13 @@ class OneRowStat():
         "league": "(.+)\/stats"
     }
 
+    PROJECTED = "Projected"
+
     def __init__(self, path, selector):
         self.path_to_row = path
         self.selector = selector
 
-    def _get_stat_dictionary(self):
+    def _aa(self):
         """creates stat dicitonary from one row in stat table"""
 
         team = self._get_stat_atribute(key="team")
@@ -350,7 +348,7 @@ class OneRowStat():
 
         league_dict = {}
         team = self._get_stat_atribute(key="team")
-        if team is None:
+        if team is None or team == OneRowStat.PROJECTED:
             return {}
         league_dict[team] = self._get_team_dict()
         league_dict[LEAGUE_URL] = self._get_league_url(league=league)
