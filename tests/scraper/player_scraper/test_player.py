@@ -5,7 +5,7 @@ import scrapy
 import json
 from copy import deepcopy
 
-PATH = "./tests/player/"
+PATH = "./tests/scraper/player_scraper/"
 
 FILE_HTML_ZOHORNA = "zohorna.html"
 FILE_JSON_ZOHORNA = "zohorna.json"
