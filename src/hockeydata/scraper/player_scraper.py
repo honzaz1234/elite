@@ -56,7 +56,7 @@ class PlayerScraper:
 class PlayerGeneralInfo():
 
     PATHS = {"player_name": "//h1[@class ="
-                            "'ep-entity-header__name']//text ()",
+                            "'ep-entity-header__name']//text()",
              "gi_l": "//div[contains(@class,"
                     "'ep-list__item--is-compact')]"
                     "/div[2][preceding-sibling::div[1]"
@@ -220,9 +220,9 @@ class PlayerStats():
         """wrapper function for downloading stats from both league and tournament tables"""
 
         dict_stats = {}
-        dict_stats["leagues"] = self._get_stats(years=years, type="league")
+        dict_stats["leagues"] = self._get_stats(years=years, type="leagues")
         dict_stats["tournaments"] = self._get_stats(years=years,
-                                                    type="tournament")
+                                                    type="tournaments")
         return dict_stats
 
     def _get_stats(self, type, years=None):
@@ -230,9 +230,9 @@ class PlayerStats():
         """function for downloading data from the whole table (league, tournament) with the player season statistics
         """
 
-        if type == "league":
+        if type == "leagues":
             path_type = PlayerStats.PATHS["path_league"]
-        elif type == "tournament":
+        elif type == "tournaments":
             path_type = PlayerStats.PATHS["path_tournament"]
         dict_stats = {}
         path_years = path_type + PlayerStats.PATHS["stat_years"]
@@ -401,7 +401,7 @@ class OneRowStat():
         """method for extracting url of team and league
         to which the statistics are related
         """
-
+        
         path_url = self.path_to_row + OneRowStat.PATHS[key_path]
         list_data = self.selector.xpath(path_url).getall()
         orig_url = list_data[0]
