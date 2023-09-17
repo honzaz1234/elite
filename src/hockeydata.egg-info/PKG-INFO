@@ -7,3 +7,6 @@ Author: jz
 Author-email: jan.ziacik@gmail.com
 License: MIT
 Requires-Python: ~=3.10
+Requires-Dist: sqlalchemy>=2.0
+Requires-Dist: scrapy
+Requires-Dist: requests
