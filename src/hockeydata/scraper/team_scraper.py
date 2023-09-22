@@ -184,11 +184,22 @@ class HistoricNames():
         return n_lines
 
     def get_team_names(self) -> list:
-        """creates list with unique names that team had in history according to the table with seasonal standings"""
+        """creates list with unique names that team had in history according to the table with seasonal standings
+        if the same team name occurs more than once the number of its occurence is added to the end of the name
+        """
 
         names = self.selector.xpath(HistoricNames.HN_PATHS["titles"]).getall()
         names = [name.strip() for name in names]
-        return names
+        names_wo_duplicates = []
+        occ_count = {}
+        for name in names:
+            occ_count[name] = 1
+        for name in names:
+            if name in names_wo_duplicates:
+                occ_count[name] += 1
+                name =  name + " (" + str(occ_count[name]) + ")"
+            names_wo_duplicates.append(name)
+        return names_wo_duplicates
     
     def get_title_position(self, n: int, n_lines: int) -> int:
         """gets index of row on which the nth name is located"""
@@ -222,29 +233,29 @@ class HistoricNames():
 
     def get_historic_names_dict(self) -> dict:
         """creates dictionary where keys are the unique team names
-        and values are again dictionaries with season range in which team had this name
+        and values are again dictionaries with season range in which team had this name;
+        when the team did not changed its name over its history it can not be found in the table, in that case short name from general info dictionary is assigned to this dictionary in update_dict module
         """
 
         n_names = self.get_num_names()
         n_lines = self.get_num_lines()
-        names_positions = self.get_title_positions(
-            n_lines=n_lines, n_names=n_names)
-        if names_positions == []:
+        if n_names == 0:
             n_names = 1
             team_names = ["-"]
             names_positions = [0]
         else:
             team_names = self.get_team_names()
+            names_positions = self.get_title_positions(
+            n_lines=n_lines, n_names=n_names)
         dict_titles = {}
         row_ind = names_positions[0]
         for ind in range(1, n_names + 1):
             list_years = []
             while True:
                 row_ind += 1
-                if row_ind in names_positions:
+                if ((row_ind in names_positions) or (row_ind > n_lines)):
                     break
                 season = self.get_season(n=row_ind)
-                print(season)
                 if season != []:
                     list_years.append(season[0])
             if list_years == []:
