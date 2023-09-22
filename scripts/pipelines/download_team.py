@@ -9,7 +9,7 @@ import time
 
 get_url_o = get_url.LeagueUrlDownload()
 
-league_list = ['USHL']
+league_list = ['NCAA III']
 #league_list = get_url_o.leagues_paths.keys()
 
 url_links_path = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/links/teams.json"

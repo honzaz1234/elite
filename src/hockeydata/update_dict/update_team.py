@@ -41,8 +41,8 @@ class UpdateTeamDict():
         gi_dict_new[ACTIVE] = self._update_status(
             leagues=gi_dict_new[PLAYS_IN])
         gi_dict_new = self._update_missing_values(
-            dict=gi_dict_new)
-        gi_dict_new = self._update_numbers(dict=gi_dict_new)
+            dict_=gi_dict_new)
+        gi_dict_new = self._update_numbers(dict_=gi_dict_new)
         del gi_dict_new[PLACE]
         return gi_dict_new
     
@@ -53,8 +53,8 @@ class UpdateTeamDict():
         si_dict_new = si_dict.copy()
         si_dict_new[PLACE_DICT] = self._create_place_dict(
             place_string=si_dict_new[LOCATION])
-        si_dict_new = self._update_missing_values(dict=si_dict_new)
-        si_dict_new = self._update_numbers(dict=si_dict_new)
+        si_dict_new = self._update_missing_values(dict_=si_dict_new)
+        si_dict_new = self._update_numbers(dict_=si_dict_new)
         del si_dict_new[LOCATION]
         return si_dict_new
         
@@ -77,6 +77,7 @@ class UpdateTeamDict():
             dict_place[PLACE] = None
             return dict_place
         list_place = place_string.split(",")
+        list_place = [name.strip() for name in list_place]
         dict_place[PLACE] = list_place[0]
         if len(list_place) == 2 and len(list_place[1]) == 2:
             if list_place[1] in NA_REGION_ABB["USA"]:
@@ -147,7 +148,9 @@ class UpdateTeamDict():
                 dict_[key] = None
         return dict_
 
-    def _update_historic_name(self, dict_titles: dict, short_name: str) -> dict:
+    def _update_historic_name(
+            self, dict_titles: dict, short_name: str
+            ) -> dict:
         """in case team had only one name throught the history, the name is not mentioned in the table with historical standings from which the names are taken; in that case, the name is set to the short name from general info dict
         """
 

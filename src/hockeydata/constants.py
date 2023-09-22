@@ -1,3 +1,6 @@
+ELITE_URL = "https://www.eliteprospects.com"
+TEAM_STANDINGS = "/standings"
+
 NA = "-"
 
 #regexes

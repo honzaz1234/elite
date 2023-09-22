@@ -26,7 +26,7 @@ class InputPlayerDict():
     def input_player_dict(self, player_dict: dict):
         """wraper method for inputing player dict into database"""
 
-        self._set_is_goalie(dict=player_dict)
+        self._set_is_goalie(dict_=player_dict)
         player_id = self._input_player_info_dict(
             info_dict=player_dict[GENERAL_INFO])
         self._input_relation_dict(

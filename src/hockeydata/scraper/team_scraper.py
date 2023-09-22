@@ -244,6 +244,7 @@ class HistoricNames():
                 if row_ind in names_positions:
                     break
                 season = self.get_season(n=row_ind)
+                print(season)
                 if season != []:
                     list_years.append(season[0])
             if list_years == []:

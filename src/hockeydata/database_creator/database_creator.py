@@ -414,7 +414,7 @@ class Achievement(Base):
     uid = Column("achievement", String)
     league_id = Column("league_id", Integer, ForeignKey("leagues.id"))
 
-    def __init__(self,  uid, league_id):
+    def __init__(self, uid, league_id):
         self.uid = uid
         self.league_id = league_id
 
