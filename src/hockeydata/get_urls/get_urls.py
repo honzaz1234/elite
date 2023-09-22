@@ -6,16 +6,20 @@ from hockeydata.constants import *
 class LeagueUrlDownload():
         
             
-    PATHS = {"main": "https://www.eliteprospects.com",
-            "league": "/league",
-            "all_leagues": "/leagues",
-             "stats": "/stats",
-            "league_names_ref": "//div[preceding-sibling::header[contains(@id, '-men')]]//a[@class='TextLink_link__3JbdQ TableBody_link__MNtRl']/@href",
-            "league_name": "//div[preceding-sibling::header[contains(@id, '-men')]]//a[@class='TextLink_link__3JbdQ TableBody_link__MNtRl']/text()",
-            "season_refs": "//a[@style='font-weight: 800;']/@href",
-            "standings": "/standings/",
-            "season_list": "//div[@id='standings']//div[@class='col-mrg-15']//option[@value!='']//text()"}
-        
+    PATHS = {
+        "league": "/league",
+        "all_leagues": "/leagues",
+            "stats": "/stats",
+        "league_names_ref": "//div[preceding-sibling::header[contains(@id, '-men')]]//a[@class='TextLink_link__3JbdQ TableBody_link__MNtRl']/@href",
+        "league_name": "//div[preceding-sibling::header[contains(@id, '-men')]]//a[@class='TextLink_link__3JbdQ TableBody_link__MNtRl']/text()",
+        "season_refs": "//a[@style='font-weight: 800;']/@href",
+        "standings": "/standings/",
+        "year_list": "//a[@class='TextLink_link__3JbdQ"
+                     " ListOfChampionsAndLeagueAwards_yearLink__rVDt0']"
+                    "/text()"
+        }
+    
+
     def __init__(self):
          pass
         
@@ -25,7 +29,7 @@ class LeagueUrlDownload():
         and values are their respective urls"""
 
         dict_leagues = {}
-        path_all_leagues = LeagueUrlDownload.PATHS["main"] + LeagueUrlDownload.PATHS["all_leagues"]
+        path_all_leagues = ELITE_URL + LeagueUrlDownload.PATHS["all_leagues"]
         html_leagues = requests.get(path_all_leagues).content
         leagues_sel = scrapy.Selector(text=html_leagues)
         leagues_ref = leagues_sel.xpath(LeagueUrlDownload.PATHS["league_names_ref"]).getall()
@@ -77,12 +81,20 @@ class LeagueUrlDownload():
 
         league_team_refs = []
         season_getter = SeasonUrlDownload()
-        league_path = LeagueUrlDownload.PATHS["main"] + LEAGUE_URL[league]
+        league_path = ELITE_URL + LEAGUE_URLS[league]
+        print(league_path)
         league_page_html = requests.get(league_path).content
         sel_league = scrapy.Selector(text=league_page_html)
-        season_list = sel_league.xpath(LeagueUrlDownload.PATHS["season_list"]).getall()
-        season_list = [season.strip() for season in season_list]
-        for season in season_list:
+        year_list = (sel_league
+                       .xpath(LeagueUrlDownload.PATHS["year_list"])
+                       .getall())
+        print(LeagueUrlDownload.PATHS["year_list"])
+        print(year_list)
+        year_list = [year.strip() for year in year_list]
+        print(year_list)
+        for year in year_list:
+            season = self.create_season_string(year=year)
+            print(season)
             season_refs = season_getter.get_team_season_refs(season=season, league=league, ref_list=league_team_refs)
             season_refs = [value for value in season_refs if type(value) == str]
             if season_refs != []:
@@ -96,7 +108,6 @@ class LeagueUrlDownload():
 class SeasonUrlDownload():
 
     PATHS = {
-        "main": "https://www.eliteprospects.com",
         "player_ref": "//table[@id='export-skater-stats-table']"
                       "//td[@class='player']//a/@href",
         "goalie_ref": "//table[@id='export-goalie-stats-table']//td"
@@ -140,7 +151,7 @@ class SeasonUrlDownload():
         """downloads urls of player profiles for one season of one league from the webpage with statistics
             output dictionary: (players-goalies) -> urls"""
 
-        league_stats_path = (SeasonUrlDownload.PATHS["main"] 
+        league_stats_path = (ELITE_URL
                              + LEAGUE_URLS[league] 
                              + SeasonUrlDownload.PATHS["stats"] 
                              + "/" 
@@ -176,13 +187,20 @@ class SeasonUrlDownload():
         dict_season["players"] = sublist_players
         return dict_season
 
-    def get_team_season_refs(self, season: str, league: str, ref_list: list=[]) -> list:
-        url_season = SeasonUrlDownload.PATHS["main"] + \
-           LEAGUE_URLS[league] + "/" + season
+    def get_team_season_refs(
+            self, season: str, league: str, ref_list: list=[]
+            ) -> list:
+        url_season = (ELITE_URL 
+                      + LEAGUE_URLS[league] 
+                      + TEAM_STANDINGS 
+                      + "/" 
+                      + season)
+        print(url_season)
         season_html = requests.get(url_season).content
         sel_season = scrapy.Selector(text=season_html)
         team_refs = sel_season.xpath(
             SeasonUrlDownload.PATHS["team_url"]).getall()
+        print(team_refs)
         for team_ref in team_refs:
             team_ref_wo_season = re.findall(
                 "(.+)\/[0-9]{4}\-[0-9]{4}$", team_ref)
