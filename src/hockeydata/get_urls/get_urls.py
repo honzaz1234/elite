@@ -1,7 +1,6 @@
-
+import re 
 import requests
 import scrapy
-import re 
 from hockeydata.constants import *
 
 class LeagueUrlDownload():
@@ -20,7 +19,7 @@ class LeagueUrlDownload():
     def __init__(self):
          pass
         
-    def get_league_names_dict(self):
+    def get_league_names_dict(self) -> dict:
 
         """function that creates dictionary, where keys are leagues that can be found on the elite prospects website
         and values are their respective urls"""
@@ -35,7 +34,7 @@ class LeagueUrlDownload():
             dict_leagues[leagues_names[ind]] = leagues_ref[ind]
         return dict_leagues
     
-    def create_season_string(self, year, preceeding=True):
+    def create_season_string(self, year: str, preceeding: bool=True) -> list:
 
         """creates season from year
             2011 => 2011-2012 etc."""
@@ -47,7 +46,7 @@ class LeagueUrlDownload():
             season_string = str(year_minus) + "-" + str(year)
         return season_string
     
-    def create_season_list(self, min, max):
+    def create_season_list(self, min: int, max: int) -> list:
          range_years = [*range(min, max, 1)]
          list_seasons = []
          for year in range_years:
@@ -55,7 +54,7 @@ class LeagueUrlDownload():
             list_seasons.append(season1)
          return list_seasons
     
-    def get_player_refs(self, league, years):
+    def get_player_refs(self, league: str, years: list) -> dict:
         """downloads player urls based on league and list of  years
             output: dictionary: season -> (players-goalies) -> urls
         """
@@ -73,7 +72,7 @@ class LeagueUrlDownload():
             dict_player_ref[season] = season_dict
         return dict_player_ref
     
-    def get_team_refs(self, league):
+    def get_team_refs(self, league: str) -> list:
         """downloads references to team pages based on the league selected"""
 
         league_team_refs = []
@@ -115,7 +114,7 @@ class SeasonUrlDownload():
     def __init__(self):
         pass
 
-    def _page_player(self, path, index):
+    def _page_player(self, path: str, index: int) -> list:
         """downloads urls of player profiles from 1 page of seasonal statistic board"""
 
         subpage_path = path + "?page=" + str(index)
@@ -125,7 +124,7 @@ class SeasonUrlDownload():
             SeasonUrlDownload.PATHS["player_ref"]).getall()
         return player_refs
 
-    def _page_goalie(self, path, index):
+    def _page_goalie(self, path: str, index: int) -> list:
         """downloads urls of goalie profiles from 1 page of seasonal statistic board"""
 
         subpage_path = (path 
@@ -137,7 +136,7 @@ class SeasonUrlDownload():
             SeasonUrlDownload.PATHS["goalie_ref"]).getall()
         return goalies_refs
 
-    def get_player_season_refs(self, league, season):
+    def get_player_season_refs(self, league: str, season: str) -> dict:
         """downloads urls of player profiles for one season of one league from the webpage with statistics
             output dictionary: (players-goalies) -> urls"""
 
@@ -177,7 +176,7 @@ class SeasonUrlDownload():
         dict_season["players"] = sublist_players
         return dict_season
 
-    def get_team_season_refs(self, season, league, ref_list=[]):
+    def get_team_season_refs(self, season: str, league: str, ref_list: list=[]) -> list:
         url_season = SeasonUrlDownload.PATHS["main"] + \
            LEAGUE_URLS[league] + "/" + season
         season_html = requests.get(url_season).content

@@ -1,8 +1,7 @@
-from sqlalchemy import create_engine, ForeignKey, Column, String, Integer, CHAR, Boolean, Date, Float
+import hockeydata.get_urls.get_urls as league_url
+from sqlalchemy import create_engine, Boolean, Column, Date, Index, Integer, ForeignKey, Float, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import Index
-import hockeydata.get_urls.get_urls as league_url
 
 
 leauge_getter = league_url.LeagueUrlDownload()

@@ -1,7 +1,6 @@
-import scrapy
-import requests
 import re
-
+import requests
+import scrapy
 from hockeydata.constants import *
 from hockeydata.get_urls.get_urls import LeagueUrlDownload
 
@@ -24,14 +23,14 @@ class LeagueScrapper():
 
     SEASON_URL_REGEX = "standings/(.+)"
 
-    def __init__(self, url):
+    def __init__(self, url: str) -> dict:
         """url is the web address of league on elite prospect website"""
 
         self.url = url
         self.html = requests.get(url).content
         self.selector = scrapy.Selector(text=self.html)
 
-    def get_league_data(self):
+    def get_league_data(self) -> dict:
         """method that creates dictionary of all data that is available to scrap with this class
         """
 
@@ -42,13 +41,13 @@ class LeagueScrapper():
         league_dict[SEASON_STANDINGS] = self.get_season_data()
         return league_dict
 
-    def _get_uid(self):
+    def _get_uid(self) -> str:
         """method for accessing uid of league from url"""
 
         u_id = re.findall(LEAGUE_UID_REGEX, self.url)[0]
         return u_id
 
-    def get_name(self):
+    def get_name(self) -> str:
         """method for scraping league name"""
 
         long_name = self.selector.xpath(
@@ -56,7 +55,7 @@ class LeagueScrapper():
         long_name = long_name[0].strip()
         return long_name
 
-    def get_achievements(self):
+    def get_achievements(self) -> list:
         """method for scraping list of achievements(trophies):
         most points, goals in the season etc."""
 
@@ -66,7 +65,7 @@ class LeagueScrapper():
                              for achievement in achievements_list]
         return achievements_list
 
-    def get_season_data(self):
+    def get_season_data(self) -> dict:
         """method for creating dictionary with season standings of teams for all years that are availiable on the website
         """
         get_season =  LeagueUrlDownload()
@@ -106,12 +105,12 @@ class LeagueSeasonScraper():
     
     REGEX_SEASON = "(.+)\/[0-9]{4}\-[0-9]{4}$"
 
-    def __init__(self, url):
+    def __init__(self, url: str):
         self.url = url
         self.html = requests.get(self.url).content
         self.selector = scrapy.Selector(text=self.html)
 
-    def get_season_standings(self):
+    def get_season_standings(self) -> dict:
         """method for downloading season stadnings data from one season"""
 
         section_names = self.selector.xpath(
@@ -128,7 +127,7 @@ class LeagueSeasonScraper():
         return dict_season
     
 
-    def get_section(self, section_ind):
+    def get_section(self, section_ind: int) -> dict:
         """wraper method for downloading season standings data from one section of season standings table
         """
 
@@ -142,7 +141,7 @@ class LeagueSeasonScraper():
         return dict_section
 
 
-    def get_section_standings(self, path_section):
+    def get_section_standings(self, path_section: str) -> dict:
         """method for downloading season standings data from one section of season standings table
         """
 
@@ -154,7 +153,7 @@ class LeagueSeasonScraper():
             dict_section[row_dict[LEAGUE_POSITION]] = row_dict
         return dict_section
     
-    def get_one_row(self, path_section, row_ind):
+    def get_one_row(self, path_section: str, row_ind: int) -> dict:
         """method for downloading one row from season stadndings table"""
 
         dict_row = {}
@@ -166,7 +165,7 @@ class LeagueSeasonScraper():
                         ] = row_stats[ind].strip()
         return dict_row
 
-    def get_row_stats(self, path_section, row_ind):
+    def get_row_stats(self, path_section: str, row_ind: int) -> list:
          """methods for downloading indvidiual attributes from one row of season standings table (total points, goals, goals against...)"""
 
          one_row_path = (path_section 
@@ -179,7 +178,7 @@ class LeagueSeasonScraper():
                     for value in row_data if value.strip() != ""]
          return row_data
 
-    def get_team_url(self, path_section, row_ind):
+    def get_team_url(self, path_section: str, row_ind: int) -> str:
         """method for accessing team uid form url of team website"""
 
         path_url = (path_section 

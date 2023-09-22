@@ -1,6 +1,6 @@
+import re
 import requests
 import scrapy
-import re
 from hockeydata.constants import *
 
 
@@ -48,12 +48,12 @@ class TeamScraper():
         "Construction Year": CONSTRUCTION_YEAR
         } 
 
-    def __init__(self, url):
+    def __init__(self, url: str):
         self.url = url + TeamScraper.URL_SECTIONS["history"]
         self.html = requests.get(self.url).content
         self.selector = scrapy.Selector(text=self.html)
 
-    def get_info(self):
+    def get_info(self) -> dict:
         """ wrapper function for downloading all of the info from one team webpage"""
 
         dict_info = {}
@@ -67,7 +67,7 @@ class TeamScraper():
         dict_info[HISTORIC_NAMES] = hist_names.get_historic_names_dict()
         return dict_info
 
-    def get_general_info_dict(self):
+    def get_general_info_dict(self) -> dict:
         """wrapper function for getting all information 
         in the general info dict"""
 
@@ -79,7 +79,7 @@ class TeamScraper():
                                         self.url)[0])
         return gi_dict
            
-    def get_dict_info(self, list_info, key_left, key_right):
+    def get_dict_info(self, list_info: list, key_left: str, key_right: str) -> dict:
         """wrapper method for downloading all of the general info"""
 
         dict_ = {}
@@ -89,7 +89,7 @@ class TeamScraper():
                 info=info, key_left=key_left, key_right=key_right)
         return dict_
 
-    def _get_short_name(self):
+    def _get_short_name(self) -> str:
         """wrapper method for downloading short name of team - must be always present on the webpage
         """
 
@@ -102,7 +102,7 @@ class TeamScraper():
             short_name = short_name[0].strip()
         return short_name
 
-    def _get_info(self, info, key_left, key_right):
+    def _get_info(self, info: str, key_left: str, key_right: str) -> int|str|list:
         """general method for downloading individual general info values"""
 
         info_path_val = (TeamScraper.INFO_PATHS[key_left] 
@@ -115,7 +115,7 @@ class TeamScraper():
             info_val = [None]
         return info_val[0]
 
-    def get_affiliated_teams(self):
+    def get_affiliated_teams(self) -> list:
         """returns list of urls of affiliated team"""
 
         list_at = []
@@ -124,7 +124,7 @@ class TeamScraper():
                    .getall())
         return list_at
 
-    def get_retired_numbers(self):
+    def get_retired_numbers(self) -> dict:
         """returns dicitonary where keys are urls of pages of players which number was retired for the given team and values are the number that was retired
         """
 
@@ -161,11 +161,11 @@ class HistoricNames():
         "name_right": "]/following-sibling::tr)"
     }
 
-    def __init__(self, selector):
+    def __init__(self, selector: scrapy.Selector):
         self.selector = selector
         pass
 
-    def get_num_names(self):
+    def get_num_names(self) -> int:
         """creates list with number of unique names that team had in history according to the table with seasonal standings"""
 
         n_names = (self.selector
@@ -174,7 +174,7 @@ class HistoricNames():
         n_names = int(float(n_names))
         return n_names
     
-    def get_num_lines(self):
+    def get_num_lines(self) -> int:
         """get number of lines in table with seasonal standings"""
 
         n_lines = (self.selector
@@ -183,14 +183,14 @@ class HistoricNames():
         n_lines = int(float(n_lines))
         return n_lines
 
-    def get_team_names(self):
+    def get_team_names(self) -> list:
         """creates list with unique names that team had in history according to the table with seasonal standings"""
 
         names = self.selector.xpath(HistoricNames.HN_PATHS["titles"]).getall()
         names = [name.strip() for name in names]
         return names
     
-    def get_title_position(self, n, n_lines):
+    def get_title_position(self, n: int, n_lines: int) -> int:
         """gets index of row on which the nth name is located"""
 
         path1 = (HistoricNames.HN_PATHS["name_left"]
@@ -201,7 +201,7 @@ class HistoricNames():
         title_position = n_lines - n_following
         return title_position
     
-    def get_title_positions(self, n_names, n_lines):
+    def get_title_positions(self, n_names: int, n_lines: int) -> list:
         """creates a list with all the positions of team names in the table"""
 
         title_positions = []
@@ -211,7 +211,7 @@ class HistoricNames():
         title_positions.append(n_lines + 1)
         return title_positions
     
-    def get_season(self, n):
+    def get_season(self, n: int) -> list:
         """gets the season of nth row of the table"""
 
         path_season = (HistoricNames.HN_PATHS["season_l"]
@@ -220,7 +220,7 @@ class HistoricNames():
         season = self.selector.xpath(path_season).getall()
         return season
 
-    def get_historic_names_dict(self):
+    def get_historic_names_dict(self) -> dict:
         """creates dictionary where keys are the unique team names
         and values are again dictionaries with season range in which team had this name
         """

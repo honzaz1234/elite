@@ -9,13 +9,13 @@ class UpdateLeagueDict():
     def __init__(self):
         pass
     
-    def update_league_dict(self, league_dict):
+    def update_league_dict(self, league_dict: dict) -> dict:
         new_league_dict = league_dict.copy()
         new_league_dict[SEASON_STANDINGS] = self._update_standing_dict(
             standing_dict=new_league_dict[SEASON_STANDINGS])
         return new_league_dict
 
-    def _update_standing_dict(self, standing_dict):
+    def _update_standing_dict(self, standing_dict: dict) -> dict:
         """wraper function for updating dict with team standings for individual seasons
         """
 
@@ -31,7 +31,7 @@ class UpdateLeagueDict():
                     new_dict[section][season][new_key] = new_row_dict
         return new_dict
 
-    def _update_row(self, row_dict):
+    def _update_row(self, row_dict: dict) -> dict:
         """function for updating one team entry in season data dict"""
         
         for stat in list(row_dict.keys()):

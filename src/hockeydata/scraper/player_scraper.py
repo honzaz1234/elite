@@ -1,7 +1,6 @@
+import re
 import requests
 import scrapy
-import re
-
 from hockeydata.constants import *
 
 
@@ -15,7 +14,7 @@ class PlayerScraper:
        c) player achievements 
     """
 
-    def __init__(self, url):
+    def __init__(self, url: str):
         """Arguments:
         url - url of player profile
         html - html code of player profile webpage
@@ -25,7 +24,7 @@ class PlayerScraper:
         self.html = requests.get(self.url).content
         self.selector = scrapy.Selector(text=self.html)
 
-    def get_info_all(self, years=None):
+    def get_info_all(self, years: list=None) -> dict:
         """Wrapper function containing all individual methods for scrapping data into self.info_dict
             Output: dictionary used  for storing data on a player
                     Stats - keys: individual seasons -> (league - team) -> regular_season_playoff -> stats (list)
@@ -89,20 +88,20 @@ class PlayerGeneralInfo():
     } 
     
 
-    def __init__(self, selector, url):
+    def __init__(self, selector: scrapy.Selector, url: str):
         """attribute: selector - selector created from html of whole player webpage"""
 
         self.selector = selector
         self.url = url
 
-    def get_general_info(self):
+    def get_general_info(self) -> dict:
         dict_gi = self._get_info_wraper()
         dict_gi[PLAYER_NAME] = self._get_name()
         dict_gi[PLAYER_UID] = re.findall(PLAYER_UID_REGEX,
                                          self.url)[0]
         return dict_gi
 
-    def _get_name(self):
+    def _get_name(self) -> str:
         """used to get player name"""
 
         name = (self.selector
@@ -112,7 +111,7 @@ class PlayerGeneralInfo():
         name = [string for string in name if string != ""]
         return name[0].strip()
 
-    def _get_info_wraper(self):
+    def _get_info_wraper(self) -> dict:
         """wraper method for downloading individual all info information from facts table"""
 
         dict_gi = {}
@@ -125,7 +124,7 @@ class PlayerGeneralInfo():
                                                 keep_list=keep_list)
         return dict_gi
 
-    def _get_info(self, info_name, keep_list):
+    def _get_info(self, info_name: str, keep_list: bool) -> int|str|list:
         "method for getting one info value from Facts table on player's webpage"
 
         info_path_val = (PlayerGeneralInfo.PATHS["gi_l"]
@@ -155,7 +154,7 @@ class FamilyRelations():
     
     URL_UID_REGEX = "player\=([0-9]+)"
 
-    def __init__(self, selector):
+    def __init__(self, selector: scrapy.Selector):
         self.selector = selector
         self._relations_regex = ("("
                                  + FamilyRelations.RELATION_REGEX
@@ -163,7 +162,7 @@ class FamilyRelations():
                                  + ":")
         self._relation_url_regex = ":(.+)(:|$)"
 
-    def _get_individual_relations(self):
+    def _get_individual_relations(self) -> dict:
         """creates dictionary in which the keys are the relations that exist for the player and values are the html code in which u_ids of these relations can be found
         """
 
@@ -185,7 +184,7 @@ class FamilyRelations():
             dict_strings[r_list[ind][1]] = data_list[ind]
         return dict_strings
 
-    def _get_relation_dict(self):
+    def _get_relation_dict(self) -> dict:
         relations_uid = {}
         player_string_dict = self._get_individual_relations()
         for relation in player_string_dict:
@@ -211,12 +210,12 @@ class PlayerStats():
         "stat_years": "//table[contains(@class,'table table-condensed table-sortable')]/tbody/tr/@data-season"
     }
 
-    def __init__(self, selector):
+    def __init__(self, selector: scrapy.Selector):
         """attribute: selector - selector created from html of whole player webpage"""
 
         self.selector = selector
 
-    def get_all_stats(self, years=None):
+    def get_all_stats(self, years: list=None) -> dict:
         """wrapper function for downloading stats from both league and tournament tables"""
 
         dict_stats = {}
@@ -225,7 +224,7 @@ class PlayerStats():
                                                     type="tournaments")
         return dict_stats
 
-    def _get_stats(self, type, years=None):
+    def _get_stats(self, type: str, years: list=None) -> dict:
         
         """function for downloading data from the whole table (league, tournament) with the player season statistics
         """
@@ -248,7 +247,7 @@ class PlayerStats():
                 season_dict=dict_stats[season], path_type=path_type, ind=ind)
         return dict_stats
     
-    def _get_season_stats(self, season_dict, path_type, ind):
+    def _get_season_stats(self, season_dict: dict, path_type: str, ind: int) -> dict:
 
         """adds one row from stat table to stat dictionary"""
 
@@ -263,7 +262,7 @@ class PlayerStats():
                 old_dict=season_dict, new_dict=sub_dict)
         return new_season_dict
 
-    def _merge_league_dict(self, old_dict, new_dict):
+    def _merge_league_dict(self, old_dict: dict, new_dict: dict) -> dict:
         
         """merges season dictionary with new stat row dictionary - needed because sometimes player changes team in one competition over the season
         """
@@ -297,40 +296,11 @@ class OneRowStat():
 
     PROJECTED = "Projected"
 
-    def __init__(self, path, selector):
+    def __init__(self, path: str, selector: scrapy.Selector):
         self.path_to_row = path
         self.selector = selector
-
-    def _aa(self):
-        """creates stat dicitonary from one row in stat table"""
-
-        team = self._get_stat_atribute(key="team")
-        if team is None:
-            return {}
-        league = self._get_stat_atribute(key="league")
-        leadership = self._get_stat_atribute(key="leadership")
-        stat_play_off = self._get_stat_atribute(
-            key="stats_regular", keep_list=True)
-        stat_regular = self._get_stat_atribute(
-            key="stats_playoff", keep_list=True)
-        if league is not None:
-            league_url = self._extract_general_url(
-                key_path="url_league", key_regex="league")
-        else:
-            league_url = None
-        team_url = self._extract_general_url(
-             key_path="url_team", key_regex="team")
-        dict_row = {}
-        dict_row[league] = {}
-        dict_row[league][LEAGUE_URL] = league_url
-        dict_row[league][team] = {}
-        dict_row[league][team][REGULAR_SEASON] = stat_regular
-        dict_row[league][team][PLAY_OFF] = stat_play_off
-        dict_row[league][team][LEADERSHIP] = leadership
-        dict_row[league][team][TEAM_URL] = team_url
-        return dict_row
     
-    def _get_stat_dictionary(self):
+    def _get_stat_dictionary(self) -> dict:
         """method for getting stat dictionary of one row of stat table"""
 
         dict_stat = {}
@@ -343,7 +313,7 @@ class OneRowStat():
         else:
             return dict_stat
     
-    def _get_league_dict(self, league):
+    def _get_league_dict(self, league: str) -> dict:
         """method for getting league dictionary of one row of stat table"""
 
         league_dict = {}
@@ -354,7 +324,7 @@ class OneRowStat():
         league_dict[LEAGUE_URL] = self._get_league_url(league=league)
         return league_dict
 
-    def _get_league_url(self, league):
+    def _get_league_url(self, league: str) -> str:
         """wrapper method for getting league url"""
 
         if league is not None:
@@ -364,7 +334,7 @@ class OneRowStat():
             league_url = None
         return league_url
     
-    def _get_team_dict(self):
+    def _get_team_dict(self) -> dict:
         """get dict with information regarding the team from one row of stat table"""
 
         dict_team = {}
@@ -381,7 +351,7 @@ class OneRowStat():
         dict_team[TEAM_URL] = team_url
         return dict_team
 
-    def _get_stat_atribute(self, key, keep_list=False):
+    def _get_stat_atribute(self, key: str, keep_list: bool=False) -> list|str|int:
 
         """method for extracting one attribute from stat row(team, league, capitancy, season stats
         """
@@ -396,7 +366,7 @@ class OneRowStat():
         else:
             return stat_list[0]
         
-    def _extract_general_url(self, key_path, key_regex):
+    def _extract_general_url(self, key_path: str, key_regex: str) -> str:
 
         """method for extracting url of team and league
         to which the statistics are related
@@ -423,7 +393,7 @@ class PlayerAchievements():
     def __init__(self, selector):
         self.selector = selector
 
-    def get_achievements(self, years=None):
+    def get_achievements(self, years: list=None) -> dict:
         """method for downloading achievements of player into dictionary"""
 
         dict_achiev = {}
@@ -438,8 +408,7 @@ class PlayerAchievements():
                 ind=ind)
         return dict_achiev
     
-
-    def get_season_achievements(self, ind):
+    def get_season_achievements(self, ind: int) -> list:
         """method for getting list of achievements in one season"""
 
         path = (PlayerAchievements.PATHS["achievements_l"]

@@ -1,5 +1,4 @@
 import re
-
 from hockeydata.constants import * 
 
 
@@ -12,7 +11,7 @@ class UpdateTeamDict():
     def __init__(self):
         pass
 
-    def update_team_dict(self, dict):
+    def update_team_dict(self, dict: dict) -> dict:
         """wraper function for updating team dict in order to prepared it for insertion into the database
         """
 
@@ -30,7 +29,7 @@ class UpdateTeamDict():
             list_url=new_dict[AFFILIATED_TEAMS], regex=TEAM_UID_REGEX)
         return new_dict
         
-    def _update_general_info(self, gi_dict):
+    def _update_general_info(self, gi_dict: dict) -> dict:
         """wraper method for updating general info dict in order to prepare for insertion into db
         """
 
@@ -47,7 +46,7 @@ class UpdateTeamDict():
         del gi_dict_new[PLACE]
         return gi_dict_new
     
-    def _update_stadium_info(self, si_dict):
+    def _update_stadium_info(self, si_dict: dict) -> dict:
         """wraper method for updating stadium info dict in order to prepare for insertion into db"""
 
 
@@ -60,7 +59,7 @@ class UpdateTeamDict():
         return si_dict_new
         
 
-    def _create_place_dict(self, place_string):
+    def _create_place_dict(self, place_string: str|None) -> dict:
         """place of birth string scraped from player webpage consists of 2 or 3 values; town and country or town region and country in case Canada or USA; the ranking of these 3 values is always the same:
         on the first position is place, followed by region and finally country all separated by , 
         on a rare occasions, only a name of (US or CAN) region is mentioned with the country being explicitly stated
@@ -97,7 +96,7 @@ class UpdateTeamDict():
             dict_place[REGION] = list_place[1].strip()
         return dict_place
 
-    def update_urls(self, list_url, regex):
+    def update_urls(self, list_url: list, regex: str) -> dict:
         """creates dict from list where keys are regex matches and values are original values
         """
 
@@ -107,24 +106,24 @@ class UpdateTeamDict():
             dict_url[u_id] = url
         return dict_url
 
-    def _update_numbers(self, dict):
+    def _update_numbers(self, dict_: dict) -> dict:
         """method for updating string integers to integers"""
 
-        for key in dict:
+        for key in dict_:
             if key in UpdateTeamDict.INT_KEYS:
-                if dict[key] is None:
+                if dict_[key] is None:
                     continue
                 else:
-                    new_int = (re.sub("\s", "", dict[key]))
+                    new_int = (re.sub("\s", "", dict_[key]))
                     new_int = re.findall("[0-9]+", new_int)
                     if new_int != []:
                         new_int = int(new_int[0])
                     else:
                         new_int = None
-                    dict[key] = new_int
-        return dict
+                    dict_[key] = new_int
+        return dict_
 
-    def _update_colours(self, colour_string):
+    def _update_colours(self, colour_string: str|None) -> list:
         """method for creating list of colours from string"""
 
         if colour_string == None:
@@ -132,7 +131,7 @@ class UpdateTeamDict():
         colour_list = colour_string.split(" + ")
         return colour_list
 
-    def _update_status(self, leagues):
+    def _update_status(self, leagues: str) -> int:
         """method for asserting if team is active (participates in some competition or not)
         """
 
@@ -141,14 +140,14 @@ class UpdateTeamDict():
         else:
             return 1
 
-    def _update_missing_values(self, dict):
+    def _update_missing_values(self, dict_: dict) -> dict:
         """method for updating values equal to - to None"""
-        for key in dict:
-            if dict[key] == NA:
-                dict[key] = None
-        return dict
+        for key in dict_:
+            if dict_[key] == NA:
+                dict_[key] = None
+        return dict_
 
-    def _update_historic_name(self, dict_titles, short_name):
+    def _update_historic_name(self, dict_titles: dict, short_name: str) -> dict:
         """in case team had only one name throught the history, the name is not mentioned in the table with historical standings from which the names are taken; in that case, the name is set to the short name from general info dict
         """
 
@@ -160,7 +159,7 @@ class UpdateTeamDict():
                     del dict_titles_new[key]
         return dict_titles_new
 
-    def _update_retired_numbers(self, num_dict):
+    def _update_retired_numbers(self, num_dict: dict) -> dict:
         """method for creating dict where keys are players uids and values are list where on the first position is the number and on the second position is player uid
         """
 
