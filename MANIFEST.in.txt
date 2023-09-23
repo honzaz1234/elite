@@ -1,0 +1,4 @@
+include CHANGES.txt
+include *.md
+recursive-include *.json
+recursive-include *.html

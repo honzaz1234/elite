@@ -1,8 +1,8 @@
+LICENSE.txt
 README.md
 setup.py
 src/hockeydata/__init__.py
 src/hockeydata/constants.py
-src/hockeydata/setup.py
 src/hockeydata.egg-info/PKG-INFO
 src/hockeydata.egg-info/SOURCES.txt
 src/hockeydata.egg-info/dependency_links.txt

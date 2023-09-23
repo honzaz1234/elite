@@ -1,8 +1,0 @@
--udpdate team scraper for retired numbers
--update player_dict updater for redundant spaces at player achievements
--add dict updater for team
--add database entry for team
--update exisiting entry for possibility that team league is not already in database
--update database scheme - done
--upravit team info u team scraper
--delete dnp
