@@ -1,12 +1,10 @@
 import hockeydata.get_urls.get_urls as league_url
-from sqlalchemy import create_engine, Boolean, Column, Date, Index, Integer, ForeignKey, Float, String
+from sqlalchemy import Boolean, Column, Date, Index, Integer, ForeignKey, Float, String
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 
 
 leauge_getter = league_url.LeagueUrlDownload()
 Base = declarative_base()
-
 
 class Player(Base):
 
@@ -535,22 +533,4 @@ class GoalieStats(Base):
 Index('goalie_stats_league_id_season_id_index',
       GoalieStats.league_id, GoalieStats.season_id)
 
-engine = create_engine(
-    "sqlite:///C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/database/hockey_v8.db", echo=False)
-Base.metadata.create_all(bind=engine)
 
-DBSession = sessionmaker(bind=engine)
-session = DBSession()
-
-check_data = session.query(Season).all()
-if check_data == []:
-    season_list = leauge_getter.create_season_list(1886, 2024)
-    for one_season in season_list:
-        season_entry = Season(season=one_season)
-        session.add(season_entry)
-        session.commit()
-    years = [*range(1886, 2025, 1)]
-    for year in years:
-        season_entry = Season(season=year)
-        session.add(season_entry)
-        session.commit()

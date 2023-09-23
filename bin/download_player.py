@@ -6,17 +6,15 @@ import hockeydata.scraper.player_scraper as player
 import hockeydata.get_urls.get_urls as get_url
 import hockeydata.update_dict.update_player as update_player
 import hockeydata.input_dict.input_player_dict as input_dict
-import hockeydata.database_creator.database_creator as db
+from  hockeydata.database_creator.create_session import session
 
-url_links = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/links/players.json"
-dict_data = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/data_dict/"
-done_players_path = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/data/data_dict/done_players.json"
-file_name_done = "done_players.json"
-
+url_links = "./data/links/players.json"
+dict_data = "./data/data_dict/"
+done_players_path = "./data/data_dict/done_players.json"
 
 season_url_scraper = get_url.SeasonUrlDownload()
 update_dict = update_player.UpdatePlayer()
-input_database = input_dict.InputPlayerDict(db_session=db.session)
+input_database = input_dict.InputPlayerDict(db_session=session)
 league_url_scraper = get_url.LeagueUrlDownload()
 
 list_seasons_whl = league_url_scraper.create_season_list(1966, 2023)
