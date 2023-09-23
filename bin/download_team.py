@@ -2,10 +2,10 @@ import hockeydata.get_urls.get_urls as get_url
 import hockeydata.scraper.team_scraper as scraper_team
 import hockeydata.update_dict.update_team as team_updater
 import hockeydata.input_dict.input_team_dict as input_dict_2
-import hockeydata.database_creator.database_creator as db
 import re
 import json
 import time
+from  hockeydata.database_creator.create_session import session
 
 get_url_o = get_url.LeagueUrlDownload()
 
@@ -18,7 +18,7 @@ dict_data_path = "C:/Users/jziac/OneDrive/Documents/programovani/projekty/elite/
 print(league_list)
 
 tu_o = team_updater.UpdateTeamDict()
-insert_team_data = input_dict_2.InputTeamDict(session_db=db.session)
+insert_team_data = input_dict_2.InputTeamDict(session_db=session)
 
 f =  open(dict_data_path)
 u_id_done_dict = json.load(f)
