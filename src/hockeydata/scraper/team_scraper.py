@@ -11,34 +11,33 @@ class TeamScraper():
 
     INFO_PATHS = {
 
-        "short_name": "//h1[@class='semi-logo']/text()",
-        "gi_left": "//div[@class='league-title clearfix']"
-                             "//*[@class='value' and preceding-sibling::"
-                             "span[contains(text(),'",
+        "short_name": "//h1[@class='Profile_headerMain__uA_uQ']/text()",
+        "gi_left": "//div[@id='team-facts']"
+                             "//td[preceding-sibling::"
+                             "th[contains(text(),'",
         "gi_right": "')]]//text()",
-        "si_left": "//strong[preceding::span[1]"
-                      "[contains(text(), '",
-        "si_right": "')]]/text()"
+        "si_left": "//div[@id='team-arena']"
+                             "//td[preceding-sibling::"
+                             "th[contains(text(),'",
+        "si_right": "')]]//text()"
     }
     
     OTHER_PATHS = {
-        "affiliated_teams": "//strong[@class='value'"
-                                  " and preceding-sibling::span"
-                                  "[text()='Affiliated Team(s)']]//@href",
-        "retired_num": "//ul[preceding-sibling::h4"
-                              "[text()='Retired Numbers']]//a[1]/"
+        "affiliated_teams": "//div[preceding-sibling::span[contains(text()"
+                            ", 'Affiliated Team(s)')]]//li/a/@href",
+        "retired_num": "//div[@id='team-retired-player']//ul/li"
     }
 
     URL_SECTIONS = {
         "history": "?team-history=complete#team-history"
     }
 
-    INFO_NAMES = ["Plays in", "Team colours", "Town", "Founded", "Full name"]
+    INFO_NAMES = ["Plays in", "Team colors", "Town", "Founded", "Full name"]
     STADIUM_INFO_NAMES = ["Arena Name", "Location", "Capacity", 
                           "Construction Year"]
     WEB_MAPPING = {
         "Plays in": PLAYS_IN, 
-        "Team colours": TEAM_COLOURS,
+        "Team colors": TEAM_COLOURS,
         "Town": PLACE, 
         "Founded": YEAR_FOUNDED, 
         "Full name": LONG_NAME,
@@ -79,7 +78,9 @@ class TeamScraper():
                                         self.url)[0])
         return gi_dict
            
-    def get_dict_info(self, list_info: list, key_left: str, key_right: str) -> dict:
+    def get_dict_info(
+            self, list_info: list, key_left: str, key_right: str
+            ) -> dict:
         """wrapper method for downloading all of the general info"""
 
         dict_ = {}
@@ -129,8 +130,8 @@ class TeamScraper():
         """
 
         dict_num = {}
-        path_url = TeamScraper.OTHER_PATHS["retired_num"] + "@href"
-        path_num = TeamScraper.OTHER_PATHS["retired_num"] + "text()"
+        path_url = TeamScraper.OTHER_PATHS["retired_num"] + "//a/@href"
+        path_num = TeamScraper.OTHER_PATHS["retired_num"] + "/span/text()"
         urls = self.selector.xpath(path_url).getall()
         numbers = self.selector.xpath(path_num).getall()
         for ind in range(len(urls)):
@@ -138,7 +139,8 @@ class TeamScraper():
         return dict_num
 
 class HistoricNames():
-    """class for creating dictionary with team hsitoric names and season range in which these names where used"""
+    """FOR TIME BEING DEPRECIATED - team info website changed to dynamic - table with historic names can not be longer downloaded with requests library;
+    class for creating dictionary with team historic names and season range in which these names where used"""
 
     HN_PATHS = {
         "season_l": "(//div[@class='content_left']//"
@@ -239,14 +241,17 @@ class HistoricNames():
 
         n_names = self.get_num_names()
         n_lines = self.get_num_lines()
+        print([n_names, n_lines])
         if n_names == 0:
             n_names = 1
             team_names = ["-"]
             names_positions = [0]
         else:
             team_names = self.get_team_names()
+            print(team_names)
             names_positions = self.get_title_positions(
             n_lines=n_lines, n_names=n_names)
+            print(names_positions)
         dict_titles = {}
         row_ind = names_positions[0]
         for ind in range(1, n_names + 1):

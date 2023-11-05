@@ -7,8 +7,7 @@ league_getter = league_url.LeagueUrlDownload()
 
 database_location = input('Database path: ')
 if database_location == '': 
-    database_location = "./database/hockey_v8.db"
-
+    database_location = "./database/hockey_v9.db"
 engine = create_engine("sqlite:///" + database_location, echo=False)
 Base.metadata.create_all(bind=engine)
 

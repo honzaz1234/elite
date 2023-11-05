@@ -16,7 +16,7 @@ class LeagueScrapper():
         "league_refs": "//a[contains(@class,'" 
                         "ListOfChampionsAndLeagueAwards_yearLink__rVDt0')]"
                         "/@href",
-        "long_name": "//h1/text()",
+        "long_name": "//h1//text()",
         "season": "//a[@class='TextLink_link__3JbdQ"
                   " ListOfChampionsAndLeagueAwards_yearLink__rVDt0']/text()"
     }

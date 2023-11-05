@@ -119,7 +119,7 @@ class DatabasePipeline():
             ) -> int:
         database_method = DatabaseMethods(db_session=self.db_session)
         achiev_id = database_method._input_uid(
-            table=db.Achievement, uid_val=achiev, league_id=None)
+            table=db.Achievement, uid_val=achiev, uid=achiev, league_id=None)
         season_id = database_method._input_unique_data(
             table=db.Season, season=season)
         relation_id = database_method._input_unique_data(
@@ -127,7 +127,6 @@ class DatabasePipeline():
             achievement_id=achiev_id, player_id=player_id)
         return relation_id
     
-
     def _input_player_stats(self, dict_stats: dict) -> int:
         database_method = DatabaseMethods(db_session=self.db_session)
         team_id = database_method._input_uid(
