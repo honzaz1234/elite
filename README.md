@@ -23,6 +23,10 @@ of project (available at: https://github.com/honzaz1234/elite).
 ```bash
 python setup.py install
 ```
+or
+```bash
+pip install .
+```
 
 ## Usage
 
