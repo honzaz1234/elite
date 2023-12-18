@@ -12,13 +12,12 @@ class LeagueScrapper():
     """
 
     PATHS = {
-        "achievements": "//ul[contains(@class, 'ListOfChampionsAndLeagueAwards_league-awards__EE8Bm')]/li/a/text()",
+        "achievements": "//div[h4[text()='League Awards']]//li/a/text()",
         "league_refs": "//a[contains(@class,'" 
                         "ListOfChampionsAndLeagueAwards_yearLink__rVDt0')]"
                         "/@href",
         "long_name": "//h1//text()",
-        "season": "//a[@class='TextLink_link__3JbdQ"
-                  " ListOfChampionsAndLeagueAwards_yearLink__rVDt0']/text()"
+        "season": "//div[@id='standings']//option[position()>1]/text()"
     }
 
     SEASON_URL_REGEX = "standings/(.+)"
@@ -70,13 +69,11 @@ class LeagueScrapper():
         """
         get_season =  LeagueUrlDownload()
 
-        year_list = self.selector.xpath(
+        season_list = self.selector.xpath(
             LeagueScrapper.PATHS["season"]).getall()
         league_standings_dict = {}
-        for year in year_list:
-            season = get_season.create_season_string(
-            year=year, preceeding=False)
-            season_link = self.url + STANDINGS_URL + season
+        for season in season_list:
+            season_link = self.url + STANDINGS_URL + season.strip()
             league_season_o = LeagueSeasonScraper(url=season_link)
             season_dict = league_season_o.get_season_standings()
             league_standings_dict[season] = season_dict
@@ -111,7 +108,7 @@ class LeagueSeasonScraper():
         self.selector = scrapy.Selector(text=self.html)
 
     def get_season_standings(self) -> dict:
-        """method for downloading season stadnings data from one season"""
+        """method for downloading season standings data from one season"""
 
         section_names = self.selector.xpath(
             LeagueSeasonScraper.PATHS["table_section_names"]).getall()
@@ -186,7 +183,5 @@ class LeagueSeasonScraper():
                         + str(row_ind) 
                         + "]" 
                         +  LeagueSeasonScraper.PATHS["team_url_r"])
-        url_season = self.selector.xpath(path_url).getall()[0]
-        url_general = re.findall(
-            LeagueSeasonScraper.REGEX_SEASON, url_season)[0]
+        url_general = self.selector.xpath(path_url).getall()[0]
         return url_general

@@ -11,33 +11,35 @@ class TeamScraper():
 
     INFO_PATHS = {
 
-        "short_name": "//h1[@class='Profile_headerMain__uA_uQ']/text()",
-        "gi_left": "//div[@id='team-facts']"
-                             "//td[preceding-sibling::"
-                             "th[contains(text(),'",
+        "short_name": "//h1[@class='semi-logo']/text()",
+        "gi_left": "//div[@class='facts']"
+                             "//*[preceding-sibling::"
+                             "*[contains(text(),'",
         "gi_right": "')]]//text()",
-        "si_left": "//div[@id='team-arena']"
-                             "//td[preceding-sibling::"
-                             "th[contains(text(),'",
+        "si_left": "//div[preceding-sibling::div[contains(text(),"
+                   "'Arena Information')]]"
+                   "//strong[preceding-sibling::"
+                   "span[contains(text(),'",
         "si_right": "')]]//text()"
     }
     
     OTHER_PATHS = {
-        "affiliated_teams": "//div[preceding-sibling::span[contains(text()"
-                            ", 'Affiliated Team(s)')]]//li/a/@href",
-        "retired_num": "//div[@id='team-retired-player']//ul/li"
+        "affiliated_teams": "//strong[preceding-sibling::span[contains(text()"
+                            ", 'Affiliated Team(s)')]]//a/@href",
+        "retired_num": "//ul[preceding-sibling::h4[contains(text()"
+                            ", 'Retired Numbers')]]/li/a[1]"
     }
 
     URL_SECTIONS = {
         "history": "?team-history=complete#team-history"
     }
 
-    INFO_NAMES = ["Plays in", "Team colors", "Town", "Founded", "Full name"]
+    INFO_NAMES = ["Plays in", "Team colours", "Town", "Founded", "Full name"]
     STADIUM_INFO_NAMES = ["Arena Name", "Location", "Capacity", 
                           "Construction Year"]
     WEB_MAPPING = {
         "Plays in": PLAYS_IN, 
-        "Team colors": TEAM_COLOURS,
+        "Team colours": TEAM_COLOURS,
         "Town": PLACE, 
         "Founded": YEAR_FOUNDED, 
         "Full name": LONG_NAME,
@@ -130,8 +132,8 @@ class TeamScraper():
         """
 
         dict_num = {}
-        path_url = TeamScraper.OTHER_PATHS["retired_num"] + "//a/@href"
-        path_num = TeamScraper.OTHER_PATHS["retired_num"] + "/span/text()"
+        path_url = TeamScraper.OTHER_PATHS["retired_num"] + "/@href"
+        path_num = TeamScraper.OTHER_PATHS["retired_num"] + "/text()"
         urls = self.selector.xpath(path_url).getall()
         numbers = self.selector.xpath(path_num).getall()
         for ind in range(len(urls)):
@@ -241,17 +243,14 @@ class HistoricNames():
 
         n_names = self.get_num_names()
         n_lines = self.get_num_lines()
-        print([n_names, n_lines])
         if n_names == 0:
             n_names = 1
             team_names = ["-"]
             names_positions = [0]
         else:
             team_names = self.get_team_names()
-            print(team_names)
             names_positions = self.get_title_positions(
             n_lines=n_lines, n_names=n_names)
-            print(names_positions)
         dict_titles = {}
         row_ind = names_positions[0]
         for ind in range(1, n_names + 1):

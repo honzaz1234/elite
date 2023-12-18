@@ -14,9 +14,7 @@ class LeagueUrlDownload():
         "league_name": "//div[preceding-sibling::header[contains(@id, '-men')]]//a[@class='TextLink_link__3JbdQ TableBody_link__MNtRl']/text()",
         "season_refs": "//a[@style='font-weight: 800;']/@href",
         "standings": "/standings/",
-        "year_list": "//a[@class='TextLink_link__3JbdQ"
-                     " ListOfChampionsAndLeagueAwards_yearLink__rVDt0']"
-                    "/text()"
+        "year_list": "//div[@id='standings']//option[position()>1]/text()"
         }
     
 
@@ -84,12 +82,11 @@ class LeagueUrlDownload():
         league_path = ELITE_URL + LEAGUE_URLS[league]
         league_page_html = requests.get(league_path).content
         sel_league = scrapy.Selector(text=league_page_html)
-        year_list = (sel_league
+        season_list = (sel_league
                        .xpath(LeagueUrlDownload.PATHS["year_list"])
                        .getall())
-        year_list = [year.strip() for year in year_list]
-        for year in year_list:
-            season = self.create_season_string(year=year)
+        season_list = [season.strip() for season in season_list]
+        for season in season_list:
             season_refs = season_getter.get_team_season_refs(season=season, league=league, ref_list=league_team_refs)
             season_refs = [value for value in season_refs if type(value) == str]
             if season_refs != []:
