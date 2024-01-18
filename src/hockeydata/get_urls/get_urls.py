@@ -3,9 +3,9 @@ import requests
 import scrapy
 from hockeydata.constants import *
 
+
 class LeagueUrlDownload():
         
-            
     PATHS = {
         "league": "/league",
         "all_leagues": "/leagues",
@@ -15,15 +15,14 @@ class LeagueUrlDownload():
         "season_refs": "//a[@style='font-weight: 800;']/@href",
         "standings": "/standings/",
         "year_list": "//div[@id='standings']//option[position()>1]/text()"
-        }
+    }
     
-
     def __init__(self):
          pass
         
     def get_league_names_dict(self) -> dict:
 
-        """function that creates dictionary, where keys are leagues that can be found on the elite prospects website
+        """method that creates dictionary, where keys are leagues that can be found on the elite prospects website
         and values are their respective urls"""
 
         dict_leagues = {}
@@ -40,6 +39,7 @@ class LeagueUrlDownload():
 
         """creates season from year
             2011 => 2011-2012 etc."""
+        
         if preceeding == True:
             year_plus = int(year) + 1
             season_string = str(year) + "-" +  str(year_plus)
@@ -49,6 +49,8 @@ class LeagueUrlDownload():
         return season_string
     
     def create_season_list(self, min: int, max: int) -> list:
+         """create list of season strings"""
+
          range_years = [*range(min, max, 1)]
          list_seasons = []
          for year in range_years:
@@ -70,7 +72,8 @@ class LeagueUrlDownload():
             list_seasons.append(season_string)
         season_getter = SeasonUrlDownload()
         for season in list_seasons:
-            season_dict = season_getter.get_player_season_refs(league=league, season=season)
+            season_dict = season_getter.get_player_season_refs(league=league,
+                                                                season=season)
             dict_player_ref[season] = season_dict
         return dict_player_ref
     
@@ -87,7 +90,8 @@ class LeagueUrlDownload():
                        .getall())
         season_list = [season.strip() for season in season_list]
         for season in season_list:
-            season_refs = season_getter.get_team_season_refs(season=season, league=league, ref_list=league_team_refs)
+            season_refs = season_getter.get_team_season_refs(
+                season=season, league=league, ref_list=league_team_refs)
             season_refs = [value for value in season_refs if type(value) == str]
             if season_refs != []:
                 league_team_refs = league_team_refs + season_refs
@@ -95,8 +99,9 @@ class LeagueUrlDownload():
         return league_team_refs
 
 
-
 class SeasonUrlDownload():
+
+    #xpaths used in the process of downloading players and team's urls  
 
     PATHS = {
         "player_ref": "//table[@id='export-skater-stats-table']"
@@ -108,7 +113,7 @@ class SeasonUrlDownload():
         "team_url": "//td[@class='team']//@href",
         "stats": "/stats",
         "page_goalie": "?sort-goalie-stats=svp&page-goalie="
-        }
+    }
     
     GOALIES_REG = "[0-9]+#goalies$"
     GOALIES_REG_MATCH = "([0-9]+)#goalies$"
@@ -181,6 +186,8 @@ class SeasonUrlDownload():
     def get_team_season_refs(
             self, season: str, league: str, ref_list: list=[]
             ) -> list:
+        """downloads team's urls for one  season"""
+
         url_season = (ELITE_URL 
                       + LEAGUE_URLS[league] 
                       + TEAM_STANDINGS 

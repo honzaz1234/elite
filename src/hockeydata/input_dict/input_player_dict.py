@@ -2,10 +2,10 @@ import hockeydata.insert_db.insert_db as insert_db
 from hockeydata.constants import *
 from sqlalchemy.orm import Session
 
-class InputPlayerDict():
-    """class containing wraper methods for uploading player dictionary into db
-    """
 
+class InputPlayerDict():
+    """class containing wrapper methods for uploading player dictionary into db
+    """
 
     def __init__(self, db_session: Session):
         self.is_goalie = None
@@ -24,62 +24,53 @@ class InputPlayerDict():
             self.is_goalie = False
 
     def input_player_dict(self, player_dict: dict):
-        """wraper method for inputing player dict into database"""
+        """wrapper method for inputting  player dict into database"""
 
         self._set_is_goalie(dict_=player_dict)
         player_id = self._input_player_info_dict(
             info_dict=player_dict[GENERAL_INFO])
-        self._input_relation_dict(
-            relation_dict=player_dict[RELATIONS],
-            player_id=player_id
-            )
-        self._input_stats_dict(
-            stat_dict=player_dict[SEASON_STATS],
-            player_id=player_id
-            )
-        self._input_achievement_dict(
-            achiev_dict=player_dict[ACHIEVEMENTS],
-            player_id=player_id
-            )
+        self._input_relation_dict(relation_dict=player_dict[RELATIONS],
+                                  player_id=player_id)
+        self._input_stats_dict(stat_dict=player_dict[SEASON_STATS],
+                               player_id=player_id)
+        self._input_achievement_dict(achiev_dict=player_dict[ACHIEVEMENTS],
+                                     player_id=player_id)
 
     def _input_player_info_dict(self, info_dict: dict) -> int:
         """method for inserting general info dict into database"""
 
         player_info = InputPlayerInfo(db_session=self.db_session)
-        player_id = player_info._input_player(
-            info_dict=info_dict)
-        player_info._input_draft_dict(
-            draft_dict=info_dict[DRAFTS], player_id=player_id
-            )
-        player_info._input_nationalities(
-            nation_list=info_dict[NATIONALITY], player_id=player_id
-            )
+        player_id = player_info._input_player(info_dict=info_dict)
+        player_info._input_draft_dict(draft_dict=info_dict[DRAFTS], 
+                                      player_id=player_id)
+        player_info._input_nationalities(nation_list=info_dict[NATIONALITY], 
+                                         player_id=player_id)
         return player_id
 
     def _input_relation_dict(self, relation_dict: dict, player_id: int):
-        """wraper method for upploading relation dict of a player into database
+        """wrapper method for upploading relation dict of a player into database
         """
 
         relation_info = InputRelationDict(db_session=self.db_session)
-        relation_info._input_relation_dict(
-            relation_dict=relation_dict, player_id=player_id)
+        relation_info._input_relation_dict(relation_dict=relation_dict, 
+                                           player_id=player_id)
         
     def _input_stats_dict(self, stat_dict: dict, player_id: int):
-        """wraper method for uploading player stats into database"""
+        """wrapper method for uploading player stats into database"""
 
         stats_info = InputStatsDict(db_session=self.db_session)
         stats_info._input_stats_dict(stat_dict=stat_dict, 
                                     player_id=player_id,
                                     is_goalie=self.is_goalie)
 
-
     def _input_achievement_dict(self, achiev_dict: dict, player_id: int):
-        """wraper method for uploading player achievements into database"""
+        """wrapper method for uploading player achievements into database"""
 
         achiev_info = InputAchievementDict(db_session=self.db_session)
-        achiev_info._input_achievements(
-            dict_achievements=achiev_dict, player_id=player_id)
+        achiev_info._input_achievements(dict_achievements=achiev_dict, 
+                                        player_id=player_id)
         
+
 class InputPlayerInfo():
 
     """class with methods for uploading information from player info dictionary into db
@@ -90,7 +81,7 @@ class InputPlayerInfo():
         pass
 
     def _input_player(self, info_dict: dict) -> int:
-        """method for puting general info into player DB and the related tables
+        """method for putting  general info into player DB and the related tables
         """
 
         player_id = self.insert_db.input_data_in_player_table(
@@ -102,16 +93,16 @@ class InputPlayerInfo():
 
         for draft in draft_dict:
             one_draft = draft_dict[draft]
-            self.insert_db._input_player_draft(
-                player_id=player_id, draft_dict=one_draft)
+            self.insert_db._input_player_draft(player_id=player_id, 
+                                               draft_dict=one_draft)
 
     def _input_nationalities(self, nation_list: list, player_id: int):
-        """method for puting relation between player and his nationalites into DB
+        """method for putting  relation between player and his nationalites into DB
         """
 
         for nation in nation_list:
-            self.insert_db._input_player_nation(
-                player_id=player_id, nationality=nation)
+            self.insert_db._input_player_nation(player_id=player_id, 
+                                                nationality=nation)
 
 
 class InputRelationDict():
@@ -136,8 +127,9 @@ class InputRelationDict():
             """method for uploading relations of one type into DB"""
 
             for u_id in list_uid:
-                self.insert_db._input_player_relation(
-                    player_from_uid=u_id, player_to_id=player_id, relation=type_)
+                self.insert_db._input_player_relation(player_from_uid=u_id, 
+                                                      player_to_id=player_id, relation=type_)
+
 
 class InputStatsDict():
 
@@ -167,7 +159,8 @@ class InputStatsDict():
         for season_name in dict_competititon_type:
             season_dict = dict_competititon_type[season_name]
             dict_info[SEASON_NAME] = season_name
-            self._input_season_dict(season_dict=season_dict, dict_info=dict_info)
+            self._input_season_dict(season_dict=season_dict, 
+                                    dict_info=dict_info)
     
     def _input_season_dict(self, season_dict: dict, dict_info: dict):
         """method for uploading dict of stats from one season into DB"""
@@ -175,7 +168,8 @@ class InputStatsDict():
         for league_name in season_dict:
             dict_info[LEAGUE_NAME] = league_name
             league_dict = season_dict[league_name]
-            self._input_league_dict(league_dict=league_dict, dict_info=dict_info)
+            self._input_league_dict(league_dict=league_dict,    
+                                    dict_info=dict_info)
 
     def _input_league_dict(self, league_dict: dict, dict_info: dict):
         """method for uploading dict of stats from one season and one league into DB
@@ -204,9 +198,8 @@ class InputStatsDict():
             if season_data_dict is None:
                 continue
             dict_row = {**season_data_dict, **dict_info}
-            self.insert_db._input_player_stats(
-                dict_stats=dict_row
-                )
+            self.insert_db._input_player_stats(dict_stats=dict_row)
+
 
 class InputAchievementDict():
 
@@ -230,7 +223,7 @@ class InputAchievementDict():
         """method for uploading achievements from one season into DB"""
         
         for achiev_name in season_dict:
-                self.insert_db._input_achievement_relation(
-                    achiev=achiev_name, season=season, player_id=player_id)
+                self.insert_db._input_achievement_relation(achiev=achiev_name, 
+                                                           season=season, player_id=player_id)
 
                 

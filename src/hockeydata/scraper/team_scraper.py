@@ -9,6 +9,8 @@ class TeamScraper():
     there are methods available for downloading general info, stadium info, affiliated teams, retired numbers and historic names
     """
 
+    #xpaths used to access general and stadium information about team
+
     INFO_PATHS = {
 
         "short_name": "//h1[@class='semi-logo']/text()",
@@ -23,6 +25,8 @@ class TeamScraper():
         "si_right": "')]]//text()"
     }
     
+    #xpaths used to access affiliated teams and retired numbers
+
     OTHER_PATHS = {
         "affiliated_teams": "//strong[preceding-sibling::span[contains(text()"
                             ", 'Affiliated Team(s)')]]//a/@href",
@@ -30,13 +34,24 @@ class TeamScraper():
                             ", 'Retired Numbers')]]/li/a[1]"
     }
 
+    #url used to access webpage with complete history of team standings
+
     URL_SECTIONS = {
         "history": "?team-history=complete#team-history"
     }
 
+    #names of general info found on the team's webpage
+
     INFO_NAMES = ["Plays in", "Team colours", "Town", "Founded", "Full name"]
+
+    #names of info about team's stadium found on the team's webpage
+
     STADIUM_INFO_NAMES = ["Arena Name", "Location", "Capacity", 
-                          "Construction Year"]
+                          "Construction Year"
+    ]
+
+    #mapping of names of info from webpage to names in scrapped dictionary
+
     WEB_MAPPING = {
         "Plays in": PLAYS_IN, 
         "Team colours": TEAM_COLOURS,
@@ -50,16 +65,22 @@ class TeamScraper():
         } 
 
     def __init__(self, url: str):
+        """url - url of webpage with team's info
+           html - html of webpage with team info
+           selector - selector object created from html of team's webpage   
+                   used for attaining individual pieces of information     
+        """
+
         self.url = url + TeamScraper.URL_SECTIONS["history"]
         self.html = requests.get(self.url).content
         self.selector = scrapy.Selector(text=self.html)
 
     def get_info(self) -> dict:
-        """ wrapper function for downloading all of the info from one team webpage"""
+        """ wrapper method for downloading all of the info from one team webpage"""
 
         dict_info = {}
-        dict_info[GENERAL_INFO] = self.get_general_info_dict()
-        dict_info[STADIUM_INFO] = self.get_dict_info(
+        dict_info[GENERAL_INFO] = self._get_general_info_dict()
+        dict_info[STADIUM_INFO] = self._get_dict_info(
             list_info=TeamScraper.STADIUM_INFO_NAMES,
             key_left="si_left", key_right="si_right")
         dict_info[AFFILIATED_TEAMS] = self.get_affiliated_teams()
@@ -68,11 +89,12 @@ class TeamScraper():
         dict_info[HISTORIC_NAMES] = hist_names.get_historic_names_dict()
         return dict_info
 
-    def get_general_info_dict(self) -> dict:
-        """wrapper function for getting all information 
-        in the general info dict"""
+    def _get_general_info_dict(self) -> dict:
+        """wrapper method for getting all information 
+        in the general info dict
+        """
 
-        gi_dict = self.get_dict_info(
+        gi_dict = self._get_dict_info(
             list_info=TeamScraper.INFO_NAMES,
             key_left="gi_left", key_right="gi_right")
         gi_dict[SHORT_NAME] = self._get_short_name()
@@ -80,10 +102,12 @@ class TeamScraper():
                                         self.url)[0])
         return gi_dict
            
-    def get_dict_info(
+    def _get_dict_info(
             self, list_info: list, key_left: str, key_right: str
             ) -> dict:
-        """wrapper method for downloading all of the general info"""
+        """wrapper method for downloading all of the info from table
+           with general information or stadium information on webpage
+        """
 
         dict_ = {}
         for info in list_info:
@@ -105,8 +129,12 @@ class TeamScraper():
             short_name = short_name[0].strip()
         return short_name
 
-    def _get_info(self, info: str, key_left: str, key_right: str) -> int|str|list:
-        """general method for downloading individual general info values"""
+    def _get_info(
+            self, info: str, key_left: str, key_right: str
+            ) -> int|str|list:
+        """general method for downloading individual values from general  
+           info table
+        """
 
         info_path_val = (TeamScraper.INFO_PATHS[key_left] 
                          + info 
@@ -128,7 +156,7 @@ class TeamScraper():
         return list_at
 
     def get_retired_numbers(self) -> dict:
-        """returns dicitonary where keys are urls of pages of players which number was retired for the given team and values are the number that was retired
+        """returns dicitonary where keys are urls of pages of players which numbers were retired for the given team and values are the numbers that were retired
         """
 
         dict_num = {}
@@ -141,8 +169,10 @@ class TeamScraper():
         return dict_num
 
 class HistoricNames():
-    """FOR TIME BEING DEPRECIATED - team info website changed to dynamic - table with historic names can not be longer downloaded with requests library;
-    class for creating dictionary with team historic names and season range in which these names where used"""
+
+    """class for creating dictionary with team historic names and season range in which these names were used
+    """
+    #xpaths used to access information on historic names 
 
     HN_PATHS = {
         "season_l": "(//div[@class='content_left']//"
@@ -166,11 +196,14 @@ class HistoricNames():
     }
 
     def __init__(self, selector: scrapy.Selector):
+        """selector - original selector of team's webpage"""
+
         self.selector = selector
         pass
 
-    def get_num_names(self) -> int:
-        """creates list with number of unique names that team had in history according to the table with seasonal standings"""
+    def _get_num_names(self) -> int:
+        """creates list with number of unique names that team had in history according to the table with season standings
+        """
 
         n_names = (self.selector
                 .xpath(HistoricNames.HN_PATHS["num_titles"])
@@ -178,8 +211,8 @@ class HistoricNames():
         n_names = int(float(n_names))
         return n_names
     
-    def get_num_lines(self) -> int:
-        """get number of lines in table with seasonal standings"""
+    def _get_num_lines(self) -> int:
+        """get number of lines in table with season standings"""
 
         n_lines = (self.selector
             .xpath(HistoricNames.HN_PATHS["num_lines"])
@@ -187,9 +220,9 @@ class HistoricNames():
         n_lines = int(float(n_lines))
         return n_lines
 
-    def get_team_names(self) -> list:
-        """creates list with unique names that team had in history according to the table with seasonal standings
-        if the same team name occurs more than once the number of its occurence is added to the end of the name
+    def _get_team_names(self) -> list:
+        """creates list with unique names that team had in history according to the table with season standings
+        if the same team name occurs more than once the number of its occurences is added to the end of the name
         """
 
         names = self.selector.xpath(HistoricNames.HN_PATHS["titles"]).getall()
@@ -205,7 +238,7 @@ class HistoricNames():
             names_wo_duplicates.append(name)
         return names_wo_duplicates
     
-    def get_title_position(self, n: int, n_lines: int) -> int:
+    def _get_title_position(self, n: int, n_lines: int) -> int:
         """gets index of row on which the nth name is located"""
 
         path1 = (HistoricNames.HN_PATHS["name_left"]
@@ -216,17 +249,17 @@ class HistoricNames():
         title_position = n_lines - n_following
         return title_position
     
-    def get_title_positions(self, n_names: int, n_lines: int) -> list:
+    def _get_title_positions(self, n_names: int, n_lines: int) -> list:
         """creates a list with all the positions of team names in the table"""
 
         title_positions = []
         for ind in range(1, n_names + 1):
-            title_position = self.get_title_position(n=ind, n_lines=n_lines)
+            title_position = self._get_title_position(n=ind, n_lines=n_lines)
             title_positions.append(title_position)
         title_positions.append(n_lines + 1)
         return title_positions
     
-    def get_season(self, n: int) -> list:
+    def _get_season(self, n: int) -> list:
         """gets the season of nth row of the table"""
 
         path_season = (HistoricNames.HN_PATHS["season_l"]
@@ -241,15 +274,15 @@ class HistoricNames():
         when the team did not changed its name over its history it can not be found in the table, in that case short name from general info dictionary is assigned to this dictionary in update_dict module
         """
 
-        n_names = self.get_num_names()
-        n_lines = self.get_num_lines()
+        n_names = self._get_num_names()
+        n_lines = self._get_num_lines()
         if n_names == 0:
             n_names = 1
             team_names = ["-"]
             names_positions = [0]
         else:
-            team_names = self.get_team_names()
-            names_positions = self.get_title_positions(
+            team_names = self._get_team_names()
+            names_positions = self._get_title_positions(
             n_lines=n_lines, n_names=n_names)
         dict_titles = {}
         row_ind = names_positions[0]
@@ -259,7 +292,7 @@ class HistoricNames():
                 row_ind += 1
                 if ((row_ind in names_positions) or (row_ind > n_lines)):
                     break
-                season = self.get_season(n=row_ind)
+                season = self._get_season(n=row_ind)
                 if season != []:
                     list_years.append(season[0])
             if list_years == []:

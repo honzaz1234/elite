@@ -162,11 +162,11 @@ class TestPlayerGeneralInfo(unittest.TestCase):
         name = pgi._get_name()
         self.assertEqual(name, DICT_MCDAVID[GENERAL_INFO][PLAYER_NAME])
 
-    def test_get_info_wraper(self):
+    def test_get_info_wrapper(self):
         pgi = PlayerGeneralInfo(
         selector=SELECTOR_HOWE, url=URL_HOWE
         )
-        gi_dict = pgi._get_info_wraper()
+        gi_dict = pgi._get_info_wrapper()
         self.assertEqual(gi_dict, GI_ORIG)
 
     def test_get_info(self):

@@ -4,6 +4,8 @@ from hockeydata.constants import *
 
 class UpdateTeamDict():
 
+    """class used for updating values in dictionary with data on team in order to prepare it for inserting into DB
+    """
 
     INT_KEYS = [YEAR_FOUNDED, CAPACITY, CONSTRUCTION_YEAR]
     RETIRED_NUM_REGEX = "#([0-9]+)"
@@ -12,7 +14,7 @@ class UpdateTeamDict():
         pass
 
     def update_team_dict(self, dict: dict) -> dict:
-        """wraper function for updating team dict in order to prepared it for insertion into the database
+        """wrapper method for updating team dict in order to prepared it for insertion into the database
         """
 
         new_dict = dict.copy()
@@ -25,12 +27,12 @@ class UpdateTeamDict():
             si_dict=new_dict[STADIUM_INFO])
         new_dict[RETIRED_NUMBERS] = self._update_retired_numbers(
             num_dict=new_dict[RETIRED_NUMBERS])
-        new_dict[AFFILIATED_TEAMS] = self.update_urls(
+        new_dict[AFFILIATED_TEAMS] = self._update_urls(
             list_url=new_dict[AFFILIATED_TEAMS], regex=TEAM_UID_REGEX)
         return new_dict
         
     def _update_general_info(self, gi_dict: dict) -> dict:
-        """wraper method for updating general info dict in order to prepare for insertion into db
+        """wrapper method for updating general info dict in order to prepare for insertion into db
         """
 
         gi_dict_new = gi_dict.copy()
@@ -47,7 +49,7 @@ class UpdateTeamDict():
         return gi_dict_new
     
     def _update_stadium_info(self, si_dict: dict) -> dict:
-        """wraper method for updating stadium info dict in order to prepare for insertion into db"""
+        """wrapper method for updating stadium info dict in order to prepare for insertion into db"""
 
 
         si_dict_new = si_dict.copy()
@@ -97,7 +99,7 @@ class UpdateTeamDict():
             dict_place[REGION] = list_place[1].strip()
         return dict_place
 
-    def update_urls(self, list_url: list, regex: str) -> dict:
+    def _update_urls(self, list_url: list, regex: str) -> dict:
         """creates dict from list where keys are regex matches and values are original values
         """
 
@@ -143,6 +145,7 @@ class UpdateTeamDict():
 
     def _update_missing_values(self, dict_: dict) -> dict:
         """method for updating values equal to - to None"""
+        
         for key in dict_:
             if dict_[key] == NA:
                 dict_[key] = None

@@ -4,13 +4,14 @@ from hockeydata.constants import *
 
 class UpdatePlayer:
 
-    """class used for updating values in dictionary in order to prepare them for inserting into DB
+    """class used for updating values in dictionary with data on player in order to prepare it for inserting into DB
+    is_goalie - True if player is a goalie, False if he is a field player
     """
 
     def __init__(self):
         self.is_goalie = None
 
-    def set_is_goalie(self, dict: dict):
+    def _set_is_goalie(self, dict: dict):
 
         """method for establishing if the player is goalie or field player; important because of different statistical categories
         """
@@ -22,15 +23,15 @@ class UpdatePlayer:
             self.is_goalie = False
 
     def update_player_dict(self, dict: dict) -> dict:
-        """wraper method for updating whole player dict"""
+        """wrapper method for updating whole player dict"""
 
         new_dict = dict.copy()
-        self.set_is_goalie(new_dict)
+        self._set_is_goalie(new_dict)
         player_info = UpdatePlayerInfo(is_goalie=self.is_goalie)
         new_dict[GENERAL_INFO] = player_info._update_info_dict(
             info_dict=new_dict[GENERAL_INFO])
         player_stats = UpdatePlayerStats(is_goalie=self.is_goalie)
-        new_dict[SEASON_STATS] = player_stats.update_stats_dict(
+        new_dict[SEASON_STATS] = player_stats._update_stats_dict(
             dict_stats= new_dict[SEASON_STATS])
         player_relation = UpdateRelations()
         new_dict[RELATIONS] = player_relation._update_relation_dict(
@@ -38,6 +39,9 @@ class UpdatePlayer:
         return new_dict
     
 class UpdatePlayerInfo():
+    """class used for updating values in subdictionary general info"""
+
+    #regexes used to extract specific information from original strings
 
     HEIGHT_REGEX = "([0-9]+)\scm"
     WEIGHT_REGEX = "([0-9]+)\skg"
@@ -51,8 +55,11 @@ class UpdatePlayerInfo():
     DRAFT_POSITION_REGEX = "#([0-9]+)\s"
     DRAFT_TEAM_REGEX = "by\s(.+)$"
     
+    #names of keys from dictionary to be deleted before insertion of the dict #into DB
 
     DELETE_KEYS = [BIRTH_PLACE_STRING, NHL_RIGHTS, DRAFT_LIST]
+
+    #unique identificators of NHL teams
 
     NHL_UID = {
         'Boston Bruins': 52,
@@ -134,6 +141,8 @@ class UpdatePlayerInfo():
     }
 
     def __init__(self, is_goalie: bool):
+        """is_goalie - True if player is a goalie False otherwise"""
+
         self.is_goalie = is_goalie
 
 
@@ -150,7 +159,8 @@ class UpdatePlayerInfo():
             return False
         
     def _update_nationality(self, nation_list: list) -> list:
-        """method for filtering out the / from the list of nationalities"""
+        """method for filtering out the / symbol from the list of   nationalities
+        """
 
         for nation in nation_list:
             if nation == "/":
@@ -171,6 +181,10 @@ class UpdatePlayerInfo():
             return None
 
     def _create_draft_info_dict(self, draft_list: list) -> dict:
+        """wrapper method which creates dict with draft information on player
+            in some rare cases player was drafted more than once in NHL
+        """
+
         dict_draft = {}
         if draft_list == [None]:
             return {}
@@ -211,8 +225,8 @@ class UpdatePlayerInfo():
     
     def _create_place_dict(self, place_string: str|None) -> dict:
         """place of birth string scraped from player webpage consists of 2 or 3 values; town and country or town region and country in case Canada or USA; the ranking of these 3 values is always the same:
-        on the first position is place, followed by region and finally country all separated by ,
-        on a rare occasions, only a name of (US or CAN) region is mentioned with the country being explicitly stated
+        on the first position is place, followed by region and finally country all separated by comma
+        on a rare occasions, only a name of (US or CAN) region is mentioned without the country being explicitly stated
         """
 
         dict_place = {}
@@ -255,7 +269,8 @@ class UpdatePlayerInfo():
         return int(updated_cap_hit)
 
     def _get_nhl_rights_uid(self, nhl_rights: str|None) -> int|None:
-        """attain uid of team that owns player nhl rights"""
+        """attain uid of team that owns player's nhl rights"""
+
         if nhl_rights is None:
             return None
         team_rights = self._get_nhl_rights_info(
@@ -274,7 +289,7 @@ class UpdatePlayerInfo():
             return False
 
     def _get_nhl_rights_info(self, nhl_rights: str|None, ind: int) -> str|None:
-        """function to attain info (team name or signed/unsigned)
+        """method for attaining info (team name or signed/unsigned)
         from nhl rights string
         """
 
@@ -316,7 +331,7 @@ class UpdatePlayerInfo():
             return int(age)
 
     def _update_info_dict_individual_vals(self, info_dict: dict) -> dict:
-        """wraper for all methods updating single values in dict"""
+        """wrapper for all methods updating single values in dict"""
 
         info_dict_updated = info_dict.copy()
         info_dict_updated[ACTIVE] = self._update_status(
@@ -357,7 +372,7 @@ class UpdatePlayerInfo():
         return info_dict
     
     def _delete_redundant_keys(self, info_dict: dict) -> dict:
-        """delete keys that are unecessary to keep in the dict"""
+        """delete keys that are unecessary to be kept in the dict"""
 
         new_info_dict = info_dict.copy()
         for key in UpdatePlayerInfo.DELETE_KEYS:
@@ -365,7 +380,7 @@ class UpdatePlayerInfo():
         return new_info_dict
 
     def _update_info_dict(self, info_dict: dict) -> dict:
-        """wraper method for all the changes in the info dict"""
+        """wrapper method for all the changes in the info dict"""
 
         info_dict_vals = self._update_info_dict_individual_vals(
             info_dict=info_dict)
@@ -377,16 +392,21 @@ class UpdatePlayerInfo():
 
  
 class UpdateRelations():
+    """method for updating values in relations dictionary"""
 
     def __init__(self):
             pass
 
     def _update_relation_dict(self, relation_dict: dict) -> dict:
+        """wrapper method for updating relations dictionary"""
+
         new_relation_dict = self._relations_to_lower(relation_dict)
         new_relation_dict_2 = self._relation_uids_to_int(new_relation_dict)
         return new_relation_dict_2  
 
     def _relations_to_lower(self, relation_dict: dict) -> dict:
+        """methods for converting relation types to lower case"""
+
         new_dict = {}
         for relation_type in list(relation_dict.keys()):
             new_key = relation_type.lower()
@@ -394,6 +414,8 @@ class UpdateRelations():
         return new_dict
     
     def _relation_uids_to_int(self, relation_dict: dict) -> dict:
+        """method for converting uids of relations to integers"""
+
         for relation_type in relation_dict:
             list_u_id = relation_dict[relation_type]
             new_list = []
@@ -406,14 +428,18 @@ class UpdateRelations():
     
 class UpdatePlayerStats:
 
-    """class for updating dict with player seasonal stats"""
+    """class for updating dict with player's seasonal stats"""
+
+    #regex used for extracting captaincy info
 
     CAPTAINCY_REGEX = "[AC]"
 
     def __init__(self, is_goalie: bool):
+        """is_goalie - True if player is a goalie False otherwise"""
+
         self.is_goalie = is_goalie
 
-    def update_stats_dict(self, dict_stats: dict) -> dict:
+    def _update_stats_dict(self, dict_stats: dict) -> dict:
         """method for updating whole dict with player season statistics"""
 
         new_dict_stats = dict_stats.copy()
@@ -428,6 +454,7 @@ class UpdatePlayerStats:
         """method for updating dict for one competition
         (league/tournament)
         """
+
         competition_dict_new = competition_dict.copy()
         for year_key in list(competition_dict_new.keys()):
             year_dict = competition_dict_new[year_key]
@@ -447,6 +474,7 @@ class UpdatePlayerStats:
 
     def _update_league_dict(self, league_dict: dict) -> dict:
         """method for updating dict for one league"""
+
         new_league_dict = league_dict.copy()
         if new_league_dict[LEAGUE_URL] is not None:
             league_id = re.findall(LEAGUE_UID_REGEX, 
@@ -463,6 +491,7 @@ class UpdatePlayerStats:
 
     def _update_team_dict(self, team_dict: dict) -> dict:
         """method for updating dict for one team"""
+
         new_team_dict = team_dict.copy()
         team_id = re.findall(
             TEAM_UID_REGEX, new_team_dict[TEAM_URL])[0]
@@ -476,7 +505,7 @@ class UpdatePlayerStats:
             if list_season is None:
                 continue
             season_dict = SeasonDict(is_goalie=self.is_goalie)
-            stat_dict = season_dict.update_season(season_list=list_season)
+            stat_dict = season_dict._update_season(season_list=list_season)
             new_team_dict[season_type] = stat_dict
         return new_team_dict
 
@@ -491,6 +520,7 @@ class UpdatePlayerStats:
 
 
 class SeasonDict():
+    """class containing methods for updating season stats from one season"""
 
     PLAYER_ATT = [GP, G, A, TP, PIM, PLUS_MINUS]
     GOALIE_ATT = [GP, GD, GAA,
@@ -501,8 +531,8 @@ class SeasonDict():
         self.is_goalie = is_goalie
 
 
-    def update_season(self, season_list: list) -> dict:
-        """wraper method for updating season stats of a player"""
+    def _update_season(self, season_list: list) -> dict:
+        """wrapper method for updating season stats of player"""
 
         if self.is_goalie == True:
             n_att = len(SeasonDict.GOALIE_ATT)
@@ -525,7 +555,7 @@ class SeasonDict():
 
     def _update_season_goalkeeper(self, season_list: list) -> dict:
         """update seasonal stat for goalkeeper
-        two attributes SVP - save percentage and GAA - goal against average are float number, otherwise all statistics are integers 
+        two attributes SVP - save percentage and GAA - goal against average are float numbers, otherwise all statistics are integers 
         """
 
         dict_stats = {}
@@ -548,6 +578,7 @@ class SeasonDict():
 
     def _update_season_player(self, season_list: list) -> dict:
         """method for updating stats of player"""
+
         dict_stats = {}
         for ind in range(len(season_list)):
             if season_list[ind] == NA or season_list[ind] is None:
@@ -569,6 +600,8 @@ class SeasonDict():
         return dic_wlt
     
     def stat_to_int(self, stat: str) -> int:
+            """method for converting stat to integer"""
+
             stat = re.sub(" ", "", stat)
             stat = int(stat)
             return stat 

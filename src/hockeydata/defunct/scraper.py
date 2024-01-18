@@ -9,7 +9,7 @@ class Scraper:
     
     def get_player_refs(self, dict_info=None):
 
-        """wraper function used to download urls of all players based on league and season played
+        """wrapper method used to download urls of all players based on league and season played
            dict_info - dictionary, keys - names of leagues; values - list of years to be downloaded
             2011 = 2011-2012 season etc. 
             output: dictionary: leagues -> season -> (players-goalies) -> urls"""
@@ -27,8 +27,8 @@ class Scraper:
     
     def get_player_info_wrapper(self, url_dict):
 
-        """"function used to download information on player based on dictionary of urls of player profiles
-         attained from function  get_player_refs
+        """"method used to download information on player based on dictionary of urls of player profiles
+         attained from method  get_player_refs
          output: dictionary: names -> (general_info-stats-achievements)-> values"""
 
         dict_players = {}

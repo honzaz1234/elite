@@ -4,19 +4,24 @@ from hockeydata.constants import *
 
 class UpdateLeagueDict():
 
+    """class used for updating values in dictionary with data on league in order to prepare it for inserting into DB
+    """
+
     NOT_INT = [POSTSEASON, TEAM, TEAM_URL, POSITION]
 
     def __init__(self):
         pass
     
     def update_league_dict(self, league_dict: dict) -> dict:
+        """wrapper method for updating all info in league dict"""
+
         new_league_dict = league_dict.copy()
         new_league_dict[SEASON_STANDINGS] = self._update_standing_dict(
             standing_dict=new_league_dict[SEASON_STANDINGS])
         return new_league_dict
 
     def _update_standing_dict(self, standing_dict: dict) -> dict:
-        """wraper function for updating dict with team standings for individual seasons
+        """wrapper method for updating dict with team standings for individual seasons
         """
 
         new_dict = {}
@@ -32,7 +37,7 @@ class UpdateLeagueDict():
         return new_dict
 
     def _update_row(self, row_dict: dict) -> dict:
-        """function for updating one team entry in season data dict"""
+        """method for updating one team entry in season data dict"""
         
         for stat in list(row_dict.keys()):
             if row_dict[stat] == NA:
@@ -40,7 +45,7 @@ class UpdateLeagueDict():
             elif stat not in UpdateLeagueDict.NOT_INT:
                 row_dict[stat] = int(row_dict[stat])
             elif stat == TEAM_URL:
-                u_id = re.findall(
-                    TEAM_UID_REGEX, row_dict[stat])[0]
+                u_id = re.findall(TEAM_UID_REGEX, 
+                                  row_dict[stat])[0]
                 row_dict[TEAM_UID] = u_id
         return row_dict
