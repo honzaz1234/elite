@@ -54,8 +54,8 @@ class PlayerScraper:
 
 class PlayerGeneralInfo():
 
-    PATHS = {"player_name": "//h1[@class ="
-                            "'ep-entity-header__name']//text()",
+    PATHS = {"player_name": "//h1[contains(@class,"
+                            "'ep-entity-header__name')]//text()",
              "gi_l": "//div[contains(@class,"
                     "'ep-list__item--is-compact')]"
                     "/div[2][preceding-sibling::div[1]"
@@ -95,6 +95,8 @@ class PlayerGeneralInfo():
         self.url = url
 
     def get_general_info(self) -> dict:
+        """wrapper function for attaining all available info on player"""
+        
         dict_gi = self._get_info_wraper()
         dict_gi[PLAYER_NAME] = self._get_name()
         dict_gi[PLAYER_UID] = re.findall(PLAYER_UID_REGEX,
