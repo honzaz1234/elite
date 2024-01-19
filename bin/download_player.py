@@ -22,8 +22,11 @@ list_seasons_ohl = league_url_scraper.create_season_list(1974, 2023)
 list_seasons_qmjhl = league_url_scraper.create_season_list(1975, 2023)
 
 
-dict_input = {"WHL": list_seasons_whl,
-              "OHL": list_seasons_ohl, "QMJHL": list_seasons_qmjhl}
+dict_input = {
+    "WHL": list_seasons_whl,
+    "OHL": list_seasons_ohl, 
+    "QMJHL": list_seasons_qmjhl
+}
 
 data_list = os.listdir(dict_data)
 
@@ -35,21 +38,24 @@ help_list = []
 for league_ in dict_input:
     print(league_)
     season_list = dict_input[league_]
+    if league_ not in player_links:
+        player_links[league_] = {}
     for season_ in season_list:
         if (season_ not in player_links[league_]
-            or len(player_links[league_]["goalies"])==0
-            or len(player_links[league_]["players"])==0
+            or len(player_links[league_][season_]["goalies"])==0
+            or len(player_links[league_][season_]["players"])==0
             ):
             url_season = season_url_scraper.get_player_season_refs(
                 league=league_, season=season_)
             print(url_season)
             player_links[league_][season_] = url_season
     with open(url_links, "w") as fp:
-        json.dump(url_season, fp)
+        json.dump(player_links, fp)
 
 
 f = open(url_links)
 player_links = json.load(f)
+
 
 for league_ in dict_input:
     season_list = dict_input[league_]
