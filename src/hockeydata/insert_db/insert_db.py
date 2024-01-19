@@ -5,12 +5,17 @@ from sqlalchemy.orm import Session
 
 
 class DatabasePipeline():
+    """class containing methods used for inserting data in DB"""
 
     def __init__(self, db_session: Session):
         self.db_session = db_session
         pass
 
     def input_data_in_player_table(self, dict_info: dict) -> int:
+        """"inputs data into table players
+            values in the table depend on the tables players, 
+            nationalities and places
+        """
         database_method = DatabaseMethods(db_session=self.db_session)
         query_object = Query(db_session=self.db_session)
         nr_team_id = database_method._input_uid(
@@ -45,6 +50,11 @@ class DatabasePipeline():
     def input_data_in_team_table(
             self, dict_info: dict, stadium_id: int
             ) -> int:
+        """inputs info about team in teams table
+            values in the table depend on tables places and stadiums
+            id of stadium from table stadiums must be known beforehand
+        """
+
         database_method = DatabaseMethods(db_session=self.db_session)
         query_object = Query(db_session=self.db_session)
         place_dict = dict_info[PLACE_DICT]
@@ -83,6 +93,8 @@ class DatabasePipeline():
     def _input_data_in_league_table(
             self, league_uid: int, long_name: str
             ) -> int:
+        """inputs league info (uid and name) in leagues table"""
+
         query_object = Query(db_session=self.db_session)
         database_method = DatabaseMethods(db_session=self.db_session)
         league_id = query_object._find_id_in_table(table=db.League,
@@ -97,6 +109,11 @@ class DatabasePipeline():
         return league_id
     
     def _input_achievement(self, achiev: str, league_id: int) -> int:
+        """inputs table achievement into table achievements based on
+           its name which serves as its unique identificator and league_id
+           values in the table depend on table leagues
+        """
+
         query_object = Query(db_session=self.db_session)
         database_method = DatabaseMethods(db_session=self.db_session)
         achiev_id = query_object._find_id_in_table(
@@ -114,6 +131,14 @@ class DatabasePipeline():
     def _input_achievement_relation(
             self, player_id: int, achiev: str, season: str
             ) -> int:
+        """input relation between player, achievement and year it was achieved 
+           into table players achievements
+           values in the table depend on tables players, achievements and seasons
+           Parameters: player_id - id of player from table players
+                       aciev - achievement name which also serves as its unique indentificator
+                       season - season string
+        """
+
         database_method = DatabaseMethods(db_session=self.db_session)
         achiev_id = database_method._input_uid(
             table=db.Achievement, uid_val=achiev, uid=achiev, league_id=None)
@@ -125,6 +150,17 @@ class DatabasePipeline():
         return relation_id
     
     def _input_player_stats(self, dict_stats: dict) -> int:
+        """inputs one season statistics for player into table player_statistics
+           values in the table depend on tables players, teams, league and
+           seasons
+           team_id is attained based on uid of team, 
+           season based on season string
+           league id based on uid of league
+           player_id must be already included in dictionary dict_stats 
+           input is dictionary with information on indiviual statistics, info
+           on if the player is goalie or field player and if the statistics are from regular season or play off
+        """
+
         database_method = DatabaseMethods(db_session=self.db_session)
         team_id = database_method._input_uid(
             table=db.Team, uid_val=dict_stats[TEAM_UID], 
@@ -134,7 +170,6 @@ class DatabasePipeline():
             uid=dict_stats[LEAGUE_UID])
         season_id = database_method._input_unique_data(
             table=db.Season, season=dict_stats[SEASON_NAME])
-        stat_id = database_method._input_unique_data
         if dict_stats[IS_GOALIE] == False:
             stat_id = database_method._input_unique_data(
                 table=db.PlayerStats,
@@ -173,6 +208,12 @@ class DatabasePipeline():
             return stat_id
     
     def _input_stadium_data(self, stadium_dict: dict) -> int:
+        """inputs data into stadium into stadiums table,
+           values in the table depend on the table places
+           parameter is dict containg: stadium name, its capacity,
+           town in  which it is located and year of construction
+        """
+        
         database_method = DatabaseMethods(db_session=self.db_session)
         if stadium_dict[ARENA_NAME] is None:
             return None
@@ -194,6 +235,14 @@ class DatabasePipeline():
         return stadium_id
 
     def _input_affiliated_teams(self, team_id: int, team_aff_uid: int) -> int:
+        """inputs relation between affiliated teams in table affiliated_teams
+        parameters are id of team from table teams and uid of its affiliated team
+        values in the table depend on the values from table teams
+        in case the entry was already inputed in table in reverse:
+        (team connected to team_id was inputted as affiliated team of team with uid team_aff_uid) 
+        new entry is not inputted into table 
+        """
+
         database_method = DatabaseMethods(db_session=self.db_session)
         if team_id is None or team_aff_uid is None:
             return None
@@ -220,6 +269,11 @@ class DatabasePipeline():
         return relation_id
     
     def _input_colour_team(self, team_id: int, colour: str) -> int:
+        """inputs relation between team and its colours into table team_colours
+        values in the table depend on the values from table teams and colours
+           parameters are: team_id - id of team from table teams
+                           colour - string with colour name
+        """
         if team_id is None or colour is None:
             return None
         database_method = DatabaseMethods(db_session=self.db_session)
@@ -231,6 +285,14 @@ class DatabasePipeline():
         return relation_id
     
     def _input_player_draft(self, draft_dict: dict, player_id: int) -> int:
+        """inputs draft information regarding one player into drafts;
+           currently only for NHL draft info
+           values depend on table players and teams (team that drafted player)
+           parameters of method are following:
+           player_id - id of player from table players
+           draft_dict - dict with info about in which round on which position, in which year and by which team was player drafted
+        """
+
         if player_id is None:
             return None
         database_method = DatabaseMethods(db_session=self.db_session)
@@ -248,6 +310,12 @@ class DatabasePipeline():
         return draft_id
     
     def _input_player_nation(self, player_id: int, nationality: str) -> int:
+        """inputs relation between player and his nationality
+           separate table is needed because for some players more than one nationality can be listed, values depend on values from tables players and nationality, inputs into method are the following:
+           player_id - id of player from table players
+           nationality - country code of nation
+        """
+
         database_method = DatabaseMethods(db_session=self.db_session)
         nation_id = database_method._input_unique_data(
             table=db.Nationality,
@@ -261,6 +329,13 @@ class DatabasePipeline():
     def _input_player_relation(
             self, player_from_uid: int, player_to_id: int, relation: str
             ) -> int:
+        """inputs one relation between players into table player_relations
+           the values in the table are dependent on the tables players and relations in which different types of relation are listed
+           inputs in the method are following:
+           for example relation: grandfather (uid: 123) of player with uid 456
+           player_from_uid = 123, player_to_id=456, and relation='grandfather'
+        """
+
         database_method = DatabaseMethods(db_session=self.db_session)
         player_from_id = database_method._input_uid(
             table=db.Player, uid_val=player_from_uid, name=None, uid=player_from_uid, position=None, active=None, age=None, shoots=None, catches=None, contract=None, cap_hit=None, signed_nhl=None, date_birth=None, drafted=None, 
@@ -275,6 +350,12 @@ class DatabasePipeline():
     def _input_retired_number_relation(
             self, team_id: int, player_uid: int, number: int
             ) -> int:
+        """inputs one team retired number, team and player relation     
+           in table retired_numbers, values in the table are connected to tables teams and players so it is necessary to find id 
+           of player with player_uid from table players and id,
+           id of team for which the number was retired must be then be known beforehand
+        """
+        
         database_method = DatabaseMethods(db_session=self.db_session)
         player_id = database_method._input_uid(table=db.Player,
                                                 uid_val=player_uid, 
@@ -299,6 +380,15 @@ class DatabasePipeline():
     def _input_team_name(
             self, name: str, min: int, max: int, team_id: int
             ) -> int:
+        """inputs one historic name of team with range of seasons in which 
+           it was in table team_names, values in the table are connected to tables seasons and teams so the values from these table related to the entry in team_names table are attained first based on:
+           min - season from which the name was in use
+           max - season to which the name was in use
+           name - name of the team in the range of the seasons
+           team_id is then id of team for which the historic name is saved
+           from table teams
+        """
+
         database_method = DatabaseMethods(db_session=self.db_session)
         season_min_id = database_method._input_unique_data(table=db.Season,
                                                             season=min)
@@ -309,6 +399,12 @@ class DatabasePipeline():
         return team_name_id
     
     def _input_team_position(self, dict_: dict) -> int:
+        """inputs team position in table with season standings
+           table is connected to table teams, postseason_types,
+           divisions and seasons, so the values from these table related to
+           the entry in season standings table must be attained at first 
+        """
+
         database_method = DatabaseMethods(db_session=self.db_session)
         team_id = database_method._input_uid(table=db.Team, 
                                              uid_val=dict_[TEAM_UID],
@@ -349,11 +445,18 @@ class DatabasePipeline():
 
 class DatabaseMethods():
 
+    """class containg operations for dealing with the data in the database"""
+
     def __init__(self, db_session: Session):
         self.db_session = db_session
         pass
 
     def _input_data(self, table, **kwargs) -> int:
+        """method for adding a row to a table
+           Parameters: table - to which table should data be inputted
+                       **kwargs - column value pairs to be inputted
+        """
+
         query_object = Query(db_session=self.db_session)
         query_insert = query_object._create_table_entry(table=table, 
                                                         **kwargs)
@@ -363,6 +466,12 @@ class DatabaseMethods():
         return id
     
     def _input_unique_data(self, table, **kwargs) -> int:
+        """inputs data into database when it is not there already 
+            and returns the id of entry
+            Parameters: table - to which table should data be inputted
+                       **kwargs - column value pairs to be inputted
+        """
+
         query_object = Query(db_session=self.db_session)
         id = query_object._find_id_in_table(table=table, **kwargs)
         if id is None:
@@ -370,6 +479,16 @@ class DatabaseMethods():
         return id
 
     def _update_data(self, table, where_col, where_val, **kwargs):
+        """ method for updating value of already existing  
+            row in table
+            Parameters: table - table in which the row is updated
+            where_col - column based on which the row is selected
+            where_val - value of where_col based on which the   
+                        row is selected
+            **kwargs - key value pairs, where keys are columns 
+                        and values are new updated values
+        """
+
         query_object = Query(db_session=self.db_session)
         update_query = query_object._update_entry(
             table=table, where_col=where_col, where_val=where_val, **kwargs)
@@ -377,6 +496,12 @@ class DatabaseMethods():
         self.db_session.commit()
 
     def _input_uid(self, table, uid_val, **kwargs) -> int:
+        """method for inputing uid in database
+           Parameters: table - table in which uid is inputted
+                       uid_val - inputted uid
+                       **kwargs -uid=uid_val ad other column value pairs of the table, all of them need to be specified
+        """
+
         query_object = Query(db_session=self.db_session)
         id = query_object._find_id_in_table(table=table, uid=uid_val)
         if id is None:
@@ -386,14 +511,26 @@ class DatabaseMethods():
 
 class Query():
 
+    """class containing basic operations for the database"""
+
     def __init__(self, db_session: Session):
         self.db_session = db_session
         
     def _create_table_entry(self, table, **kwargs):
+        """method for creating new row in selected table
+        parameters:    table - to which table should data be inputted
+                       **kwargs - column value pairs which should be inserted
+        """
+
         entry = table(**kwargs)
         return entry
     
     def _find_id_in_table(self, table, **kwargs) -> int:
+        """method for finding id of row in a table based on arbitrary column value pairs from the table
+        parameters:  table - from which table id should be extracted
+                     **kwargs - column value pairs by which row should be found
+        """
+
         row_data = self.db_session.query(table.id).filter_by(**kwargs).first()
         if row_data is None:
             return None
@@ -401,6 +538,16 @@ class Query():
             return row_data.id
         
     def _update_entry(self, table, where_col, where_val, **kwargs):
+        """method for creating query for updating value of already existing  
+           row in a table
+           Parameters: table - table in which the row is updated
+                       where_col - column based on which the row is selected
+                       where_val - value of where_col based on which the   
+                                   row is selected
+                       **kwargs - key value pairs, where keys are columns 
+                                  and values are new updated values
+        """
+
         update_query = (update(table)
                        .where(where_col == where_val)
                        .values(**kwargs))
