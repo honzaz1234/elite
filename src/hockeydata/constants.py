@@ -202,6 +202,7 @@ LEAGUE_URLS = {
         'Norway U18': '/league/norway-u18',
         'Iceland': '/league/iceland',
         'NL': '/league/nl',
+        'Czechia': '/league/czechia', 
         'SL': '/league/sl',
         'MyHL': '/league/myhl',
         '1. Liga': '/league/swissdiv1',

@@ -14,7 +14,11 @@ class LeagueUrlDownload():
         "league_name": "//div[preceding-sibling::header[contains(@id, '-men')]]//a[@class='TextLink_link__3JbdQ TableBody_link__MNtRl']/text()",
         "season_refs": "//a[@style='font-weight: 800;']/@href",
         "standings": "/standings/",
-        "year_list": "//div[@id='standings']//option[position()>1]/text()"
+        "year_list": "//div[@id='standings']//option[position()>1]/text()",
+        "last_year": "//ul[preceding-sibling::h4[contains(text(), 'List of "
+                      "Champions')]]/li[1]/a[1]/text()",
+        "first_year": "//ul[preceding-sibling::h4[contains(text(), 'List of "
+                      "Champions')]]/li[last()]/a[1]/text()"
     }
     
     def __init__(self):
@@ -62,19 +66,31 @@ class LeagueUrlDownload():
         """downloads player urls based on league and list of  years
             output: dictionary: season -> (players-goalies) -> urls
         """
-
-        if years == []:
+        if years == None:
+            url = ELITE_URL + LEAGUE_URLS[league]
+            league_page_html = requests.get(url).content
+            sel_league = scrapy.Selector(text=league_page_html)
+            first_year = int((sel_league
+                        .xpath(LeagueUrlDownload.PATHS["first_year"])
+                        .getall()[0])) - 1
+            last_year = int((sel_league
+            .xpath(LeagueUrlDownload.PATHS["last_year"])
+            .getall()[0]))
+            years = [year for year in range(first_year, last_year)]
+        elif years == []:
                 return
         list_seasons = []
         dict_player_ref = {}
         for year in years:
             season_string = self.create_season_string(year)
             list_seasons.append(season_string)
+        print(list_seasons)
         season_getter = SeasonUrlDownload()
         for season in list_seasons:
             season_dict = season_getter.get_player_season_refs(league=league,
                                                                 season=season)
-            dict_player_ref[season] = season_dict
+            if season_dict != {"goalies": [], "players": []}:
+                dict_player_ref[season] = season_dict
         return dict_player_ref
     
     def get_team_refs(self, league: str) -> list:
