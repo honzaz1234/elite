@@ -3,15 +3,15 @@ import requests
 import scrapy
 from hockeydata.constants import *
 
-XPATHS = {
-    "game_summary": "//a[contains(text(), 'Game Summary')]",
-    "playbyplay_report": "//a[contains(text(), 'Full Play-By-Play')]",
-    "faceoff_comparison": "//a[contains(text(), 'Faceoff Comparison')]",
-    "faceoff_summary": "//a[contains(text(), 'Faceoff Summary')]",
-}
-
 
 class GetGameStats():
+
+    XPATHS = {
+        "game_summary": "//a[contains(text(), 'Game Summary')]",
+        "playbyplay_report": "//a[contains(text(), 'Full Play-By-Play')]",
+        "faceoff_comparison": "//a[contains(text(), 'Faceoff Comparison')]",
+        "faceoff_summary": "//a[contains(text(), 'Faceoff Summary')]",
+    }
 
     def __init__(self, url):
         self.url = url
@@ -20,17 +20,17 @@ class GetGameStats():
         self.url_dict = {}
 
     def get_urls(self):
-        self.url_dict["game_summary"] = self.sel(XPATHS["game_summary"])
-        self.url_dict["playbyplay"] = self.sel(XPATHS["playbyplay_report"])
-        self.url_dict["faceoff_comparison"] = self.sel(
-            XPATHS["faceoff_comparison"])
-        self.url_dict["playbyplay_report"] = self.sel(
-            XPATHS["playbyplay_report"])
-
+        self.url_dict["game_summary"] = self.sel.xpath(GetGameStats.XPATHS["game_summary"]).get()
+        print(self.url_dict)
+        self.url_dict["playbyplay"] = self.sel.xpath(GetGameStats.XPATHS["playbyplay_report"]).get()
+        self.url_dict["faceoff_comparison"] = self.sel.xpath(
+            GetGameStats.XPATHS["faceoff_comparison"]).get()
+        self.url_dict["playbyplay_report"] = self.sel.xpath(
+            GetGameStats.XPATHS["playbyplay_report"]).get()
 
     def get_info_all(self):
         dict_all = {}
-        plays_o = GetPlays()
+        plays_o = GetPlays(self.url)
         dict_plays = plays_o.get_all_plays(
             base_url=self.url_dict["playbyplay"])
         dict_all["plays"] = dict_plays
@@ -44,18 +44,19 @@ class GetPlays():
         "date": "//table[@id='GameInfo']/tbody/tr[4]",
         "venue_attendance": "//table[@id='GameInfo']/tbody/tr[4]",
         "start_end": "//table[@id='GameInfo']/tbody/tr[6]"
-        }
+    }
 
     def __init__(self, base_url):
 
         self.url = base_url
-        self.htm = requests.get(base_url)
+        self.htm = requests.get(base_url).content
         self.sel = scrapy.Selector(text=self.htm)
         self.dict_info = {}
         self.dict_info["id"] = re.findall('\/(.+).HTM$')
 
     
     def get_general_info(self):
+
         g_info_dict = {}
         g_info_dict["home_team"] = self.get_home_team()
         g_info_dict["away_team"] = self.get_away_team()
@@ -72,7 +73,6 @@ class GetPlays():
         plays_dict = play_parser_o.parse_plays()
         return plays_dict
 
-    
     def get_home_team(self):
         
         home_team = self.sel.xpath(
@@ -130,7 +130,6 @@ class PlayParser():
         "play_selector": "//tr[contains(@id, 'PL')]",
         "play_type": "//td[5]/text()",
         "game_time": "//td[4]/text()"
-
     }
 
     def __init__(self, selector):
@@ -157,13 +156,13 @@ class PlayParser():
         dict_play_string = {}
         if play_type == "HIT":
             dict_play_string = self.parse_hit_string()
-        else if play_type == "SHOT":
+        elif play_type == "SHOT":
             dict_play_string = self.parse_shot_string()
-        else if play_type == "STOP":
+       # else if play_type == "STOP":
 
-    def get_game_time(self):
+    #def get_game_time(self):
 
-        dict_play["game_time"] = 
+     #   dict_play["game_time"] = 
 
 
 

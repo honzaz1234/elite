@@ -41,7 +41,6 @@ class Scraper:
                     for url_player in list_players:
                         if url_player in list_downloaded:
                             continue
-                        print(url_player)
                         player_object = player.PlayerScraper(url_player)
                         info_dict = player_object.get_info_all()
                         dict_players = {**dict_players, **info_dict}
