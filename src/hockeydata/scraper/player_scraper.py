@@ -1,6 +1,7 @@
 import re
 import requests
 import scrapy
+from . import logger
 from hockeydata.constants import *
 
 
@@ -50,6 +51,12 @@ class PlayerScraper:
         dict_player[ACHIEVEMENTS] = a_o.get_achievements()
         s_o = PlayerStats(selector=self.selector)
         dict_player[SEASON_STATS] = s_o.get_all_stats(years=years)
+        logger.debug("player dict: {dict_player}")
+        logger.info(
+            "Dict from player with name" 
+            "{dict_player[GENERAL_INFO][PLAYER_NAME]} "
+            "({dict_player[GENERAL_INFO][PLAYER_UID])"
+            " succesfully scraped")
         return dict_player
 
 
@@ -113,6 +120,10 @@ class PlayerGeneralInfo():
         dict_gi[PLAYER_NAME] = self._get_name()
         dict_gi[PLAYER_UID] = re.findall(PLAYER_UID_REGEX,
                                          self.url)[0]
+        logger.debug("player dict: {dict_gi}")
+        logger.info("Dictionary with general info of player" 
+                    "{dict_gi[PLAYER_NAME]}"
+                    " succesfully scraped")
         return dict_gi
 
     def _get_name(self) -> str:
@@ -123,6 +134,9 @@ class PlayerGeneralInfo():
                 .getall())
         name = [string.strip() for string in name]
         name = [string for string in name if string != ""]
+        logger.info("Name of player:" 
+                    " {name}"
+                    " succesfully scraped")
         return name[0].strip()
 
     def _get_info_wrapper(self) -> dict:
@@ -150,6 +164,8 @@ class PlayerGeneralInfo():
         info_val = [string for string in info_val if string != ""]
         if info_val == []:
             info_val = [None]
+        logger.info("Info ({info_name}):" 
+                    " succesfully scraped")
         if keep_list == False:
             return info_val[0]
         else:
@@ -225,6 +241,8 @@ class FamilyRelations():
             if list_uid == []:
                 continue
             relations_uid[relation] = list_uid
+        logger.debug("Relation Dict: {relations_uid}")
+        logger.info("Dict with relations of player succesfully scraped")
         return relations_uid
 
 
@@ -258,6 +276,9 @@ class PlayerStats():
         dict_stats["leagues"] = self._get_stats(years=years, type="leagues")
         dict_stats["tournaments"] = self._get_stats(years=years,
                                                     type="tournaments")
+        logger.debug("Stats Dict: {dict_stats}")
+        logger.info("Dict with stats (both leagues and tournaments)" 
+                    "of player succesfully scraped")
         return dict_stats
 
     def _get_stats(self, type: str, years: list=None) -> dict:
@@ -281,6 +302,10 @@ class PlayerStats():
                 dict_stats[season] = {}
             dict_stats[season] = self._get_season_stats(
                 season_dict=dict_stats[season], path_type=path_type, ind=ind)
+            logger.debug("Stats Dict (Season: {season}, Type: {type}):" 
+                        " {relations_uid}")
+        logger.info("Dict with stats for all season for Type: {type}"
+                    "succesfully scraped")
         return dict_stats
     
     def _get_season_stats(
@@ -307,9 +332,12 @@ class PlayerStats():
         new_merged_dict = old_dict.copy()
         for league in new_dict:
             if  league in old_dict:
+                logger.debug("League: {league} is already present in"
+                             "the dictionary")
                 new_merged_dict[league] = {
                     **old_dict[league], **new_dict[league]
                 }
+                logger.debug("Old and new dictionary succesfully merged")
             else:
                 new_merged_dict[league] = new_dict[league]
         return new_merged_dict
@@ -367,9 +395,12 @@ class OneRowStat():
         league_dict = {}
         team = self._get_stat_atribute(key="team")
         if team is None or team == OneRowStat.PROJECTED:
+            logger.debug("League dict equal to {{}} given the team name" 
+                         "is equal to None")
             return {}
         league_dict[team] = self._get_team_dict()
         league_dict[LEAGUE_URL] = self._get_league_url(league=league)
+        logger.debug("League dict extracted: {league_dict}")
         return league_dict
 
     def _get_league_url(self, league: str) -> str:
@@ -378,7 +409,9 @@ class OneRowStat():
         if league is not None:
             league_url = self._extract_general_url(key_path="url_league", 
                                                    key_regex="league")
+            logger.debug("League url extracted: {league_url}")
         else:
+            logger.debug("League url equal to None:")
             league_url = None
         return league_url
     
@@ -398,6 +431,7 @@ class OneRowStat():
         dict_team[PLAY_OFF] = stat_play_off
         dict_team[LEADERSHIP] = leadership
         dict_team[TEAM_URL] = team_url
+        logger.debug("Dict for team extracted: {dict_team}")
         return dict_team
 
     def _get_stat_atribute(
@@ -411,10 +445,13 @@ class OneRowStat():
         stat_list = self.selector.xpath(path_stat).getall()
         stat_list = [string.strip() for string in stat_list]
         if stat_list == [] or set(stat_list)=={""}:
+            logger.debug("Attribute: {key} equal to None")
             return None
         elif keep_list==True:
+            logger.debug("Attribute: {key} extracted: {stat_list}")
             return stat_list
         else:
+            logger.debug("Attribute: {key} extracted: {stat_list[0]}")
             return stat_list[0]
         
     def _extract_general_url(self, key_path: str, key_regex: str) -> str:
@@ -428,6 +465,7 @@ class OneRowStat():
         orig_url = list_data[0]
         url_list = re.findall(OneRowStat.REGEX[key_regex], orig_url)
         url = url_list[0]
+        logger.debug(" General url for {key_regex}: {url}")
         return url
 
 
