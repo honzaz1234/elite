@@ -34,8 +34,8 @@ class UpdatePlayer:
         new_dict[SEASON_STATS] = player_stats._update_stats_dict(
             dict_stats= new_dict[SEASON_STATS])
         player_relation = UpdateRelations()
-        new_dict[RELATIONS] = player_relation._update_relation_dict(
-            relation_dict=new_dict[RELATIONS])
+        #new_dict[RELATIONS] = player_relation._update_relation_dict(
+        #    relation_dict=new_dict[RELATIONS])
         return new_dict
     
 class UpdatePlayerInfo():
@@ -52,7 +52,7 @@ class UpdatePlayerInfo():
 
     DRAFT_YEAR_REGEX = "^([0-9]+)\s"
     DRAFT_ROUND_REGEX = "round\s([0-9]+)\s"
-    DRAFT_POSITION_REGEX = "#([0-9]+)\s"
+    DRAFT_POSITION_REGEX = "#\s([0-9]+)\s"
     DRAFT_TEAM_REGEX = "by\s(.+)$"
     
     #names of keys from dictionary to be deleted before insertion of the dict #into DB
@@ -565,7 +565,7 @@ class SeasonDict():
             if ind == 7:
                 dic_wlt = self._w_l_t_to_dict(season_list[ind])
                 dict_stats = {**dict_stats, **dic_wlt}
-            elif season_list[ind] == None:
+            elif season_list[ind] is None:
                 dict_stats[SeasonDict.GOALIE_ATT[ind]
                            ] = season_list[ind]
             elif ind in [2, 3]:

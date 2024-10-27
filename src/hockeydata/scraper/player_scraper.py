@@ -1,8 +1,12 @@
+import hockeydata.playwright_setup.playwright_setup as ps
+import playwright.sync_api as sync_api
 import re
 import requests
 import scrapy
+
 from . import logger
 from hockeydata.constants import *
+from playwright.sync_api import Page
 
 
 class PlayerScraper:
@@ -15,7 +19,7 @@ class PlayerScraper:
        c) player achievements 
     """
 
-    def __init__(self, url: str):
+    def __init__(self, url: str, page: sync_api.Page):
         """Arguments:
         url - url of webpage with player's information
         html - html code of player profile webpage
@@ -23,8 +27,12 @@ class PlayerScraper:
                    used for attaining individual pieces of information
         """
         self.url = url
-        self.html = requests.get(self.url).content
-        self.selector = scrapy.Selector(text=self.html)
+        self.page = page
+        self.page.goto(url)
+        ps.click_on_button(self.page, ps.COOKIES_AGREE_XPATH)
+        #self.page.evaluate("document.body.style.zoom=1.1")
+        html_content = page.content()
+        self.selector = scrapy.Selector(text=html_content)
 
     def get_info_all(self, years: list=None) -> dict:
         """Wrapper method containing all individual methods for scrapping data 
@@ -45,12 +53,15 @@ class PlayerScraper:
         gi_o = PlayerGeneralInfo(selector=self.selector,
                                  url=self.url)
         dict_player[GENERAL_INFO] = gi_o.get_general_info()
+        print(dict_player)
         a_o = PlayerAchievements(selector=self.selector)
-        f_r_o = FamilyRelations(selector=self.selector)
-        dict_player[RELATIONS] = f_r_o._get_relation_dict()
+        #f_r_o = FamilyRelations(selector=self.selector)
+        #dict_player[RELATIONS] = f_r_o._get_relation_dict()
         dict_player[ACHIEVEMENTS] = a_o.get_achievements()
-        s_o = PlayerStats(selector=self.selector)
-        dict_player[SEASON_STATS] = s_o.get_all_stats(years=years)
+        print(dict_player[ACHIEVEMENTS])
+        stats_object = self.stats_factory(
+            general_info=dict_player[GENERAL_INFO])
+        dict_player[SEASON_STATS] = stats_object.get_all_stats(years=years)
         logger.debug("player dict: {dict_player}")
         logger.info(
             "Dict from player with name" 
@@ -58,19 +69,31 @@ class PlayerScraper:
             "({dict_player[GENERAL_INFO][PLAYER_UID])"
             " succesfully scraped")
         return dict_player
+    
+    def stats_factory(self, general_info: dict) -> 'Stats':
+        """given that attaining stats for goalies and players differ
+        they are divided into separate classes
+        """
+
+        if GOALIE_PLAYER in general_info[POSITION]:
+            stats_object = GoalieStats(
+                type_player=GOALIE_PLAYER, selector=self.selector,
+                page=self.page)
+        else:
+            stats_object = PlayerStats(type_player=OTHER_PLAYER, 
+                                       selector=self.selector)
+        return stats_object
 
 
 class PlayerGeneralInfo():
 
     #list of xpaths that are used to access information on player
 
-    PATHS = {"player_name": "//h1[contains(@class,"
-                            "'ep-entity-header__name')]//text()",
-             "gi_l": "//div[contains(@class,"
-                    "'ep-list__item--is-compact')]"
-                    "/div[2][preceding-sibling::div[1]"
-                    "[contains(text(), '",
-             "gi_r": "')]]//text()"
+    PATHS = {"player_name": "//div[contains(@class, 'Profile_titleWrapper')]"
+                             "/h1/text()",
+             "gi_left": "//section[@id='player-facts']//li"
+                     "/span[contains(text(), '",
+             "gi_right": "')]/following-sibling::"
     }
 
     #list of attributes that can be found in the table with general #information on player's page
@@ -88,20 +111,20 @@ class PlayerGeneralInfo():
     #mapping of names of attributes on the webpage into names in scrapped #dictionary
 
     PROJECT_MAPPING = {
-        "Date of Birth": BIRTH_DATE, 
-        "Age": AGE,
-        "Place of Birth": BIRTH_PLACE_STRING, 
-        "Nation": NATIONALITY, 
-        "Position": POSITION,
-        "Height": HEIGHT,
-        "Weight": WEIGHT,
-        "Shoots": SHOOTS,
-        "Catches": CATCHES,
-        "Contract": CONTRACT_END,
-        "Cap Hit": CAP_HIT,
-        "NHL Rights": NHL_RIGHTS,
-        "Drafted": DRAFT_LIST,
-        "Status": ACTIVE,
+        "Date of Birth": [BIRTH_DATE, "a/text()"], 
+        "Age": [AGE, "text()"],
+        "Place of Birth": [BIRTH_PLACE_STRING, "a/text()"],
+        "Nation": [NATIONALITY, "div//text()"], 
+        "Position": [POSITION, "text()"],
+        "Height": [HEIGHT, "text()"],
+        "Weight": [WEIGHT, "text()"],
+        "Shoots": [SHOOTS, "text()"],
+        "Catches": [CATCHES, "text()"],
+        "Contract": [CONTRACT_END, "text()"],
+        "Cap Hit": [CAP_HIT, "div//text()"],
+        "NHL Rights": [NHL_RIGHTS, "a/text()"],
+        "Drafted": [DRAFT_LIST, "div//text()"],
+        "Status": [ACTIVE, "text()"],
     } 
     
     def __init__(self, selector: scrapy.Selector, url: str):
@@ -145,7 +168,7 @@ class PlayerGeneralInfo():
         dict_gi = {}
         for info_name in PlayerGeneralInfo.INFO_NAMES:
             keep_list = False
-            key_name = PlayerGeneralInfo.PROJECT_MAPPING[info_name]
+            key_name = PlayerGeneralInfo.PROJECT_MAPPING[info_name][0]
             if info_name in PlayerGeneralInfo.KEEP_LIST:
                 keep_list = True
             dict_gi[key_name] = self._get_info(info_name=info_name,
@@ -156,21 +179,37 @@ class PlayerGeneralInfo():
         """method for getting one value from general info table on player's webpage
         """
 
-        info_path_val = (PlayerGeneralInfo.PATHS["gi_l"]
+        info_path_val = (PlayerGeneralInfo.PATHS["gi_left"]
                          + info_name
-                         + PlayerGeneralInfo.PATHS["gi_r"])
+                         + PlayerGeneralInfo.PATHS["gi_right"]
+                         + PlayerGeneralInfo.PROJECT_MAPPING[info_name][1])
         info_val = self.selector.xpath(info_path_val).getall()
         info_val = [string.strip() for string in info_val]
         info_val = [string for string in info_val if string != ""]
+        if info_name == 'Drafted':
+            info_val = self.get_drafts(info_val)
         if info_val == []:
             info_val = [None]
         logger.info("Info ({info_name}):" 
                     " succesfully scraped")
         if keep_list == False:
-            return info_val[0]
+            if info_val[0] is not None:
+                return ' '.join(info_val)
         else:
             return info_val
 
+    def get_drafts(self, drafts: list) -> list:
+        """method to get  draft strings from  list of string values
+        (info about drafts is separated on multiple lines)"""
+        
+        if drafts == [None]:
+            return [None]
+        n_drafts = int(len(drafts) / 7)
+        new_drafts = []
+        for ind in range(n_drafts):
+            draft =  " ".join(drafts[(7*ind):(7*(ind + 1))])
+            new_drafts.append(draft)
+        return new_drafts
 
 class FamilyRelations():
 
@@ -182,7 +221,7 @@ class FamilyRelations():
     #xpath to acces text in which all of the relations are mentioned on the #webpage
 
     PATHS = {
-        "whole_text": "//p[@class='ep-text mb-2']"
+        "whole_text": "//div[@class='PlayerFacts_description__ujmxU']"
     }
 
     #regex used to access relation types
@@ -246,84 +285,77 @@ class FamilyRelations():
         return relations_uid
 
 
-class PlayerStats():
+
+class Stats():
 
     """class for downloading season data from stat tables on player webpage"""
 
     # xpaths to access statistics in league and tournament tables on player webpage
 
     PATHS = {
-        "path_league": "//div[@id='league-stats']",
-        "path_tournament": "//div[@id='cup-stats']",
-        "stats_table_l": "//table[contains(@class,'table table-"
-                         "condensed table-sortable')]//tr[",
+        "path_league": "//section[@id='player-statistics']",
+        "path_tournament": "//section[@id='tournament-statistics']",
+        "stats_table_l": "//tbody//tr[",
         "stats_table_r": "]/td",
-        "stat_years": "//table[contains(@class,'table table-condensed"
-                      " table-sortable')]/tbody/tr/@data-season"
+        "stat_years": "//tbody/tr"
     }
 
-    def __init__(self, selector: scrapy.Selector):
+    def __init__(
+            self, type_player: str, selector: scrapy.Selector, 
+            page: sync_api.Page=None):
         """attribute: selector - original selector of whole webpage of player
+                      page - playwright page object with loaded webpage of  
+                             a player
         """
-
+        self.type_player = type_player
         self.selector = selector
+        self.page = page
+        self._season_type = None
+
+    @property
+    def season_type(self):
+        print("season type")
+        return self._season_type
+    
+    @season_type.setter
+    def _set_season_type(self, season_type_: str) -> None:
+        self._season_type = season_type_
 
     def get_all_stats(self, years: list=None) -> dict:
         """wrapper method for downloading stats from both league and tournament tables
         """
 
         dict_stats = {}
-        dict_stats["leagues"] = self._get_stats(years=years, type="leagues")
-        dict_stats["tournaments"] = self._get_stats(years=years,
-                                                    type="tournaments")
+        dict_stats["leagues"] = self._get_stats_wrapper(years=years,
+                                                         type_="leagues")
+        dict_stats["tournaments"] = self._get_stats_wrapper(years=years,
+                                                    type_="tournaments")
         logger.debug("Stats Dict: {dict_stats}")
         logger.info("Dict with stats (both leagues and tournaments)" 
                     "of player succesfully scraped")
         return dict_stats
-
-    def _get_stats(self, type: str, years: list=None) -> dict:
-        
-        """method for downloading data from the whole table (league, tournament) with the player season statistics
-        """
-
-        if type == "leagues":
-            path_type = PlayerStats.PATHS["path_league"]
-        elif type == "tournaments":
-            path_type = PlayerStats.PATHS["path_tournament"]
-        dict_stats = {}
-        path_years = path_type + PlayerStats.PATHS["stat_years"]
-        list_years = self.selector.xpath(path_years).getall()
-        for ind in range(1, len(list_years) + 1):
-            season = list_years[ind - 1]
-            if years is not None:
-                if list_years[ind - 1] not in years:
-                    continue
-            if season not in dict_stats:
-                dict_stats[season] = {}
-            dict_stats[season] = self._get_season_stats(
-                season_dict=dict_stats[season], path_type=path_type, ind=ind)
-            logger.debug("Stats Dict (Season: {season}, Type: {type}):" 
-                        " {relations_uid}")
-        logger.info("Dict with stats for all season for Type: {type}"
-                    "succesfully scraped")
-        return dict_stats
     
+    def _get_stats_wrapper(self, type_: str, years: list=None):
+        pass
+
+    def get_path_type_and_years(self, type_: str):
+
+        if type_ == "leagues":
+            path_type = Stats.PATHS["path_league"]
+        elif type_ == "tournaments":
+            path_type = Stats.PATHS["path_tournament"]
+        path_years = path_type + Stats.PATHS["stat_years"]
+    
+        return path_type, path_years
+
     def _get_season_stats(
-            self, season_dict: dict, path_type: str, ind: int
-            ) -> dict:
+            self, path_season: str) -> dict:
 
         """adds one row from stat table to stat dictionary"""
-
-        new_season_dict = {}
-        path_season = (path_type
-                        + PlayerStats.PATHS["stats_table_l"]
-                        + str(ind)
-                        + PlayerStats.PATHS["stats_table_r"])
         row_o = OneRowStat(path=path_season, selector=self.selector)
         sub_dict = row_o._get_stat_dictionary()
-        new_season_dict = self._merge_league_dict(
-                old_dict=season_dict, new_dict=sub_dict)
-        return new_season_dict
+
+        return sub_dict
 
     def _merge_league_dict(self, old_dict: dict, new_dict: dict) -> dict:
         
@@ -342,6 +374,154 @@ class PlayerStats():
                 new_merged_dict[league] = new_dict[league]
         return new_merged_dict
         
+    def _get_years_list(self, path_year: str) -> list:
+        """get a list of season, replaces empty strings with last 
+           preceding season
+        """
+        list_seasons = []
+        n_rows = len(self.selector
+                     .xpath(path_year).getall())
+        for index in range(1, n_rows + 1):
+            xpath = (path_year 
+                     + '[' 
+                     + str(index) 
+                     + ']/td[1]//text()')
+            season = self.selector.xpath(xpath).get()
+            if season is not None:
+                current_season = season
+            list_seasons.append(current_season)
+        return list_seasons
+    
+    def _get_stats(
+            self, path_type: str, list_years: list, years: list=None) -> dict:
+        
+        """method for downloading data from the whole table (league, tournament) with the player season statistics
+        """
+
+        dict_stats = {}
+        for ind in range(1, len(list_years) + 1):
+            season = list_years[ind - 1]
+            print(season)
+            if years is not None:
+                if list_years[ind - 1] not in years:
+                    continue
+            if season not in dict_stats:
+                dict_stats[season] = {}
+            dict_stats[season] = self._get_season_stats_wrapper(
+                season_dict=dict_stats[season], path_type=path_type, ind=ind)
+            logger.debug("Stats Dict (Season: {season}, Type: {type}):" 
+                        " {relations_uid}")
+        logger.info("Dict with stats for all season for Type: {type}"
+                    "succesfully scraped")
+        return dict_stats
+    
+    def _get_season_stats_wrapper(
+            self, season_dict: dict, path_type: str, ind: int) -> dict:
+        
+        new_season_dict = {}
+        path_season = (path_type
+                        + PlayerStats.PATHS["stats_table_l"]
+                        + str(ind)
+                        + PlayerStats.PATHS["stats_table_r"])
+        print(path_season)
+
+        sub_dict = self._get_season_stats(
+            path_season=path_season)
+        print(sub_dict)
+        new_season_dict = self._merge_league_dict(
+                old_dict=season_dict, new_dict=sub_dict)
+        return new_season_dict
+    
+    def _get_season_stats(
+            self, path_season: str) -> dict:
+        """adds one row from stat table to stat dictionary"""
+
+        row_o = self.get_onerow_factory(
+            path=path_season)
+        sub_dict = row_o._get_stat_dictionary()
+        return sub_dict
+  
+    def get_onerow_factory(
+            self, path_season: str) -> 'OneRowStat':
+
+        if self.type_player == 'G':
+            onerow_object = OneRowGoalieStat(path=path_season, 
+                                             selector=self.selector,
+                                             season_type=self._season_type)
+
+        else:
+            onerow_object = OneRowPlayerStat(
+                path=path_season, selector=self.selector)
+        return onerow_object
+    
+
+class PlayerStats(Stats):
+
+    """class for downloading season data from stat tables on player webpage"""
+
+    # xpaths to access statistics in league and tournament tables on player webpage
+
+    def __init__(self, selector: scrapy.Selector):
+        """attribute: selector - original selector of whole webpage of player
+        """
+
+        super().__init__(selector=selector)
+
+    
+    def _get_stats_wrapper(self, type_: str, years: list=None):
+
+        path_type, path_years = self.get_path_type_and_years(type_=type_)
+        list_years = self._get_years_list(path_years)
+        dict_stats = self._get_stats(path_type, list_years, years)
+        return dict_stats
+        
+class GoalieStats(Stats):
+
+    TYPE = {
+        'regular': 'Regular Season (Complete Stats)', 
+        'play_off': 'Postseason (Complete Stats)'
+        }
+
+    PATHS = {
+        "season_scroll": "//div[contains(@class,"       
+                         "'PlayerStatistics_selectorWrapper')]"
+                         "/div[./*[contains(@id," 
+                         "'player-statistics-default-season')]]",
+        "season_selection": "//div[contains(@id,'default-season-selector')]"
+                            "/div",
+    }
+
+    def __init__(
+            self, page: sync_api.Page, type_player: str, 
+            selector: scrapy.Selector):
+
+        super().__init__(page=page, type_player=type_player, selector=selector)
+
+    def _get_stats_wrapper(self, type_: str,  years: list=None):
+
+        dict_stats = {}
+        path_type, path_years = self.get_path_type_and_years(type_=type_)
+        list_years = self._get_years_list(path_years)
+        for season_type in GoalieStats.TYPE:
+            self._select_season_type(path_type=path_type,
+                                     season_type=season_type)
+            self._set_season_type(season_type_=season_type)
+            dict_stats_type = self._get_stats(path_type, list_years, years)
+            dict_stats = merge_dicts(dict_stats, dict_stats_type)
+        return dict_stats
+    
+    def _select_season_type(self, path_type: str, season_type: str) -> None:
+        button_path = (path_type 
+                        + GoalieStats.PATHS['season_scroll'])
+        ps.click_on_button(self.page, button_path)
+        selection_path = (path_type 
+                        + GoalieStats.PATHS['season_selection']
+                        + "[contains(text(), '" 
+                        + GoalieStats.TYPE[season_type]
+                        + "')]")
+        ps.click_on_button(self.page, selection_path)
+        self.selector = scrapy.Selector(text=self.page.content())
+
 
 class OneRowStat():
 
@@ -350,13 +530,14 @@ class OneRowStat():
     #paths to access different types of statistics in table with players's statistics
 
     PATHS = {
-            "team": "[@class = 'team']/span/a[1]/text()",
-            "leadership": "[@class = 'team']/span/a[2]/text()",
-            "league": "[@class = 'league']/a/text()",
-            "stats_regular": "[contains(@class,'regular')]/text()",
-            "stats_playoff": "[contains(@class,'postseason ')]/text()",
-            "url_league": "[@class = 'league']/a/@href",
-            "url_team": "[@class = 'team']//a[1]/@href",
+            "team": "[2]/span/a[1]/text()",
+            "leadership": "[2]/span/span/text()",
+            "league": "[3]/a/text()",
+            "stats_regular": "[position() >= 4 and position() <= 9]/text()",
+            "stats_playoff": "[position() >= 11 and position() <= 16]/text()",
+            "stats_goalie": "[position() >= 4 and position() <= 12]/text()",
+            "url_league": "[3]//a/@href",
+            "url_team": "[2]//a/@href",
     }
 
     #regexes used to access team and league uid in url
@@ -407,32 +588,17 @@ class OneRowStat():
         """wrapper method for getting league url"""
 
         if league is not None:
-            league_url = self._extract_general_url(key_path="url_league", 
+            league_url = self._extract_url(key_path="url_league", 
                                                    key_regex="league")
             logger.debug("League url extracted: {league_url}")
         else:
-            logger.debug("League url equal to None:")
+            logger.debug("League url equal to None")
             league_url = None
         return league_url
     
-    def _get_team_dict(self) -> dict:
-        """get dict with information regarding the team from one row of stat table
-        """
+    def _get_team_dict(self):
+        pass
 
-        dict_team = {}
-        stat_play_off = self._get_stat_atribute(key="stats_playoff",
-                                                 keep_list=True)
-        stat_regular = self._get_stat_atribute(key="stats_regular", 
-                                               keep_list=True)
-        leadership = self._get_stat_atribute(key="leadership")
-        team_url = self._extract_general_url(key_path="url_team", 
-                                             key_regex="team")
-        dict_team[REGULAR_SEASON] = stat_regular
-        dict_team[PLAY_OFF] = stat_play_off
-        dict_team[LEADERSHIP] = leadership
-        dict_team[TEAM_URL] = team_url
-        logger.debug("Dict for team extracted: {dict_team}")
-        return dict_team
 
     def _get_stat_atribute(
             self, key: str, keep_list: bool=False
@@ -454,7 +620,7 @@ class OneRowStat():
             logger.debug("Attribute: {key} extracted: {stat_list[0]}")
             return stat_list[0]
         
-    def _extract_general_url(self, key_path: str, key_regex: str) -> str:
+    def _extract_url(self, key_path: str, key_regex: str) -> str:
 
         """method for extracting url of team and league
         to which the statistics are related
@@ -462,12 +628,59 @@ class OneRowStat():
         
         path_url = self.path_to_row + OneRowStat.PATHS[key_path]
         list_data = self.selector.xpath(path_url).getall()
-        orig_url = list_data[0]
-        url_list = re.findall(OneRowStat.REGEX[key_regex], orig_url)
-        url = url_list[0]
+        url = list_data[0]
         logger.debug(" General url for {key_regex}: {url}")
         return url
 
+   
+class OneRowPlayerStat(OneRowStat):
+
+
+    def _get_team_dict(self) -> dict:
+        """get dict with information regarding the team from one row of stat table
+        """
+
+        dict_team = {}
+        stat_play_off = self._get_stat_atribute(key="stats_playoff",
+                                                 keep_list=True)
+        stat_regular = self._get_stat_atribute(key="stats_regular", 
+                                               keep_list=True)
+        leadership = self._get_stat_atribute(key="leadership")
+        team_url = self._extract_url(key_path="url_team", 
+                                             key_regex="team")
+        dict_team[REGULAR_SEASON] = stat_regular
+        dict_team[PLAY_OFF] = stat_play_off
+        dict_team[LEADERSHIP] = leadership
+        dict_team[TEAM_URL] = team_url
+        logger.debug("Dict for team extracted: {dict_team}")
+        return dict_team
+    
+    
+class OneRowGoalieStat(OneRowStat):
+
+    def __init__(self, path: str, selector: scrapy.Selector, season_type):
+        super().__init__(path=path, selector=selector)
+        self._season_type = season_type
+    
+    def _get_team_dict(self) -> dict:
+        """get dict with information regarding the team from one row of stat table
+        """
+
+        dict_team = {}
+        stats = self._get_stat_atribute(key="stats_goalie", 
+                                               keep_list=True)
+        leadership = self._get_stat_atribute(key="leadership")
+        team_url = self._extract_url(key_path="url_team", 
+                                             key_regex="team")
+        if self._season_type == 'regular':
+            key_stats = REGULAR_SEASON
+        elif self._season_type == 'play_off':
+            key_stats = PLAY_OFF
+        dict_team[key_stats] = stats
+        dict_team[LEADERSHIP] = leadership
+        dict_team[TEAM_URL] = team_url
+        logger.debug("Dict for team extracted: {dict_team}")
+        return dict_team
 
 class PlayerAchievements():
 
@@ -476,9 +689,13 @@ class PlayerAchievements():
     #xpaths used to access player achievements
 
     PATHS = {
-        "achievements_l": "//li[",
-        "achievements_r": "]/div[@class='col-xs-10']//li/a/text()",
-        "achievements_years": "//div[@class='col-xs-4 season']/text()"
+        "achievements_l": "//header[./h2[contains(., 'Career Highlights')]]"
+                          "/following-sibling::div//table/tbody/tr[",
+        "achievements_r": "][./td[1][not(text())='']]/td[2]//li/a/text()",
+        "achievements_years": "//header[./h2[contains(., 'Career Highlights')]"
+                              "]/following-sibling::div//table/tbody/tr[./td[1"
+                              "][not(text())='']]/td[1]/text()"
+
     }
 
     def __init__(self, selector):
@@ -490,9 +707,11 @@ class PlayerAchievements():
         """method for downloading achievements of player into dictionary"""
 
         dict_achiev = {}
+        print(PlayerAchievements.PATHS["achievements_years"])
         list_years = self.selector.xpath(
             PlayerAchievements.PATHS["achievements_years"]).getall()
         list_years = [string.strip() for string in list_years]
+        print(list_years)
         for ind in range(1, len(list_years) + 1):
             if years is not None:
                 if list_years[ind - 1] not in years:
@@ -508,7 +727,22 @@ class PlayerAchievements():
                     + str(ind)
                     + PlayerAchievements.PATHS["achievements_r"])
         awards = self.selector.xpath(path).getall()
+        print(awards)
         awards = [award.strip() for award in awards]
         return awards
+    
+def merge_dicts(dict_a, dict_b):
+    for key, value in dict_b.items():
+        if key in dict_a:
+            # If both values are dictionaries, merge them recursively
+            if isinstance(dict_a[key], dict) and isinstance(value, dict):
+                merge_dicts(dict_a[key], value)
+            # If they are not dictionaries, overwrite the value in dict_a
+            else:
+                dict_a[key] = value
+        else:
+            # If the key does not exist in dict_a, add it from dict_b
+            dict_a[key] = value
+    return dict_a
 
 

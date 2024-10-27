@@ -15,6 +15,11 @@ PLAYER_UID = "player_uid"
 TEAM_UID = "team_uid"
 LEAGUE_UID = "league_uid"
 
+#player types
+GOALIE_PLAYER = 'G'
+OTHER_PLAYER = 'O'
+
+
 ##places
 COUNTRY = "country"
 REGION = "region"

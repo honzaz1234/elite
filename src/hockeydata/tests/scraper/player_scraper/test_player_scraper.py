@@ -1,47 +1,64 @@
 import unittest
 from hockeydata.scraper.player_scraper import *
 from hockeydata.constants import *
+import random
 import scrapy
 import json
 from copy import deepcopy
 
+
+def get_html_file(path_to_folder, file_name):
+
+    path_file = path_to_folder + file_name
+    with open(path_file, "r") as f:
+        html_player = f.read()
+
+    return html_player
+
+def get_json_file(path_to_folder, file_name):
+
+    path_file = path_to_folder + file_name
+    f = open(path_file)
+    dict_player = json.load(f)
+
+    return dict_player
+
+
 PATH = "./tests/scraper/player_scraper/"
 
-FILE_HTML_ZOHORNA = "zohorna.html"
+FILE_JSON_HOWE = "howe.json"
+FILE_JSON_MCDAVID = "mcdavid.json"
+FILE_JSON_ORR = "orr.json"
 FILE_JSON_ZOHORNA = "zohorna.json"
 
-FILE_HTML_MCDAVID = "mcdavid.html"
-FILE_JSON_MCDAVID = "mcdavid.json"
-
-FILE_HTML_ORR = "orr.html"
-FILE_JSON_ORR = "orr.json"
-
 FILE_HTML_HOWE = "howe.html"
-FILE_JSON_HOWE = "howe.json"
-
+FILE_HTML_MCDAVID = "mcdavid.html"
+FILE_HTML_ORR = "orr.html"
+FILE_HTML_ZOHORNA = "zohorna.html"
 
 NHL_URL = 'https://www.eliteprospects.com/league/nhl'
 
-
-#Hynek Zohorna
-
+URL_HOWE = "https://www.eliteprospects.com/player/20605/gordie-howe"
+URL_MCDAVID = "https://www.eliteprospects.com/player/183442/connor-mcdavid"
+URL_ORR = "https://www.eliteprospects.com/player/19145/bobby-orr"
 URL_ZOHORNA = "https://www.eliteprospects.com/player/28129/hynek-zohorna"
-PATH_FILE = PATH + FILE_HTML_ZOHORNA
-with open(PATH_FILE, "r") as f:
-    HTML_ZOHORNA = f.read()
 
+HTML_HOWE = get_html_file(PATH, FILE_HTML_HOWE)
+HTML_MCDAVID = get_html_file(PATH, FILE_HTML_MCDAVID)
+HTML_ORR = get_html_file(PATH, FILE_HTML_ORR)
+HTML_ZOHORNA = get_html_file(PATH, FILE_HTML_ZOHORNA)
+
+SELECTOR_HOWE = scrapy.Selector(text=HTML_HOWE)
+SELECTOR_MCDAVID = scrapy.Selector(text=HTML_MCDAVID)
+SELECTOR_ORR = scrapy.Selector(text=HTML_ORR)
 SELECTOR_ZOHORNA = scrapy.Selector(text=HTML_ZOHORNA)
 
-PATH_FILE = PATH + FILE_JSON_ZOHORNA
-f = open(PATH_FILE)
-DICT_ZOHORNA = json.load(f)
+DICT_HOWE = get_json_file(PATH, FILE_JSON_HOWE)
+DICT_MCDAVID = get_json_file(PATH, FILE_JSON_MCDAVID)
+DICT_ORR = get_json_file(PATH, FILE_JSON_ORR)
+DICT_ZOHORNA = get_json_file(PATH, FILE_JSON_ZOHORNA)
 
-##achievement test dicts
-ACHIEV_DICT_ZOHORNA = deepcopy(DICT_ZOHORNA)
-ACHIEV_DICT_ZOHORNA = ACHIEV_DICT_ZOHORNA[ACHIEVEMENTS]
-ACHIEV_IND = 1
-ACHIEV_SEASON_ZOHORNA = ACHIEV_DICT_ZOHORNA['2011-2012']
-
+#Hynek Zohorna
 ##season test dicts
 LEAGUE_DICT_PART_ZOHORNA = deepcopy(DICT_ZOHORNA)
 NEW_DICT_ONE_ROW_ZOHORNA = deepcopy(DICT_ZOHORNA)
@@ -55,44 +72,15 @@ del LEAGUE_DICT_PART_ZOHORNA["Czechia2"]["HC Havlíčkův Brod"]
 LEAGUE_DICT_ZOHORNA = LEAGUE_DICT_ZOHORNA[SEASON_STATS]["leagues"]["2013-2014"]
 del LEAGUE_DICT_ZOHORNA["Czechia"]
 
-
-
 # Connor Mcdavid
-
-URL_MCDAVID = "https://www.eliteprospects.com/player/183442/connor-mcdavid"
-
-PATH_FILE = PATH + FILE_HTML_MCDAVID
-with open(PATH_FILE, "r") as f:
-    HTML_MCDAVID = f.read()
-
-SELECTOR_MCDAVID = scrapy.Selector(text=HTML_MCDAVID)
-
-PATH_FILE = PATH + FILE_JSON_MCDAVID
-f = open(PATH_FILE)
-DICT_MCDAVID = json.load(f)
-
-#dics for season stat tests
+#dicts for season stat tests
 DICT_SEASON_MCDAVID = deepcopy(DICT_MCDAVID)
 DICT_SEASON_PART_MCDAVID = deepcopy(DICT_MCDAVID)
 DICT_SEASON_MCDAVID = DICT_SEASON_MCDAVID[SEASON_STATS]["leagues"]["2014-2015"]
 DICT_SEASON_PART_MCDAVID = DICT_SEASON_PART_MCDAVID[SEASON_STATS]["leagues"]["2014-2015"]
 del DICT_SEASON_PART_MCDAVID['WJC-20']["Canada U20"]
 
-
 #Bobby Orr
-
-URL_ORR = "https://www.eliteprospects.com/player/19145/bobby-orr"
-
-PATH_FILE = PATH + FILE_HTML_ORR
-with open(PATH_FILE, "r") as f:
-    HTML_ORR = f.read()
-
-SELECTOR_ORR = scrapy.Selector(text=HTML_ORR)
-
-PATH_FILE = PATH + FILE_JSON_ORR
-f = open(PATH_FILE)
-DICT_ORR = json.load(f)
-
 ##test values for stat dictionary
 ONE_ROW_TEST_PATH_ORR = "//div[@id='league-stats']//table[contains(@class,'table table-condensed table-sortable')]//tr[8]/td"
 ONE_ROW_TEST_STAT_DICT = DICT_ORR[SEASON_STATS]["leagues"]["1969-1970"]
@@ -102,97 +90,122 @@ STAT = "leadership"
 ONE_ROW_TEST_STAT_DICT_LEADERSHIP = ONE_ROW_TEST_STAT_DICT_TEAM[LEADERSHIP]
 
 
-# Gordie Howe
-
-URL_HOWE = "https://www.eliteprospects.com/player/20605/gordie-howe"
-
-PATH_FILE = PATH + FILE_HTML_HOWE
-with open(PATH_FILE, "r") as f:
-    HTML_HOWE = f.read()
-
-SELECTOR_HOWE = scrapy.Selector(text=HTML_HOWE)
-
-PATH_FILE = PATH + FILE_JSON_HOWE
-f = open(PATH + FILE_JSON_HOWE)
-DICT_HOWE = json.load(f)
-
-GI_ORIG = deepcopy(DICT_HOWE)
-GI_ORIG  = GI_ORIG[GENERAL_INFO]
-del GI_ORIG[PLAYER_NAME]
-del GI_ORIG[PLAYER_UID]
-
-RELATION_KEYS = ['Brother', 'Son', 'Grandson']
-
-
 class TestPlayerScraper(unittest.TestCase):
 
-    def test_get_info_all_zohorna(self):
-        playerscraper = PlayerScraper(url=URL_ZOHORNA)
-        dict_player = playerscraper.get_info_all()
-        self.assertEqual(dict_player, DICT_ZOHORNA)
+    def setUp(self):
 
-    def test_get_info_all_mcdavid(self):
-        playerscraper = PlayerScraper(url=URL_MCDAVID)
-        dict_player = playerscraper.get_info_all()
-        self.assertEqual(dict_player, DICT_MCDAVID)
+        self.player_zohorna = PlayerScraper(url=URL_ZOHORNA)
+        self.player_mcdavid = PlayerScraper(url=URL_MCDAVID)
+        self.player_orr = PlayerScraper(url=URL_ORR)
+        self.player_howe = PlayerScraper(url=URL_HOWE)
 
-    def test_get_info_all_orr(self):
-        playerscraper = PlayerScraper(url=URL_ORR)
-        dict_player = playerscraper.get_info_all()
-        self.assertEqual(dict_player, DICT_ORR)
+    def test_get_info_all(self):
 
-    def test_get_info_all_howe(self):
-        playerscraper = PlayerScraper(url=URL_HOWE)
-        dict_player = playerscraper.get_info_all()
-        self.assertEqual(dict_player, DICT_HOWE)
-
+        self.assertEqual(self.player_zohorna.get_info_all(), DICT_ZOHORNA)
+        self.assertEqual(self.player_mcdavid.get_info_all(), DICT_MCDAVID)
+        self.assertEqual(self.player_orr.get_info_all(), DICT_ORR)
+        self.assertEqual(self.player_howe.get_info_all(), DICT_HOWE)
 
 class TestPlayerGeneralInfo(unittest.TestCase):
 
+    @staticmethod   
+    def get_general_info_dict(dict_player):
+
+        gi_dict = deepcopy(dict_player)
+        gi_dict  = gi_dict[GENERAL_INFO]
+        del gi_dict[PLAYER_NAME]
+        del gi_dict[PLAYER_UID]
+        
+        return gi_dict
+
+    @classmethod
+    def setUpclass(cls):
+
+        #players gi objects
+        cls.player_zohorna = PlayerGeneralInfo(
+            selector=SELECTOR_ZOHORNA, url=URL_ZOHORNA)
+        cls.player_mcdavid = PlayerGeneralInfo(
+            selector=SELECTOR_HOWE, url=URL_HOWE)
+        cls.player_orr = PlayerGeneralInfo(
+            selector=SELECTOR_MCDAVID, url=URL_MCDAVID)
+        cls.player_howe = PlayerGeneralInfo(
+            selector=SELECTOR_ORR, url=URL_ORR)
+        
+        #players dict
+        cls.gi_zohorna = TestPlayerGeneralInfo.get_general_info_dict(
+            DICT_ZOHORNA)
+        cls.gi_mcdavid = TestPlayerGeneralInfo.get_general_info_dict(
+            DICT_MCDAVID)
+        cls.gi_orr = TestPlayerGeneralInfo.get_general_info_dict(
+            DICT_ORR)
+        cls.gi_howe = TestPlayerGeneralInfo.get_general_info_dict(
+            DICT_HOWE)
+
     def test_get_general_info(self):
-        pgi = PlayerGeneralInfo(
-        selector=SELECTOR_ZOHORNA, url=URL_ZOHORNA)
-        gi_dict = pgi.get_general_info()
-        self.assertEqual(gi_dict, DICT_ZOHORNA[GENERAL_INFO])
+
+        self.assertEqual(
+            TestPlayerGeneralInfo.player_zohorna.get_general_info(), DICT_ZOHORNA[GENERAL_INFO])
+        self.assertEqual(
+            TestPlayerGeneralInfo.player_howe.get_general_info(), 
+            DICT_HOWE[GENERAL_INFO])
+        self.assertEqual(
+            TestPlayerGeneralInfo.player_mcdavid.get_general_info(), DICT_MCDAVID[GENERAL_INFO])
+        self.assertEqual(
+            TestPlayerGeneralInfo.player_orr.get_general_info(), 
+            DICT_ORR[GENERAL_INFO])
 
 
     def test_get_name(self):
-        pgi = PlayerGeneralInfo(
-            selector=SELECTOR_MCDAVID, url=URL_MCDAVID)
-        name = pgi._get_name()
-        self.assertEqual(name, DICT_MCDAVID[GENERAL_INFO][PLAYER_NAME])
+
+        self.assertEqual(TestPlayerGeneralInfo.player_zohorna._get_name(),
+                         DICT_ZOHORNA[GENERAL_INFO][PLAYER_NAME])
 
     def test_get_info_wrapper(self):
-        pgi = PlayerGeneralInfo(
-        selector=SELECTOR_HOWE, url=URL_HOWE
-        )
-        gi_dict = pgi._get_info_wrapper()
-        self.assertEqual(gi_dict, GI_ORIG)
 
+        self.assertEqual(
+            TestPlayerGeneralInfo.player_mcdavid._get_info_wrapper(), TestPlayerGeneralInfo.gi_mcdavid)
+        
     def test_get_info(self):
-        pgi = PlayerGeneralInfo(
-            selector=SELECTOR_ZOHORNA, url=URL_ZOHORNA
-        )
-        gi_dict = DICT_ZOHORNA[GENERAL_INFO]
-        for info in pgi.INFO_NAMES:
+
+        for info in DICT_MCDAVID[GENERAL_INFO].keys():
+            print('Testing info: ' + str(info))
             keep_list = False
-            if info in pgi.KEEP_LIST:
+            if info in TestPlayerGeneralInfo.player_mcdavid.KEEP_LIST:
                 keep_list = True
-            info_val = pgi._get_info(info_name=info, keep_list=keep_list)
-            self.assertEqual(info_val, gi_dict[pgi.PROJECT_MAPPING[info]])
+            self.assertEqual(
+            TestPlayerGeneralInfo.player_mcdavid._get_info(
+                 info_name=info, keep_list=keep_list), 
+                 DICT_MCDAVID[GENERAL_INFO][TestPlayerGeneralInfo.player_mcdavid.PROJECT_MAPPING[info]])
 
     
 class TestFamilyRelations(unittest.TestCase):
 
-    def _test_get_relation_dict(self):
-        pfr = FamilyRelations(selector=SELECTOR_HOWE)
-        relations_dict = pfr._get_relation_dict()
-        self.assertEqual(relations_dict, DICT_HOWE[RELATIONS])
+    @classmethod
+    def setUpclass(cls):
 
-    
+        cls.player_zohorna = FamilyRelations(selector=SELECTOR_ZOHORNA)
+        cls.player_mcdavid = FamilyRelations(selector=SELECTOR_MCDAVID)
+        cls.player_orr = FamilyRelations(selector=SELECTOR_ORR)
+        cls.player_howe = FamilyRelations(selector=SELECTOR_HOWE)
+
+    def _test_get_relation_dict(self):
+
+        self.assertEqual(
+            TestFamilyRelations.player_zohorna._get_relation_dict(), 
+            DICT_ZOHORNA[RELATIONS])
+        self.assertEqual(
+            TestFamilyRelations.player_howe._get_relation_dict(), 
+            DICT_HOWE[RELATIONS])
+        self.assertEqual(
+            TestFamilyRelations.player_mcdavid._get_relation_dict(), 
+            DICT_MCDAVID[RELATIONS])
+        self.assertEqual(
+            TestFamilyRelations.player_orr._get_relation_dict(), 
+            DICT_ORR[RELATIONS])
+
     def test_get_indvidual_relations(self):
-        pfr = FamilyRelations(selector=SELECTOR_HOWE)
-        html_dict = pfr._get_individual_relations()
+
+        html_dict = TestFamilyRelations.player_howe._get_individual_relations()
         self.assertEqual(html_dict.keys(), DICT_HOWE[RELATIONS].keys())
         for relation in DICT_HOWE[RELATIONS]:
             print("Test Relation UID: " + relation)
@@ -203,22 +216,49 @@ class TestFamilyRelations(unittest.TestCase):
 class TestPlayerStats(unittest.TestCase):
     maxDiff = True
 
+    @classmethod
+    def setUpclass(cls):
+         
+        cls.player_howe = PlayerStats(selector=SELECTOR_HOWE)
+        cls.player_mcdavid = PlayerStats(selector=SELECTOR_MCDAVID)
+        cls.player_orr = PlayerStats(selector=SELECTOR_ORR)
+        cls.player_zohorna = PlayerStats(Selector=SELECTOR_ZOHORNA)
+    
+    def test_both_season_types(self, player_o, dict_verify):
+        for type in dict_verify[SEASON_STATS]:
+            type_stats = player_o._get_stats(type=type)
+            self.assertEqual(type_stats, dict_verify[SEASON_STATS][type])
+
     def test_get_all_stats(self):
-        pfs = PlayerStats(selector=SELECTOR_MCDAVID)
-        stat_dict = pfs.get_all_stats()
-        self.assertEqual(stat_dict, DICT_MCDAVID[SEASON_STATS])
+        self.assertEqual(
+            TestPlayerStats.player_howe.get_all_stats(), 
+            DICT_HOWE[SEASON_STATS])
+        self.assertEqual(
+            TestPlayerStats.player_mcdavid.get_all_stats(), 
+            DICT_MCDAVID[SEASON_STATS])
+        self.assertEqual(
+            TestPlayerStats.player_orr.get_all_stats(), 
+            DICT_ORR[SEASON_STATS])
+        self.assertEqual(
+            TestPlayerStats.player_zohorna.get_all_stats(), 
+            DICT_ZOHORNA[SEASON_STATS])
 
     def test_get_stats(self):
-        pfs = PlayerStats(selector=SELECTOR_MCDAVID)
-        for type in DICT_MCDAVID[SEASON_STATS]:
-            print(type)
-            type_stats = pfs._get_stats(type=type)
-            self.assertEqual(type_stats, DICT_MCDAVID[SEASON_STATS][type])
+        self.test_both_season_types(
+            TestPlayerStats.player_howe, DICT_HOWE)
+        self.test_both_season_types(
+            TestPlayerStats.player_mcdavid, DICT_MCDAVID)
+        self.test_both_season_types(
+            TestPlayerStats.player_orr, DICT_ORR)
+        self.test_both_season_types(
+            TestPlayerStats.player_zohorna, DICT_ZOHORNA)
 
     def test_get_season_stats(self):
          pfs = PlayerStats(selector=SELECTOR_MCDAVID)
          season_dict = pfs._get_season_stats(
-             season_dict=DICT_SEASON_PART_MCDAVID, path_type=PlayerStats.PATHS["path_league"], ind=9)
+             season_dict=DICT_SEASON_PART_MCDAVID, 
+             path_type=PlayerStats.PATHS["path_league"], 
+             ind=9)
          self.assertEqual(season_dict, DICT_SEASON_MCDAVID)
 
     def test_merge_league_dict(self):
@@ -232,7 +272,6 @@ class TestPlayerStats(unittest.TestCase):
 
 
 class TestOneRowStats(unittest.TestCase):
-
 
     def test_get_stat_dictionary(self):
         ors = OneRowStat(
@@ -279,21 +318,56 @@ class TestOneRowStats(unittest.TestCase):
 
 
 class TestPlayerAchievements(unittest.TestCase):
+    
+    @classmethod
+    def setUpclass(cls):
+        cls.player_howe = PlayerAchievements(selector=SELECTOR_HOWE)
+        cls.player_mcdavid = PlayerAchievements(selector=SELECTOR_MCDAVID)
+        cls.player_orr = PlayerAchievements(selector=SELECTOR_ORR)
+        cls.player_zohorna = PlayerAchievements(Selector=SELECTOR_ZOHORNA)
+
+    @staticmethod
+    def get_season_ind_combination(dict_):
+        season_keys = dict_[ACHIEVEMENTS].keys()
+        season_key = random.choice(season_keys)
+        ind_ = dict_[ACHIEVEMENTS].keys().index(season_key)
+        return season_key, ind_
 
     def test_get_achievements(self):
-        pa = PlayerAchievements(selector=SELECTOR_ZOHORNA)
-        achiev_dict = pa.get_achievements()
-        self.assertEqual(achiev_dict, ACHIEV_DICT_ZOHORNA)
-
+        self.assertEqual(
+            TestPlayerAchievements.player_howe.get_achievements(), 
+            DICT_HOWE[ACHIEVEMENTS])
+        self.assertEqual(
+            TestPlayerAchievements.player_mcdavid.get_achievements(), 
+            DICT_MCDAVID[ACHIEVEMENTS])
+        self.assertEqual(
+            TestPlayerAchievements.player_orr.get_achievements(), 
+            DICT_ORR[ACHIEVEMENTS])
+        self.assertEqual(
+            TestPlayerAchievements.player_zohorna.get_achievements(), 
+            DICT_ZOHORNA[ACHIEVEMENTS])
 
     def test_get_season_achievements(self):
-        pa = PlayerAchievements(selector=SELECTOR_ZOHORNA)
-        season_achiev = pa.get_season_achievements(ind=ACHIEV_IND)
-        self.assertEqual(season_achiev, ACHIEV_SEASON_ZOHORNA)
+        season, ind_ = TestPlayerAchievements.get_season_ind_combination(
+            DICT_ZOHORNA)
+        self.assertEqual(TestPlayerAchievements.player_zohorna.get_season_achievements(ind=ind_), 
+                         DICT_ZOHORNA[ACHIEVEMENTS[season]])
+        season, ind_ = TestPlayerAchievements.get_season_ind_combination(
+            DICT_MCDAVID)
+        self.assertEqual(TestPlayerAchievements.player_mcdavid. get_season_achievements(ind=ind_), 
+                         DICT_MCDAVID[ACHIEVEMENTS[season]])
+        season, ind_ = TestPlayerAchievements.get_season_ind_combination(
+            DICT_ZOHORNA)
+        self.assertEqual(TestPlayerAchievements.player_orr.get_season_achievements(ind=ind_), 
+                         DICT_ORR[ACHIEVEMENTS[season]])
+        season, ind_ = TestPlayerAchievements.get_season_ind_combination(
+            DICT_ZOHORNA)
+        self.assertEqual(TestPlayerAchievements.player_howe.get_season_achievements(ind=ind_), 
+                         DICT_HOWE[ACHIEVEMENTS[season]])
 
 
 if __name__ == "__main__":
-    unittest.main()
+    unittest.main(verbosity=2)
         
 
 
