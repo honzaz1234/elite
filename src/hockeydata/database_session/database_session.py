@@ -8,6 +8,7 @@ import hockeydata.update_dict.update_team as update_team
 import hockeydata.input_dict.input_league_dict as input_league_dict
 import hockeydata.input_dict.input_player_dict as input_player_dict
 import hockeydata.input_dict.input_team_dict as input_team_dict
+import hockeydata.playwright_setup.playwright_setup as ps
 import json
 import os
 import re
@@ -96,6 +97,7 @@ class ManagePlayer():
         self.players_done = None
         self.players_urls = None
         self.session = session
+        self.playwright_session = ps.PlaywrightSetUp()
         self.update_dict = update_player.UpdatePlayer()
         self.input_dict = input_player_dict.InputPlayerDict(
             db_session=self.session)
@@ -132,7 +134,8 @@ class ManagePlayer():
         return players_urls
 
     def scrape_and_input_player_into_db(self, url):
-            player_o = player_scraper.PlayerScraper(url=url)
+            player_o = player_scraper.PlayerScraper(
+                url=url, page=self.playwright_session.page)
             dict_player = player_o.get_info_all()
             dict_player_updated = (self.update_dict
                                    .update_player_dict(dict_player))
