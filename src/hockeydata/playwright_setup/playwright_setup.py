@@ -3,44 +3,40 @@ from playwright.sync_api import sync_playwright
 
 COOKIES_AGREE_XPATH = "//button[./*[contains(text(), 'AGREE')]]"
 
+
 class PlaywrightSetUp():
 
-    def __init__(self, blocked_types=["image", "stylesheet", "font"]):
+    FORBIDDEN_TYPES = ["image", "stylesheet", "font"]
+    FORBIDDEN_STRINGS = [
+        'google', 'clarity', 'analytics', 
+        'RinksideWidget', 'facebook', 'twitter', 
+        'reddit', 'linkedin', 'ad.doubleclick'
+        'chrome', 'Endorsements', 'PlayerStatsAllTime',
+        'PlayerTransactions', 'SubscriptionOffer', 'PlayerMedia',
+        'PlayerGameLogs', 'DraftCoverage'
+    ]
+
+    def __init__(self):
         self.p = None
-        self.blocked_types = blocked_types
         self.browser = None
         self.page = None
+        self.blocked_list = []
         self.initiate_sync_playwright()
 
     def initiate_sync_playwright(self):
         self.p = sync_playwright().start()
         self.browser = self.p.chromium.launch(headless=False)
         self.page = self.browser.new_page()
-        self.page.route("**/*", self.block_non_essential)
+        self.page.route("**/*", self.intercept_requests)
 
-    def block_non_essential(self, route, request):
-        if request.resource_type in self.blocked_types:
+    def intercept_requests(self, route, request):
+        if request.resource_type in PlaywrightSetUp.FORBIDDEN_TYPES:
+            route.abort()
+        elif any(forbidden_string in request.url 
+                 for forbidden_string in PlaywrightSetUp.FORBIDDEN_STRINGS):
             route.abort()
         else:
             route.continue_()
-
-
-def get_all_result_texts(page, xpath):
-    # Using query_selector_all to get a list of elements, then retrieving inner_text for each
-    print(xpath)
-    result_elements = page.query_selector_all(xpath)
-    results =  [element.inner_text() for element in result_elements]
-    striped_results = [string.strip() for string in results]
-    return striped_results
-
-def get_all_result_attribute(page, xpath, attribute_type):
-    # Using query_selector_all to get a list of elements, then retrieving inner_text for each
-    print(xpath)
-    result_elements = page.query_selector_all(xpath)
-    results =  [element.get_attribute(attribute_type) 
-                for element in result_elements]
-    striped_results = [string.strip() for string in results]
-    return striped_results
 
 
 def get_xpath(path):
@@ -52,7 +48,23 @@ def get_xpath(path):
     xpath = 'xpath=' + path
     return xpath
     
-def click_on_button(page, path):
+def click_on_button_optional(page, path):
+    """wait for button for a specified amount of time and then continue
+    either click it or contineu if it does not exist
+    """
 
     xpath = get_xpath(path)
+    try:
+        page.wait_for_selector(xpath, timeout=1000)
+        page.click(xpath)
+    except:
+        return
+    
+def click_on_button(page, path, wait=500):
+    """wait for button for a specified amount of time and then continue
+    either click it or contineu if it does not exist
+    """
+
+    xpath = get_xpath(path)
+    page.wait_for_selector(xpath, timeout=wait)
     page.click(xpath)
