@@ -28,7 +28,7 @@ class PlayerScraper:
         self.url = url
         self.page = page
         self.START_TIME = time.time()
-        self.page.goto(url, wait_until='load')
+        self.page.goto(url, wait_until='networkidle')
         self.END_TIME = None
         #ps.click_on_button_optional(self.page, ps.COOKIES_AGREE_XPATH)
         #self.page.evaluate("document.body.style.zoom=1.1")
@@ -55,12 +55,10 @@ class PlayerScraper:
         gi_o = PlayerGeneralInfo(selector=self.selector,
                                  url=self.url)
         dict_player[GENERAL_INFO] = gi_o.get_general_info()
-        print(dict_player)
         a_o = PlayerAchievements(selector=self.selector)
         #f_r_o = FamilyRelations(selector=self.selector)
         #dict_player[RELATIONS] = f_r_o._get_relation_dict()
         dict_player[ACHIEVEMENTS] = a_o.get_achievements()
-        print(dict_player[ACHIEVEMENTS])
         stats_object = self.stats_factory(
             general_info=dict_player[GENERAL_INFO])
         dict_player[SEASON_STATS] = stats_object.get_all_stats(years=years)
@@ -347,15 +345,6 @@ class Stats():
     
         return path_type, path_years
 
-    def _get_season_stats(
-            self, path_season: str) -> dict:
-        """adds one row from stat table to stat dictionary"""
-
-        row_o = OneRowStat(path=path_season, selector=self.selector)
-        sub_dict = row_o._get_stat_dictionary()
-
-        return sub_dict
-
     def _merge_league_dict(self, old_dict: dict, new_dict: dict) -> dict:
         
         """merges season dictionary with new stat row dictionary - needed because sometimes player changes team in one competition over the season
@@ -402,7 +391,6 @@ class Stats():
         dict_stats = {}
         for ind in range(1, len(list_years) + 1):
             season = list_years[ind - 1]
-            print(season)
             if years is not None:
                 if list_years[ind - 1] not in years:
                     continue
@@ -424,11 +412,8 @@ class Stats():
                         + SkaterStats.PATHS["stats_table_l"]
                         + str(ind)
                         + SkaterStats.PATHS["stats_table_r"])
-        print(path_season)
-
         sub_dict = self._get_season_stats(
             path_season=path_season)
-        print(sub_dict)
         new_season_dict = self._merge_league_dict(
                 old_dict=season_dict, new_dict=sub_dict)
         return new_season_dict
@@ -609,7 +594,6 @@ class OneRowStat():
         """method for extracting one attribute from stat row (team, league, capitancy, season stats)
         """
 
-        print(key)
         path_stat = self.path_to_row + OneRowStat.PATHS[key]
         stat_list = self.selector.xpath(path_stat).getall()
         stat_list = [string.strip() for string in stat_list]
@@ -663,7 +647,7 @@ class OneRowGoalieStat(OneRowStat):
     """Child class containing methods specific to the scrapig of goalies  rows of stats
     """
 
-    def __init__(self, path: str, selector: scrapy.Selector, season_type):
+    def __init__(self, path: str, selector: scrapy.Selector, season_type: str):
         super().__init__(path=path, selector=selector)
         self.season_type = season_type
     
@@ -711,11 +695,9 @@ class PlayerAchievements():
         """method for downloading achievements of player into dictionary"""
 
         dict_achiev = {}
-        print(PlayerAchievements.PATHS["achievements_years"])
         list_years = self.selector.xpath(
             PlayerAchievements.PATHS["achievements_years"]).getall()
         list_years = [string.strip() for string in list_years]
-        print(list_years)
         for ind in range(1, len(list_years) + 1):
             if years is not None:
                 if list_years[ind - 1] not in years:
@@ -731,7 +713,6 @@ class PlayerAchievements():
                     + str(ind)
                     + PlayerAchievements.PATHS["achievements_r"])
         awards = self.selector.xpath(path).getall()
-        print(awards)
         awards = [award.strip() for award in awards]
         return awards
     
