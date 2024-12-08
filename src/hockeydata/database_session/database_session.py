@@ -12,6 +12,8 @@ import hockeydata.playwright_setup.playwright_setup as ps
 import json
 import os
 import re
+
+from hockeydata.decorators import *
 from hockeydata.constants import *
 from hockeydata.database_creator.database_creator import *
 from sqlalchemy import create_engine
@@ -97,11 +99,13 @@ class ManagePlayer():
         self.players_done = None
         self.players_urls = None
         self.session = session
+        self.plawright_setup = ps.PlaywrightSetUp()
         self.playwright_session = ps.PlaywrightSetUp()
         self.update_dict = update_player.UpdatePlayer()
         self.input_dict = input_player_dict.InputPlayerDict(
             db_session=self.session)
-        self.get_urls = get_url.LeagueUrlDownload()
+        self.get_urls = get_url.LeagueUrlDownload(
+            page=self.playwright_session.page)
 
     def set_up_manage_player(self):
         self.load_players_done_file()
@@ -133,10 +137,15 @@ class ManagePlayer():
             json.dump(players_urls, file)
         return players_urls
 
+    @repeat_request_until_success
+    def scrape_player(self, url):
+        player_o = player_scraper.PlayerScraper(
+                url=url, page=self.playwright_session)
+        dict_player = player_o.get_info_all()
+        return dict_player
+
     def scrape_and_input_player_into_db(self, url):
-            player_o = player_scraper.PlayerScraper(
-                url=url, page=self.playwright_session.page)
-            dict_player = player_o.get_info_all()
+            dict_player = self.scrape_player(url)
             dict_player_updated = (self.update_dict
                                    .update_player_dict(dict_player))
             print(dict_player_updated['general_info']['player_name'])
