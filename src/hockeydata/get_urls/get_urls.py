@@ -1,6 +1,8 @@
+import hockeydata.playwright_setup as ps
 import re 
 import requests
 import scrapy
+
 from hockeydata.constants import *
 
 
@@ -15,13 +17,14 @@ class LeagueUrlDownload():
         "season_refs": "//a[@style='font-weight: 800;']/@href",
         "standings": "/standings/",
         "year_list": "//div[@id='standings']//option[position()>1]/text()",
-        "last_year": "//ul[preceding-sibling::h4[contains(text(), 'List of "
-                      "Champions')]]/li[1]/a[1]/text()",
-        "first_year": "//ul[preceding-sibling::h4[contains(text(), 'List of "
-                      "Champions')]]/li[last()]/a[1]/text()"
+        "last_year": "//ul[preceding-sibling::header[./h2[contains(text()"
+                      ",'Champions')]]]/li[1]/a[1]/text()",
+        "first_year": "//ul[preceding-sibling::header[./h2[contains(text()"
+                      ",'Champions')]]]/li[last()]/a[1]/text()"
     }
     
-    def __init__(self):
+    def __init__(self, page=None):
+         self.page = page
          pass
         
     def get_league_names_dict(self) -> dict:
@@ -68,8 +71,8 @@ class LeagueUrlDownload():
         """
         if years == None:
             url = ELITE_URL + LEAGUE_URLS[league]
-            league_page_html = requests.get(url).content
-            sel_league = scrapy.Selector(text=league_page_html)
+            self.page.goto(url)
+            sel_league = scrapy.Selector(text=self.page.content())
             first_year = int((sel_league
                         .xpath(LeagueUrlDownload.PATHS["first_year"])
                         .getall()[0])) - 1
