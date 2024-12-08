@@ -1,6 +1,9 @@
+import hockeydata.playwright_setup.playwright_setup as ps
+import playwright.sync_api as sync_api
 import re
 import requests
 import scrapy
+import time
 from hockeydata.constants import *
 
 
@@ -13,36 +16,26 @@ class TeamScraper():
 
     INFO_PATHS = {
 
-        "short_name": "//h1[@class='semi-logo']/text()",
-        "gi_left": "//div[@class='facts']"
-                             "//*[preceding-sibling::"
-                             "*[contains(text(),'",
-        "gi_right": "')]]//text()",
-        "si_left": "//div[preceding-sibling::div[contains(text(),"
-                   "'Arena Information')]]"
-                   "//strong[preceding-sibling::"
-                   "span[contains(text(),'",
-        "si_right": "')]]//text()"
+        "short_name": "//h1[contains(@class, 'Profile_headerMain')]//text()",
+        "gi_left": "//header[./h2[contains(., 'Facts')] and not(contains(.,"
+                    "'Roster'))]/following-sibling::dl[contains(@class," "'FactsGrid_facts')]/dt[contains(text(), '",
+        "gi_right": "')]/following-sibling::dd//text()",
+        "si_left": "//header[./h2[contains(., 'Arena Information')]]"
+                   "/following-sibling::dl/dt[contains(text(), '",
+        "si_right": "')]/following-sibling::dd//text()"
     }
     
     #xpaths used to access affiliated teams and retired numbers
 
     OTHER_PATHS = {
-        "affiliated_teams": "//strong[preceding-sibling::span[contains(text()"
-                            ", 'Affiliated Team(s)')]]//a/@href",
-        "retired_num": "//ul[preceding-sibling::h4[contains(text()"
-                            ", 'Retired Numbers')]]/li/a[1]"
-    }
-
-    #url used to access webpage with complete history of team standings
-
-    URL_SECTIONS = {
-        "history": "?team-history=complete#team-history"
+        "affiliated_teams": "//dt[contains(text(), 'Affiliated Team')]"
+                            "/following-sibling::dd//li//@href",
+        "retired_num": "//div[@id='team-retired-player']//a"
     }
 
     #names of general info found on the team's webpage
 
-    INFO_NAMES = ["Plays in", "Team colours", "Town", "Founded", "Full name"]
+    INFO_NAMES = ["Plays in", "Team Colors", "Town", "Founded", "Full name"]
 
     #names of info about team's stadium found on the team's webpage
 
@@ -54,7 +47,7 @@ class TeamScraper():
 
     WEB_MAPPING = {
         "Plays in": PLAYS_IN, 
-        "Team colours": TEAM_COLOURS,
+        "Team Colors": TEAM_COLOURS,
         "Town": PLACE, 
         "Founded": YEAR_FOUNDED, 
         "Full name": LONG_NAME,
@@ -64,16 +57,24 @@ class TeamScraper():
         "Construction Year": CONSTRUCTION_YEAR
         } 
 
-    def __init__(self, url: str):
+    COMPLETE_HISTORY_BUTTON_XPATH = ("xpath=//button[contains(text(), 'View" 
+                               + " Complete Team History')]")
+
+    def __init__(self, url: str, page: sync_api.Page):
         """url - url of webpage with team's info
            html - html of webpage with team info
            selector - selector object created from html of team's webpage   
                    used for attaining individual pieces of information     
         """
 
-        self.url = url + TeamScraper.URL_SECTIONS["history"]
-        self.html = requests.get(self.url).content
-        self.selector = scrapy.Selector(text=self.html)
+        self.url = url
+        self.page = page
+        self.START_TIME = time.time()
+        self.page.goto(url, wait_until='networkidle')
+        self.page.click(TeamScraper.COMPLETE_HISTORY_BUTTON_XPATH)
+        self.selector = scrapy.Selector(text=self.page.content())
+        self.END_TIME = None
+
 
     def get_info(self) -> dict:
         """ wrapper method for downloading all of the info from one team webpage"""
@@ -87,6 +88,9 @@ class TeamScraper():
         dict_info[RETIRED_NUMBERS] = self.get_retired_numbers()
         hist_names = HistoricNames(selector=self.selector)
         dict_info[HISTORIC_NAMES] = hist_names.get_historic_names_dict()
+        self.END_TIME = time.time()
+        execution_time = self.END_TIME - self.START_TIME
+        print(f"Execution time: {execution_time} seconds")
         return dict_info
 
     def _get_general_info_dict(self) -> dict:
@@ -168,6 +172,7 @@ class TeamScraper():
             dict_num[urls[ind]] = numbers[ind].strip()
         return dict_num
 
+
 class HistoricNames():
 
     """class for creating dictionary with team historic names and season range in which these names were used
@@ -175,24 +180,21 @@ class HistoricNames():
     #xpaths used to access information on historic names 
 
     HN_PATHS = {
-        "season_l": "(//div[@class='content_left']//"
-                            "table[@class ='table table-striped "
-                            "team-history-and-standings'])[1]/tbody/tr[",
-        "season_r": "]/td[@class='season']/a/text()",
-        "num_titles": "count((//table[@class ='table table-striped"
-                      " team-history-and-standings'])[1]/tbody"
-                      "/tr[@class='title'])",
-        "num_lines": "count((//div[@class='content_left']"
-                  "//table[@class ='table table-striped "
-                  "team-history-and-standings'])[1]/tbody/tr)",
-        "titles": "(//table[@class ='table table-striped"
-                       " team-history-and-standings'])[1]"
-                       "//tr[@class='title']/td/text()",
-        "name_left": "count((//div[@class='content_left']"
-                     "//table[@class ='table table-striped "
-                     "team-history-and-standings'])[1]"
-                     "/tbody/tr[@class='title'][",
-        "name_right": "]/following-sibling::tr)"
+        "season_l": "//header[./h2[contains(text(), 'History and Standings')]]"
+                    "/following-sibling::div//table/tbody/tr[",
+        "season_r": "]/td[1]/a/text()",
+        "num_titles": "count(//header[./h2[contains(text(), 'History and"
+                      " Standings')]]/following-sibling::div//table//span"
+                      "[contains(@class, 'SortTable_sticky__Vi2HX')])",
+        "num_lines": "count(//header[./h2[contains(text(), 'History and"
+                      " Standings')]]/following-sibling::div//table/tbody/tr)",
+        "titles": "//header[./h2[contains(text(), 'History and"
+                  " Standings')]]/following-sibling::div//table//span"
+                  "[contains(@class, 'SortTable_sticky__Vi2HX')])/text()",
+        "name_left": "count(//header[./h2[contains(text(), 'History and "
+                      "Standings')]]/following-sibling::div//table/tbody[./tr"
+                      "//span[contains(@class, 'SortTable_sticky__Vi2HX')]][",
+        "name_right": "]/following-sibling::tbody/tr)"
     }
 
     def __init__(self, selector: scrapy.Selector):
