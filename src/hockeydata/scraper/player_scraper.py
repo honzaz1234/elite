@@ -17,6 +17,11 @@ class PlayerScraper:
        c) player achievements 
     """
 
+
+    TABLE_ROW_XPATH = ("xpath=//section[@id='player-statistics']"
+                      + "//tr[@class='SortTable_tr__L9yVC']")
+
+
     def __init__(self, url: str, page: sync_api.Page):
         """Arguments:
         url - url of webpage with player's information
@@ -28,7 +33,8 @@ class PlayerScraper:
         self.url = url
         self.page = page
         self.START_TIME = time.time()
-        self.page.goto(url, wait_until='networkidle')
+        self.page.goto(url)
+        self.page.wait_for_selector(PlayerScraper.TABLE_ROW_XPATH)
         self.END_TIME = None
         #ps.click_on_button_optional(self.page, ps.COOKIES_AGREE_XPATH)
         #self.page.evaluate("document.body.style.zoom=1.1")
@@ -127,7 +133,7 @@ class PlayerGeneralInfo():
         "Contract": [CONTRACT_END, "text()"],
         "Cap Hit": [CAP_HIT, "div//text()"],
         "NHL Rights": [NHL_RIGHTS, "a/text()"],
-        "Drafted": [DRAFT_LIST, "div//text()"],
+        "Drafted": [DRAFT_LIST, "div/a/node()"],
         "Status": [ACTIVE, "text()"],
     } 
     
@@ -186,7 +192,8 @@ class PlayerGeneralInfo():
         info_path_val = (PlayerGeneralInfo.PATHS["gi_left"]
                          + info_name
                          + PlayerGeneralInfo.PATHS["gi_right"]
-                         + PlayerGeneralInfo.PROJECT_MAPPING[info_name][1])
+                         + PlayerGeneralInfo.PROJECT_MAPPING[info_name][1]
+                         + "[not(self::comment())]")
         info_val = self.selector.xpath(info_path_val).getall()
         info_val = [string.strip() for string in info_val]
         info_val = [string for string in info_val if string != ""]
@@ -208,6 +215,8 @@ class PlayerGeneralInfo():
         
         if drafts == [None]:
             return [None]
+        if len(drafts) < 3:
+            return drafts
         n_drafts = int(len(drafts) / 7)
         new_drafts = []
         for ind in range(n_drafts):
