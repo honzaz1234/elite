@@ -4,7 +4,7 @@ TEAM_STANDINGS = "/standings"
 NA = "-"
 
 #regexes
-LEAGUE_UID_REGEX = "league\/(.+)$"
+LEAGUE_UID_REGEX = "league\/([a-z0-9\-]+)\/*"
 TEAM_UID_REGEX = "team\/([0-9]+)\/"
 PLAYER_UID_REGEX = "player\/([0-9]+)\/"
 

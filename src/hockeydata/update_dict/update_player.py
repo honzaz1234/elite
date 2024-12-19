@@ -1,6 +1,7 @@
 import datetime
 import re
 from hockeydata.constants import *
+from hockeydata.common_functions import convert_season_format
 
 class UpdatePlayer:
 
@@ -52,7 +53,7 @@ class UpdatePlayerInfo():
 
     DRAFT_YEAR_REGEX = "^([0-9]+)\s"
     DRAFT_ROUND_REGEX = "round\s([0-9]+)\s"
-    DRAFT_POSITION_REGEX = "#\s([0-9]+)\s"
+    DRAFT_POSITION_REGEX = "#\s*([0-9]+)\s"
     DRAFT_TEAM_REGEX = "by\s(.+)$"
     
     #names of keys from dictionary to be deleted before insertion of the dict #into DB
@@ -432,6 +433,7 @@ class UpdatePlayerStats:
 
     CAPTAINCY_REGEX = "[AC]"
     LEADERSHIP_NONE = [None, 'Lockout', 'Loan']
+    UID_REGEX = "^[0-9a-z\-]+$"
 
     def __init__(self, is_goalie: bool):
         """is_goalie - True if player is a goalie False otherwise"""
@@ -455,10 +457,12 @@ class UpdatePlayerStats:
         """
 
         competition_dict_new = competition_dict.copy()
-        for year_key in list(competition_dict_new.keys()):
-            year_dict = competition_dict_new[year_key]
+        for season_key in list(competition_dict_new.keys()):
+            year_dict = competition_dict_new[season_key]
             year_dict_new = self._update_year_dict(year_dict=year_dict)
-            competition_dict_new[year_key] = year_dict_new
+            new_season_key = convert_season_format(season_key)
+            del competition_dict_new[season_key]
+            competition_dict_new[new_season_key] = year_dict_new
         return competition_dict_new
 
     def _update_year_dict(self, year_dict: dict) -> dict:
@@ -478,6 +482,9 @@ class UpdatePlayerStats:
         if new_league_dict[LEAGUE_URL] is not None:
             league_id = re.findall(LEAGUE_UID_REGEX, 
                                    new_league_dict[LEAGUE_URL])[0]
+            if not re.match(UpdatePlayerStats.UID_REGEX, league_id):
+                raise ValueError("League uid must contain only lowcase"      
+                                 "letters, numbers or -")
         else:
             league_id = None
         new_league_dict[LEAGUE_UID] = league_id
