@@ -38,8 +38,7 @@ class PlayerScraper:
         self.END_TIME = None
         #ps.click_on_button_optional(self.page, ps.COOKIES_AGREE_XPATH)
         #self.page.evaluate("document.body.style.zoom=1.1")
-        html_content = page.content()
-        self.selector = scrapy.Selector(text=html_content)
+        self.selector = scrapy.Selector(text=self.page.content())
 
     def get_info_all(self, years: list=None) -> dict:
         """Wrapper method containing all individual methods for scrapping data 
