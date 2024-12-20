@@ -1,3 +1,4 @@
+import hockeydata.get_urls.get_urls as get_urls
 import hockeydata.scraper.league_scraper as league_scraper
 import hockeydata.scraper.player_scraper as player_scraper
 import hockeydata.scraper.team_scraper as team_scraper
@@ -45,6 +46,11 @@ LEAGUE_URLS = [
 
 ]
 
+LEAGUES = [
+    'nhl',
+    ''
+]
+
 def player_pipeline_test(player_url, session):
     pst_o = ps.PlaywrightSetUp()
     ps_o = player_scraper.PlayerScraper(url=player_url, page=pst_o.page)
@@ -59,7 +65,6 @@ def player_pipeline_test(player_url, session):
     insert_player_data = input_dict_player.InputPlayerDict(db_session=session)
     insert_player_data.input_player_dict(player_dict=dict_updated)
 
-
 def team_pipeline_test(team_url, session):
     pst_o = ps.PlaywrightSetUp()
     ts_o = team_scraper.TeamScraper(team_url, page=pst_o.page)
@@ -73,13 +78,18 @@ def team_pipeline_test(team_url, session):
 def league_pipeline_test(league_url, session):
     pst_o = ps.PlaywrightSetUp()
     ls_o = league_scraper.LeagueScrapper(league_url, page=pst_o.page)
-    league_dict = ls_o.get_league_data()
+    league_dict = ls_o.get_info()
     pst_o.p.stop()
     lu_o = league_updater.UpdateLeagueDict()
     league_dict_updated = lu_o.update_league_dict(league_dict)
     insert_league_data = input_dict_league.InputLeagueDict(session_db=session)
-    insert_league_data.input_league_dict(team_dict=league_dict_updated)
+    insert_league_data.input_league_dict(league_dict=league_dict_updated)
 
+def player_urls_pipeline_test():
+    pst_o = ps.PlaywrightSetUp()
+    lu_o = get_urls.LeagueUrlDownload(page=pst_o.page)
+    dict_player_ref = lu_o.get_player_refs(league='NHL')
+    dict_player_ref
 
 def main():
     session1 = ds.DatabaseSession(done_folder_path="",
@@ -97,6 +107,8 @@ def main():
     if 'league' in to_test:
         for league_url in LEAGUE_URLS:
             league_pipeline_test(league_url, session1.session)
+    if 'url_p' in to_test:
+        player_urls_pipeline_test()
 
 if __name__ == "__main__":
     main()
