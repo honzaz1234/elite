@@ -15,22 +15,18 @@ import json
 import re
 
 #path to database must be specifed
-
 DB_PATH = "./database/hockey_test.db"
 
-league_list = ['Czechia', 'NHL', 'SHL', 'AHL']
-
 PLAYER_URLS = [
-   "https://www.eliteprospects.com/player/8627/jaromir-jagr",
-   "https://www.eliteprospects.com/player/20605/gordie-howe",
-   "https://www.eliteprospects.com/player/183442/connor-mcdavid",
-   # "https://www.eliteprospects.com/player/19456/daniel-goneau",
+    "https://www.eliteprospects.com/player/8627/jaromir-jagr",
+    "https://www.eliteprospects.com/player/20605/gordie-howe",
+    "https://www.eliteprospects.com/player/183442/connor-mcdavid",
+    "https://www.eliteprospects.com/player/19456/daniel-goneau",
     "https://www.eliteprospects.com/player/190526/radim-zohorna",
     "https://www.eliteprospects.com/player/19145/bobby-orr",
     "https://www.eliteprospects.com/player/8665/dominik-hasek",
     "https://www.eliteprospects.com/player/70424/andrei-vasilevsky"
                ]
-
 TEAM_URLS = [
     #"https://www.eliteprospects.com/team/64/montreal-canadiens",
     "https://www.eliteprospects.com/team/162/hc-slavia-praha",
@@ -43,14 +39,7 @@ LEAGUE_URLS = [
     "https://www.eliteprospects.com/league/nhl",
     "https://www.eliteprospects.com/league/czechia",
     "https://www.eliteprospects.com/league/liiga",
-
 ]
-
-LEAGUES = [
-    'nhl',
-    ''
-]
-
 def player_pipeline_test(player_url, session):
     pst_o = ps.PlaywrightSetUp()
     ps_o = player_scraper.PlayerScraper(url=player_url, page=pst_o.page)
@@ -95,6 +84,7 @@ def team_urls_pipeline_test():
     pst_o = ps.PlaywrightSetUp()
     lu_o = get_urls.LeagueUrlDownload(page=pst_o.page)
     dict_team_ref = lu_o.get_team_refs(league='NHL')
+  
 
 def main():
     session1 = ds.DatabaseSession(done_folder_path="",
