@@ -26,7 +26,8 @@ PLAYER_URLS = [
     "https://www.eliteprospects.com/player/19145/bobby-orr",
     "https://www.eliteprospects.com/player/8665/dominik-hasek",
     "https://www.eliteprospects.com/player/70424/andrei-vasilevsky"
-               ]
+]
+
 TEAM_URLS = [
     #"https://www.eliteprospects.com/team/64/montreal-canadiens",
     "https://www.eliteprospects.com/team/162/hc-slavia-praha",
@@ -40,6 +41,8 @@ LEAGUE_URLS = [
     "https://www.eliteprospects.com/league/czechia",
     "https://www.eliteprospects.com/league/liiga",
 ]
+
+
 def player_pipeline_test(player_url, session):
     pst_o = ps.PlaywrightSetUp()
     ps_o = player_scraper.PlayerScraper(url=player_url, page=pst_o.page)
@@ -58,6 +61,10 @@ def team_pipeline_test(team_url, session):
     pst_o = ps.PlaywrightSetUp()
     ts_o = team_scraper.TeamScraper(team_url, page=pst_o.page)
     team_dict = ts_o.get_info()
+    name = re.findall('([a-z0\-]+)$', team_url)[0]
+    file_name = name + '_new.json'
+    with open(file_name, 'w') as file:
+        json.dump(team_dict, file)
     pst_o.p.stop()
     tu_o = team_updater.UpdateTeamDict()
     team_dict_updated = tu_o.update_team_dict(team_dict)
@@ -68,6 +75,10 @@ def league_pipeline_test(league_url, session):
     pst_o = ps.PlaywrightSetUp()
     ls_o = league_scraper.LeagueScrapper(league_url, page=pst_o.page)
     league_dict = ls_o.get_info()
+    name = re.findall('([a-z0\-]+)$', league_url)[0]
+    file_name = name + '_new.json'
+    with open(file_name, 'w') as file:
+        json.dump(league_dict, file)
     pst_o.p.stop()
     lu_o = league_updater.UpdateLeagueDict()
     league_dict_updated = lu_o.update_league_dict(league_dict)
@@ -88,8 +99,8 @@ def team_urls_pipeline_test():
 
 def main():
     session1 = ds.DatabaseSession(done_folder_path="",
-                              links_folder_path="",
-                              db_path=DB_PATH)
+                                 links_folder_path="",
+                                 db_path=DB_PATH)
     session1.set_up_connection()
     session1.clear_all_tables()
     to_test = input('Select pipelines to be tested: ')
