@@ -29,8 +29,8 @@ class InputPlayerDict():
         self._set_is_goalie(dict_=player_dict)
         player_id = self._input_player_info_dict(
             info_dict=player_dict[GENERAL_INFO])
-        self._input_relation_dict(relation_dict=player_dict[RELATIONS],
-                                  player_id=player_id)
+        #self._input_relation_dict(relation_dict=player_dict[RELATIONS],
+        #                          player_id=player_id)
         self._input_stats_dict(stat_dict=player_dict[SEASON_STATS],
                                player_id=player_id)
         self._input_achievement_dict(achiev_dict=player_dict[ACHIEVEMENTS],

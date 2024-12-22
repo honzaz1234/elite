@@ -1,8 +1,10 @@
+import hockeydata.playwright_setup.playwright_setup as ps
+import playwright.sync_api as sync_api
 import re
 import requests
 import scrapy
+
 from hockeydata.constants import *
-from hockeydata.get_urls.get_urls import LeagueUrlDownload
 
 
 class LeagueScrapper():
@@ -12,22 +14,24 @@ class LeagueScrapper():
     #xpath to access different types of info regarding the league
 
     PATHS = {
-        "achievements": "//div[h4[text()='League Awards']]//li/a/text()",
-        "league_refs": "//a[contains(@class,'" 
-                        "ListOfChampionsAndLeagueAwards_yearLink__rVDt0')]"
-                        "/@href",
+        "achievements": "//ul[contains(@class, 'LeagueAwards_league-awards')]"
+                        "/li//text()",
         "long_name": "//h1//text()",
-        "season": "//div[@id='standings']//option[position()>1]/text()"
+        "season_href": "//ul[contains(@class, 'list-of-champions')]/li"
+                       "/a[contains(@class, 'yearLink')]/@href"
     }
 
-    def __init__(self, url: str) -> dict:
+    def __init__(self, url: str, page: sync_api.Page):
         """url is the web address of league on elite prospect website"""
 
         self.url = url
         self.html = requests.get(url).content
-        self.selector = scrapy.Selector(text=self.html)
+        self.page = page
+        self.page.goto(url)
+        #self.page.wait_for_selector(PlayerScraper.TABLE_ROW_XPATH)
+        self.selector = scrapy.Selector(text=self.page.content())
 
-    def get_league_data(self) -> dict:
+    def get_info(self) -> dict:
         """method that creates dictionary of all data that is available for scrappping within this class
         """
 
@@ -66,11 +70,12 @@ class LeagueScrapper():
         """method for creating dictionary with season standings of teams for all years that are availiable on the website
         """
 
-        season_list = self.selector.xpath(
-            LeagueScrapper.PATHS["season"]).getall()
+        season_href_list = self.selector.xpath(
+            LeagueScrapper.PATHS["season_href"]).getall()
         league_standings_dict = {}
-        for season in season_list:
-            season_link = self.url + STANDINGS_URL + season.strip()
+        for season_ref in season_href_list:
+            season = re.findall('\/([0-9\-]+)$', season_ref)[0]
+            season_link = ELITE_URL + season_ref
             league_season_o = LeagueSeasonScraper(url=season_link)
             season_dict = league_season_o.get_season_standings()
             league_standings_dict[season] = season_dict

@@ -7,9 +7,8 @@ class InputLeagueDict():
 
     """class used for inputting  league information in to the DB"""
 
-    def __init__(self, db_session: Session):
-        self.db_session = db_session
-        pass
+    def __init__(self, session_db: Session):
+        self.db_session = session_db
 
     def input_league_dict(self, league_dict: dict):
         """wrapper method for inputting  all scraped data from dict to DB"""

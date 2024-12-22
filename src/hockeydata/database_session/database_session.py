@@ -12,9 +12,11 @@ import hockeydata.playwright_setup.playwright_setup as ps
 import json
 import os
 import re
+
+from hockeydata.decorators import *
 from hockeydata.constants import *
 from hockeydata.database_creator.database_creator import *
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 class DatabaseSession():
@@ -26,7 +28,9 @@ class DatabaseSession():
         self.database_path = db_path
         self.done_folder_path = done_folder_path
         self.links_folder_path = links_folder_path
+        self.engine = None
         self.session = None
+        self.meta_data = None
 
     def set_up_connection(self):
         self.start_session()
@@ -35,10 +39,18 @@ class DatabaseSession():
             self.add_data_to_season_table()
 
     def start_session(self):
-        engine = create_engine("sqlite:///" + self.database_path, echo=False)
-        Base.metadata.create_all(bind=engine)
-        DBSession = sessionmaker(bind=engine)
+        self.engine = create_engine("sqlite:///" + self.database_path, echo=False)
+        Base.metadata.create_all(bind=self.engine)
+        DBSession = sessionmaker(bind=self.engine)
         self.session = DBSession()
+        self.meta_data = Base.metadata
+
+    def clear_all_tables(self):
+        if 'test' not in self.database_path.lower():
+            raise ValueError(f"Data deletion is not allowed on the database '{self.database_path}' as it does not contain 'test'.")
+        for table in self.meta_data.sorted_tables:
+            self.session.execute(text(f"DELETE FROM {table.name};"))
+        self.session.commit()
 
     def check_seasons_table(self):
         check_data = self.session.query(Season).all()
@@ -97,11 +109,13 @@ class ManagePlayer():
         self.players_done = None
         self.players_urls = None
         self.session = session
+        self.plawright_setup = ps.PlaywrightSetUp()
         self.playwright_session = ps.PlaywrightSetUp()
         self.update_dict = update_player.UpdatePlayer()
         self.input_dict = input_player_dict.InputPlayerDict(
             db_session=self.session)
-        self.get_urls = get_url.LeagueUrlDownload()
+        self.get_urls = get_url.LeagueUrlDownload(
+            page=self.playwright_session.page)
 
     def set_up_manage_player(self):
         self.load_players_done_file()
@@ -133,10 +147,16 @@ class ManagePlayer():
             json.dump(players_urls, file)
         return players_urls
 
+    @repeat_request_until_success
+    def scrape_player(self, url):
+        player_o = player_scraper.PlayerScraper(
+                url=url, page=self.playwright_session)
+        dict_player = player_o.get_info_all()
+        return dict_player
+
+    @time_execution
     def scrape_and_input_player_into_db(self, url):
-            player_o = player_scraper.PlayerScraper(
-                url=url, page=self.playwright_session.page)
-            dict_player = player_o.get_info_all()
+            dict_player = self.scrape_player(url)
             dict_player_updated = (self.update_dict
                                    .update_player_dict(dict_player))
             print(dict_player_updated['general_info']['player_name'])
@@ -230,6 +250,7 @@ class ManageTeam():
             json.dump(teams_urls, file)
         return teams_urls
 
+    @time_execution
     def scrape_and_input_team_into_db(self, url):
             team_o = team_scraper.TeamScraper(url=url)
             dict_team = team_o.get_info()
@@ -298,6 +319,7 @@ class ManageLeague():
             json.dump(leagues_done, file)
         return leagues_done
 
+    @time_execution
     def scrape_and_input_league_into_db(self, url):
             league_o = league_scraper.LeagueScrapper(url=url)
             dict_league = league_o.get_league_data()
