@@ -19,7 +19,8 @@ class LeagueUrlDownload():
         "league_name": "//div[preceding-sibling::header[contains(@id, '-men')]]//a[@class='TextLink_link__3JbdQ TableBody_link__MNtRl']/text()",
         "season_refs": "//a[@style='font-weight: 800;']/@href",
         "standings": "/standings/",
-        "year_list": "//div[@id='standings']//option[position()>1]/text()",
+        "year_list": "//ul[preceding-sibling::header[./h2[contains(text()"
+                     ", 'Champions')]]]/li/a[1]/@href",
         "last_year": "//ul[preceding-sibling::header[./h2[contains(text()"
                       ",'Champions')]]]/li[1]/a[1]/text()",
         "first_year": "//ul[preceding-sibling::header[./h2[contains(text()"
@@ -133,16 +134,18 @@ class LeagueUrlDownload():
 
         league_team_refs = []
         season_getter = SeasonUrlDownload()
-        league_path = ELITE_URL + LEAGUE_URLS[league]
-        league_page_html = requests.get(league_path).content
-        sel_league = scrapy.Selector(text=league_page_html)
-        season_list = (sel_league
+        league_url = ELITE_URL + LEAGUE_URLS[league]
+        self.page.goto(league_url)
+        #league_page_html = requests.get(league_url).content
+        sel_league = scrapy.Selector(text=self.page.content())
+        season_ref_list = (sel_league
                        .xpath(LeagueUrlDownload.PATHS["year_list"])
                        .getall())
-        season_list = [season.strip() for season in season_list]
-        for season in season_list:
+        season_ref_list = [season.strip() for season in season_ref_list]
+        for season_ref in season_ref_list:
             season_refs = season_getter.get_team_season_refs(
-                season=season, league=league, ref_list=league_team_refs)
+                season_ref=season_ref, 
+                ref_list=league_team_refs)
             season_refs = [value for value in season_refs if type(value) == str]
             if season_refs != []:
                 league_team_refs = league_team_refs + season_refs
@@ -288,15 +291,12 @@ class SeasonUrlDownload():
         return goalies_refs
 
     def get_team_season_refs(
-            self, season: str, league: str, ref_list: list=[]
+            self, season_ref: str, ref_list: list=[]
             ) -> list:
         """downloads team's urls for one  season"""
 
         url_season = (ELITE_URL 
-                      + LEAGUE_URLS[league] 
-                      + TEAM_STANDINGS 
-                      + "/" 
-                      + season)
+                      + season_ref)
         season_html = requests.get(url_season).content
         sel_season = scrapy.Selector(text=season_html)
         team_refs = sel_season.xpath(

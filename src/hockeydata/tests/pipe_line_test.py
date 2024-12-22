@@ -91,6 +91,11 @@ def player_urls_pipeline_test():
     dict_player_ref = lu_o.get_player_refs(league='NHL')
     dict_player_ref
 
+def team_urls_pipeline_test():
+    pst_o = ps.PlaywrightSetUp()
+    lu_o = get_urls.LeagueUrlDownload(page=pst_o.page)
+    dict_team_ref = lu_o.get_team_refs(league='NHL')
+
 def main():
     session1 = ds.DatabaseSession(done_folder_path="",
                               links_folder_path="",
@@ -109,6 +114,8 @@ def main():
             league_pipeline_test(league_url, session1.session)
     if 'url_p' in to_test:
         player_urls_pipeline_test()
+    if 'url_t' in to_test:
+        team_urls_pipeline_test()
 
 if __name__ == "__main__":
     main()

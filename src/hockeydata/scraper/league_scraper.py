@@ -16,9 +16,6 @@ class LeagueScrapper():
     PATHS = {
         "achievements": "//ul[contains(@class, 'LeagueAwards_league-awards')]"
                         "/li//text()",
-        "league_refs": "//a[contains(@class,'" 
-                        "ListOfChampionsAndLeagueAwards_yearLink__rVDt0')]"
-                        "/@href",
         "long_name": "//h1//text()",
         "season_href": "//ul[contains(@class, 'list-of-champions')]/li"
                        "/a[contains(@class, 'yearLink')]/@href"
