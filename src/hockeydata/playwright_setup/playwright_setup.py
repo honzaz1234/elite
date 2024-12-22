@@ -6,6 +6,7 @@ COOKIES_AGREE_XPATH = "//button[./*[contains(text(), 'AGREE')]]"
 
 class PlaywrightSetUp():
 
+
     FORBIDDEN_TYPES = ["image", "stylesheet", "font"]
     FORBIDDEN_STRINGS = [
         'google', 'clarity', 'analytics', 
@@ -16,6 +17,7 @@ class PlaywrightSetUp():
         'PlayerGameLogs', 'DraftCoverage'
     ]
 
+
     def __init__(self):
         self.p = None
         self.browser = None
@@ -25,7 +27,7 @@ class PlaywrightSetUp():
 
     def initiate_sync_playwright(self):
         self.p = sync_playwright().start()
-        self.browser = self.p.chromium.launch(headless=False)
+        self.browser = self.p.chromium.launch(headless=True)
         self.page = self.browser.new_page()
         self.page.route("**/*", self.intercept_requests)
 
@@ -68,3 +70,21 @@ def click_on_button(page, path, wait=500):
     xpath = get_xpath(path)
     page.wait_for_selector(xpath, timeout=wait)
     page.click(xpath)
+
+def wait_click_wait(page, path_click, path_wait, wait=300, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            # Wait for the selector with a timeout of 10 seconds
+            page.wait_for_selector(path_wait, timeout=wait)
+            print("Target selector appeared!")
+            break
+        except:
+            print(f"Attempt {attempt + 1}: Selector not found. Clicking fallback button...")
+            try:
+                # Click the fallback button
+                page.click(path_click)
+            except Exception as e:
+                print(f"Error clicking fallback button: {e}")
+                break
+    else:
+        print("Failed to find the selector after maximum retries.")

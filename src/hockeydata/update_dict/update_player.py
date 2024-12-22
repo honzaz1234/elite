@@ -1,6 +1,7 @@
 import datetime
 import re
 from hockeydata.constants import *
+from hockeydata.common_functions import convert_season_format
 
 class UpdatePlayer:
 
@@ -41,8 +42,8 @@ class UpdatePlayer:
 class UpdatePlayerInfo():
     """class used for updating values in subdictionary general info"""
 
-    #regexes used to extract specific information from original strings
 
+    #regexes used to extract specific information from original strings
     HEIGHT_REGEX = "([0-9]+)\scm"
     WEIGHT_REGEX = "([0-9]+)\skg"
     CAP_HIT_REGEX = "[^0-9]"
@@ -52,15 +53,13 @@ class UpdatePlayerInfo():
 
     DRAFT_YEAR_REGEX = "^([0-9]+)\s"
     DRAFT_ROUND_REGEX = "round\s([0-9]+)\s"
-    DRAFT_POSITION_REGEX = "#\s([0-9]+)\s"
+    DRAFT_POSITION_REGEX = "#\s*([0-9]+)\s"
     DRAFT_TEAM_REGEX = "by\s(.+)$"
     
     #names of keys from dictionary to be deleted before insertion of the dict #into DB
-
     DELETE_KEYS = [BIRTH_PLACE_STRING, NHL_RIGHTS, DRAFT_LIST]
-
+    
     #unique identificators of NHL teams
-
     NHL_UID = {
         'Boston Bruins': 52,
         'Toronto Maple Leafs': 76,
@@ -433,6 +432,8 @@ class UpdatePlayerStats:
     #regex used for extracting captaincy info
 
     CAPTAINCY_REGEX = "[AC]"
+    LEADERSHIP_NONE = [None, 'Lockout', 'Loan']
+    UID_REGEX = "^[0-9a-z\-]+$"
 
     def __init__(self, is_goalie: bool):
         """is_goalie - True if player is a goalie False otherwise"""
@@ -456,10 +457,12 @@ class UpdatePlayerStats:
         """
 
         competition_dict_new = competition_dict.copy()
-        for year_key in list(competition_dict_new.keys()):
-            year_dict = competition_dict_new[year_key]
+        for season_key in list(competition_dict_new.keys()):
+            year_dict = competition_dict_new[season_key]
             year_dict_new = self._update_year_dict(year_dict=year_dict)
-            competition_dict_new[year_key] = year_dict_new
+            new_season_key = convert_season_format(season_key)
+            del competition_dict_new[season_key]
+            competition_dict_new[new_season_key] = year_dict_new
         return competition_dict_new
 
     def _update_year_dict(self, year_dict: dict) -> dict:
@@ -479,6 +482,9 @@ class UpdatePlayerStats:
         if new_league_dict[LEAGUE_URL] is not None:
             league_id = re.findall(LEAGUE_UID_REGEX, 
                                    new_league_dict[LEAGUE_URL])[0]
+            if not re.match(UpdatePlayerStats.UID_REGEX, league_id):
+                raise ValueError("League uid must contain only lowcase"      
+                                 "letters, numbers or -")
         else:
             league_id = None
         new_league_dict[LEAGUE_UID] = league_id
@@ -512,7 +518,7 @@ class UpdatePlayerStats:
     def update_leadership(self, lead_value: str|None) -> str|None:
         """get rid of quotation marks around A or C letter"""
 
-        if lead_value is None:
+        if lead_value in UpdatePlayerStats.LEADERSHIP_NONE:
             return None
         new_lead_value = re.findall(
             UpdatePlayerStats.CAPTAINCY_REGEX, lead_value)[0]
@@ -523,13 +529,21 @@ class SeasonDict():
     """class containing methods for updating season stats from one season"""
 
     PLAYER_ATT = [GP, G, A, TP, PIM, PLUS_MINUS]
-    GOALIE_ATT = [GP, GD, GAA,
-                  SVP, GA, SVS, SO, WLT, TOI]
+    GOALIE_ATT = [
+        GP, GD, GAA, SVP, GA, SVS, 
+        SO, WLT, TOI
+        ]
     WLT = [G_W, G_L, G_T]
 
     def __init__(self, is_goalie):
         self.is_goalie = is_goalie
 
+    @staticmethod
+    def convert_to_seconds(time_str):
+        """converts TOI from format mintues::seconds to just seconds"""
+        
+        minutes, seconds = map(int, time_str.split(":"))
+        return minutes * 60 + seconds
 
     def _update_season(self, season_list: list) -> dict:
         """wrapper method for updating season stats of player"""
@@ -571,6 +585,8 @@ class SeasonDict():
             elif ind in [2, 3]:
                 stat = float(season_list[ind])
                 dict_stats[SeasonDict.GOALIE_ATT[ind]] = stat
+            elif ind == 8:
+                dict_stats[SeasonDict.GOALIE_ATT[ind]] = SeasonDict.convert_to_seconds(season_list[ind])
             else:
                 stat = self.stat_to_int(stat=season_list[ind])
                 dict_stats[SeasonDict.GOALIE_ATT[ind]] = stat
@@ -605,4 +621,5 @@ class SeasonDict():
             stat = re.sub(" ", "", stat)
             stat = int(stat)
             return stat 
+
 
