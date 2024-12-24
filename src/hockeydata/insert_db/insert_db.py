@@ -19,8 +19,8 @@ class DatabasePipeline():
             nationalities and places
         """
 
-        #logger.debug(f"Input of player info dict {dict_info}"
-        #             f" into table {db.Player.__tablename__} started")
+        logger.debug(f"Input of player info dict {dict_info}"
+                     f" into table {db.Player.__tablename__} started")
         database_method = DatabaseMethods(db_session=self.db_session)
         query_object = Query(db_session=self.db_session)
         nr_team_id = database_method._input_uid(
@@ -50,9 +50,9 @@ class DatabasePipeline():
                 catches=dict_info[CATCHES], contract=dict_info[CONTRACT_END], cap_hit=dict_info[CAP_HIT], signed_nhl=dict_info[SIGNED_NHL], date_birth=dict_info[BIRTH_DATE], drafted=dict_info[DRAFTED], 
                 height=dict_info[HEIGHT], weight=dict_info[WEIGHT], 
                 nhl_rights_id=nr_team_id, place_birth_id=place_birth_id)
-        #logger.debug(f"Input of player info dict {dict_info} "
-        #             f"into table {db.Player.__tablename__} finished, "
-        #             f"new entry added at index {player_id}")
+        logger.debug(f"Input of player info dict {dict_info} "
+                     f"into table {db.Player.__tablename__} finished, "
+                     f"new entry added at index {player_id}")
         return player_id
     
     def input_data_in_team_table(
@@ -63,8 +63,8 @@ class DatabasePipeline():
             id of stadium from table stadiums must be known beforehand
         """
         
-        #logger.debug(f"Input of team info dict {dict_info}"
-        #             f" into table {db.Team.__tablename__} started")
+        logger.debug(f"Input of team info dict {dict_info}"
+                     f" into table {db.Team.__tablename__} started")
         database_method = DatabaseMethods(db_session=self.db_session)
         query_object = Query(db_session=self.db_session)
         place_dict = dict_info[PLACE_DICT]
@@ -98,9 +98,9 @@ class DatabasePipeline():
                 place_id=place_id,
                 founded=dict_info[YEAR_FOUNDED],
                 stadium_id=stadium_id)
-        #logger.debug(f"Input of team info dict {dict_info}"
-        #             f" into table {db.Team.__tablename__} finished, new "
-        #             f"entry added at index {team_id}")
+        logger.debug(f"Input of team info dict {dict_info}"
+                     f" into table {db.Team.__tablename__} finished, new "
+                     f"entry added at index {team_id}")
         return team_id
     
     def _input_data_in_league_table(
@@ -108,8 +108,8 @@ class DatabasePipeline():
             ) -> int:
         """inputs league info (uid and name) in leagues table"""
 
-        #logger.debug(f"Input of league_uid {league_uid} and name {long_name}"
-        #             f" into table {db.League.__tablename__} started")
+        logger.debug(f"Input of league_uid {league_uid} and name {long_name}"
+                     f" into table {db.League.__tablename__} started")
         query_object = Query(db_session=self.db_session)
         database_method = DatabaseMethods(db_session=self.db_session)
         league_id = query_object._find_id_in_table(table=db.League,
@@ -121,9 +121,9 @@ class DatabasePipeline():
             database_method._update_data(table=db.League, 
                                          where_col=db.League.uid, where_val=league_uid,
                                          league=long_name)
-        #logger.debug(f"Input of league_uid {league_uid} and name {long_name}"
-        #             f" into table {db.League.__tablename__} finished, "
-        #             f" new entry added at index {league_id}")
+        logger.debug(f"Input of league_uid {league_uid} and name {long_name}"
+                     f" into table {db.League.__tablename__} finished, "
+                     f" new entry added at index {league_id}")
         return league_id
     
     def _input_achievement(self, achiev: str, league_id: int) -> int:
@@ -132,9 +132,9 @@ class DatabasePipeline():
            values in the table depend on table leagues
         """
 
-        #logger.debug(f"Input of achievement {achiev} with index {league_id}"
-        #             f" from table {db.League.__tablename__} into table"
-        #             f" {db.Achievement.__tablename__} started")
+        logger.debug(f"Input of achievement {achiev} with index {league_id}"
+                     f" from table {db.League.__tablename__} into table"
+                     f" {db.Achievement.__tablename__} started")
         query_object = Query(db_session=self.db_session)
         database_method = DatabaseMethods(db_session=self.db_session)
         achiev_id = query_object._find_id_in_table(
@@ -147,10 +147,10 @@ class DatabasePipeline():
             database_method._update_data(
                 table=db.Achievement, where_col=db.Achievement.uid, 
                 where_val=achiev, league_id=league_id)
-        #logger.debug(f"Input of achievement {achiev} with index {league_id}"
-        #             f" from table {db.League.__tablename__} into table"
-        #             f" {db.Achievement.__tablename__} finished, new entry"
-        #             f" added at index {achiev_id}")
+        logger.debug(f"Input of achievement {achiev} with index {league_id}"
+                     f" from table {db.League.__tablename__} into table"
+                     f" {db.Achievement.__tablename__} finished, new entry"
+                     f" added at index {achiev_id}")
         return achiev_id
 
     def _input_achievement_relation(
@@ -164,9 +164,9 @@ class DatabasePipeline():
                        season - season string
         """
 
-        #logger.debug(f"Input of player achievement relation {achiev} and"
-        #             f" index {player_id} from {db.Player.__tablename__}"
-        #             f" table into table {db.PlayerAchievement.__tablename__}#" f" started")
+        logger.debug(f"Input of player achievement relation {achiev} and"
+                     f" index {player_id} from {db.Player.__tablename__}"
+                     f" table into table {db.PlayerAchievement.__tablename__}" f" started")
         database_method = DatabaseMethods(db_session=self.db_session)
         achiev_id = database_method._input_uid(
             table=db.Achievement, uid_val=achiev, uid=achiev, league_id=None)
@@ -175,10 +175,10 @@ class DatabasePipeline():
         relation_id = database_method._input_unique_data(
             table=db.PlayerAchievement, season_id=season_id,
             achievement_id=achiev_id, player_id=player_id)
-        #logger.debug(f"Input of player achievement relation {achiev} and"
-        #             f" index from {db.Player.__tablename__} table into"
-        #             f" table {db.PlayerAchievement.__tablename__} finished, "
-        #             f"new entry added at index {relation_id}")
+        logger.debug(f"Input of player achievement relation {achiev} and"
+                     f" index from {db.Player.__tablename__} table into"
+                     f" table {db.PlayerAchievement.__tablename__} finished, "
+                     f"new entry added at index {relation_id}")
         return relation_id
     
     def _input_player_stats(self, dict_stats: dict) -> int:
@@ -203,8 +203,8 @@ class DatabasePipeline():
         season_id = database_method._input_unique_data(
             table=db.Season, season=dict_stats[SEASON_NAME])
         if dict_stats[IS_GOALIE] == False:
-            #logger.debug(f"Input of skater stats dict {dict_stats}"
-            #             f" into table {db.PlayerStats.__tablename__} started")
+            logger.debug(f"Input of skater stats dict {dict_stats}"
+                         f" into table {db.PlayerStats.__tablename__} started")
             stat_id = database_method._input_unique_data(
                 table=db.PlayerStats,
                 player_id=dict_stats[PLAYER_ID],
@@ -219,12 +219,12 @@ class DatabasePipeline():
                 total_points=dict_stats[TOTAL_POINTS],
                 PM=dict_stats[PIM],
                 plus_minus=dict_stats[PLUS_MINUS])
-            #logger.debug(f"Input of skater stats dict {dict_stats}"
-            #             f" into table {db.PlayerStats.__tablename__}"
-            #             f" finished, new entry added at index {stat_id}")
+            logger.debug(f"Input of skater stats dict {dict_stats}"
+                         f" into table {db.PlayerStats.__tablename__}"
+                         f" finished, new entry added at index {stat_id}")
         else:
-            #logger.debug(f"Input of goalie stats dict {dict_stats}"
-            #             f" into table {db.GoalieStats.__tablename__} started")
+            logger.debug(f"Input of goalie stats dict {dict_stats}"
+                         f" into table {db.GoalieStats.__tablename__} started")
             stat_id = database_method._input_unique_data(
                 table=db.GoalieStats,
                 player_id=dict_stats[PLAYER_ID],
@@ -244,9 +244,9 @@ class DatabasePipeline():
                 looses=dict_stats[L],
                 ties=dict_stats[T], 
                 toi=dict_stats[TOI])
-            #logger.debug(f"Input of goalie stats dict {dict_stats}"
-            #             f" into table {db.GoalieStats.__tablename__}"
-            #             f" finished, new entry added at index {stat_id}")
+            logger.debug(f"Input of goalie stats dict {dict_stats}"
+                         f" into table {db.GoalieStats.__tablename__}"
+                         f" finished, new entry added at index {stat_id}")
             return stat_id
     
     def _input_stadium_data(self, stadium_dict: dict) -> int:
@@ -256,8 +256,8 @@ class DatabasePipeline():
            town in  which it is located and year of construction
         """
         
-        #logger.debug(f"Input of stadium dict {stadium_dict}"
-        #             f" into table {db.Stadium.__tablename__} started")
+        logger.debug(f"Input of stadium dict {stadium_dict}"
+                     f" into table {db.Stadium.__tablename__} started")
         database_method = DatabaseMethods(db_session=self.db_session)
         if stadium_dict[ARENA_NAME] is None:
             return None
@@ -276,9 +276,9 @@ class DatabasePipeline():
             capacity=stadium_dict[CAPACITY],
             construction_year=stadium_dict[CONSTRUCTION_YEAR],
             place_id=place_id)
-        #logger.debug(f"Input of stadium dict {stadium_dict}"
-        #             f" into table {db.Stadium.__tablename__} finished,"
-        #             f" new entry added at index {stadium_id}")
+        logger.debug(f"Input of stadium dict {stadium_dict}"
+                     f" into table {db.Stadium.__tablename__} finished,"
+                     f" new entry added at index {stadium_id}")
         return stadium_id
 
     def _input_affiliated_teams(self, team_id: int, team_aff_uid: int) -> int:
@@ -290,10 +290,10 @@ class DatabasePipeline():
         new entry is not inputted into table 
         """
 
-        #logger.debug(f"Input of affiliated team combination for team with"
-        #             f" index {team_id} from table {db.Team.__tablename__}"
-       #              f" and affiliated team with uid {team_aff_uid} into table"
-       #              f" {db.AffiliatedTeam} started")
+        logger.debug(f"Input of affiliated team combination for team with"
+                     f" index {team_id} from table {db.Team.__tablename__}"
+                     f" and affiliated team with uid {team_aff_uid} into table"
+                     f" {db.AffiliatedTeam} started")
         database_method = DatabaseMethods(db_session=self.db_session)
         if team_id is None or team_aff_uid is None:
             return None
@@ -317,11 +317,11 @@ class DatabasePipeline():
             table=db.AffiliatedTeam, 
             team_1_id=team_id,
             team_2_id=team_aff_id)
-        #logger.debug(f"Input of affiliated team combination for team with"
-        #             f" index {team_id} from table {db.Team.__tablename__}"
-        #             f" and affiliated team with uid {team_aff_uid} into table"
-        #             f" {db.AffiliatedTeam} finished, new entry added at"
-        #             f" index {relation_id}")
+        logger.debug(f"Input of affiliated team combination for team with"
+                     f" index {team_id} from table {db.Team.__tablename__}"
+                     f" and affiliated team with uid {team_aff_uid} into table"
+                     f" {db.AffiliatedTeam} finished, new entry added at"
+                     f" index {relation_id}")
         return relation_id
     
     def _input_colour_team(self, team_id: int, colour: str) -> int:
@@ -331,9 +331,9 @@ class DatabasePipeline():
                            colour - string with colour name
         """
 
-       # logger.debug(f"Input of team colour {colour} and id from table"
-       #              f" {db.Team.__tablename__} {team_id} into table"
-       #              f" {db.TeamColour} started")
+        logger.debug(f"Input of team colour {colour} and id from table"
+                     f" {db.Team.__tablename__} {team_id} into table"
+                     f" {db.TeamColour} started")
         if team_id is None or colour is None:
             return None
         database_method = DatabaseMethods(db_session=self.db_session)
@@ -342,10 +342,10 @@ class DatabasePipeline():
         relation_id = database_method._input_unique_data(
             table=db.TeamColour,
             team_id=team_id, colour_id=colour_id)
-       # logger.debug(f"Input of team colour {colour} and id from table"
-       #              f" {db.Team.__tablename__} {team_id} into table"
-       #              f" {db.TeamColour.__tablename__} finished, "
-       #              f" new entry added at index {relation_id}")
+        logger.debug(f"Input of team colour {colour} and id from table"
+                     f" {db.Team.__tablename__} {team_id} into table"
+                     f" {db.TeamColour.__tablename__} finished, "
+                     f" new entry added at index {relation_id}")
         return relation_id
     
     def _input_player_draft(self, draft_dict: dict, player_id: int) -> int:
@@ -357,9 +357,9 @@ class DatabasePipeline():
            draft_dict - dict with info about in which round on which position, in which year and by which team was player drafted
         """
 
-        #logger.debug(f"Input of draft dict {draft_dict} for player at"
-        #             f" index {player_id} at {db.PlayerDraft.__tablename__}"
-        #             f" table started")
+        logger.debug(f"Input of draft dict {draft_dict} for player at"
+                     f" index {player_id} at {db.PlayerDraft.__tablename__}"
+                     f" table started")
         if player_id is None:
             return None
         database_method = DatabaseMethods(db_session=self.db_session)
@@ -374,10 +374,10 @@ class DatabasePipeline():
             draft_round=draft_dict[DRAFT_ROUND],
             draft_year=draft_dict[DRAFT_YEAR],
             draft_position=draft_dict[DRAFT_POSITION])
-        #logger.debug(f"Input of draft dict {draft_dict} for player at"
-        #             f" index {player_id} at players table finished, row"
-        #             f" added at index {draft_id} in the"
-        #             f" {db.PlayerDraft.__tablename__} table")
+        logger.debug(f"Input of draft dict {draft_dict} for player at"
+                     f" index {player_id} at players table finished, row"
+                     f" added at index {draft_id} in the"
+                     f" {db.PlayerDraft.__tablename__} table")
         return draft_id
     
     def _input_player_nation(self, player_id: int, nationality: str) -> int:
@@ -387,10 +387,10 @@ class DatabasePipeline():
            nationality - country code of nation
         """
         
-        #logger.debug(f"Input nationality of player at index {player_id}"
-        #             f" at players table and nationality {nationality}"
-        #             f" into table {db.PlayerNationality.__tablename__}"
-        #             f" started")
+        logger.debug(f"Input nationality of player at index {player_id}"
+                     f" at players table and nationality {nationality}"
+                     f" into table {db.PlayerNationality.__tablename__}"
+                     f" started")
         database_method = DatabaseMethods(db_session=self.db_session)
         nation_id = database_method._input_unique_data(
             table=db.Nationality,
@@ -399,10 +399,10 @@ class DatabasePipeline():
             table=db.PlayerNationality,
             player_id=player_id,
             nationality_id=nation_id)
-        #logger.debug(f"Input nationality of player at index {player_id}"
-        #             f" in {db.Player.__tablename__} table and nationality"
-        #             f" {nationality} into table"
-        #             f" {db.PlayerNationality.__tablename__}  finished")
+        logger.debug(f"Input nationality of player at index {player_id}"
+                     f" in {db.Player.__tablename__} table and nationality"
+                     f" {nationality} into table"
+                     f" {db.PlayerNationality.__tablename__}  finished")
         return relation_id
     
     def _input_player_relation(
@@ -415,11 +415,11 @@ class DatabasePipeline():
            player_from_uid = 123, player_to_id=456, and relation='grandfather'
         """
 
-        #logger.debug(f"Input of player's relation of player with"
-        #             f" uid {player_from_uid} with player at index"
-         #            f" {player_to_id} in {db.Player.__tablename__} table"
-         #            f" and type of relation {relation} into table"
-         #            f"{db.PlayerRelation.__tablename__}  started")
+        logger.debug(f"Input of player's relation of player with"
+                     f" uid {player_from_uid} with player at index"
+                     f" {player_to_id} in {db.Player.__tablename__} table"
+                     f" and type of relation {relation} into table"
+                     f"{db.PlayerRelation.__tablename__}  started")
         database_method = DatabaseMethods(db_session=self.db_session)
         player_from_id = database_method._input_uid(
             table=db.Player, uid_val=player_from_uid, name=None, uid=player_from_uid, position=None, active=None, age=None, shoots=None, catches=None, contract=None, cap_hit=None, signed_nhl=None, date_birth=None, drafted=None, 
@@ -429,12 +429,12 @@ class DatabasePipeline():
         table_relation_id = database_method._input_unique_data(
             table=db.PlayerRelation, player_from_id=player_from_id,
             player_to_id=player_to_id, relation_id=relation_id)
-        #logger.debug(f"Input of player's relation of player with"
-        #             f" uid {player_from_uid} with player at index"
-        #             f" {player_to_id} in {db.Player.__tablename__} table"
-         #            f" and type of relation {relation} into table"
-         #            f"{db.PlayerRelation.__tablename__}  finished, "
-         #            f"index of new entry is {table_relation_id}")
+        logger.debug(f"Input of player's relation of player with"
+                     f" uid {player_from_uid} with player at index"
+                     f" {player_to_id} in {db.Player.__tablename__} table"
+                     f" and type of relation {relation} into table"
+                     f"{db.PlayerRelation.__tablename__}  finished, "
+                     f"index of new entry is {table_relation_id}")
         return table_relation_id
     
     def _input_retired_number_relation(
@@ -446,10 +446,10 @@ class DatabasePipeline():
            id of team for which the number was retired must be then be known beforehand
         """
         
-        #logger.debug(f"Input of retired number relation with number {number}"
-        #             f" for player uid {player_uid} and id from"
-        #             f" {db.Team.__tablename__} table {team_id} into table"
-        #             f" {db.RetiredNumber.__tablename__} started")
+        logger.debug(f"Input of retired number relation with number {number}"
+                     f" for player uid {player_uid} and id from"
+                     f" {db.Team.__tablename__} table {team_id} into table"
+                     f" {db.RetiredNumber.__tablename__} started")
         database_method = DatabaseMethods(db_session=self.db_session)
         player_id = database_method._input_uid(table=db.Player,
                                                 uid_val=player_uid, 
@@ -469,11 +469,11 @@ class DatabasePipeline():
         relation_id = database_method._input_unique_data(
             table=db.RetiredNumber, team_id=team_id, 
             player_id=player_id, number=number)
-        #logger.debug(f"Input of retired number relation with number {number}"
-        #             f" for player uid {player_uid} and id from"
-        #             f" {db.Team.__tablename__} table {team_id} into table"
-        #             f" {db.RetiredNumber.__tablename__} finished, index of"
-        #             f" new entry is {relation_id}")
+        logger.debug(f"Input of retired number relation with number {number}"
+                     f" for player uid {player_uid} and id from"
+                     f" {db.Team.__tablename__} table {team_id} into table"
+                     f" {db.RetiredNumber.__tablename__} finished, index of"
+                     f" new entry is {relation_id}")
         return relation_id
     
     def _input_team_name(
@@ -487,8 +487,8 @@ class DatabasePipeline():
            team_id is then id of team for which the historic name is saved
            from table teams
         """
-        #logger.debug(f"Input of team name {name} with season range {min}"
-        #             f" {max} into table {db.TeamName.__tablename__} started")
+        logger.debug(f"Input of team name {name} with season range {min}"
+                     f" {max} into table {db.TeamName.__tablename__} started")
         database_method = DatabaseMethods(db_session=self.db_session)
         season_min_id = database_method._input_unique_data(table=db.Season,
                                                             season=min)
@@ -496,9 +496,9 @@ class DatabasePipeline():
                                                             season=max)
         team_name_id = database_method._input_unique_data(
             table=db.TeamName, team_name=name, year_from=season_min_id, year_to=season_max_id, team_id=team_id)
-        #logger.debug(f"Input of team name {name} with season range {min}"
-        #             f" {max} into table {db.TeamName.__tablename__} finished"
-        #             f", id of entry is {team_name_id}")
+        logger.debug(f"Input of team name {name} with season range {min}"
+                     f" {max} into table {db.TeamName.__tablename__} finished"
+                     f", id of entry is {team_name_id}")
         return team_name_id
     
     def _input_team_position(self, dict_: dict) -> int:
@@ -507,8 +507,8 @@ class DatabasePipeline():
            divisions and seasons, so the values from these table related to
            the entry in season standings table must be attained at first 
         """
-        #logger.debug(f"Input of team position with dict {dict_}"
-        #             f" into table {db.TeamSeason.__tablename__} started")
+        logger.debug(f"Input of team position with dict {dict_}"
+                     f" into table {db.TeamSeason.__tablename__} started")
         database_method = DatabaseMethods(db_session=self.db_session)
         team_id = database_method._input_uid(table=db.Team, 
                                              uid_val=dict_[TEAM_UID],
@@ -544,9 +544,9 @@ class DatabasePipeline():
             plus_minus=dict_[PLUS_MINUS], 
             tp=dict_[TOTAL_POINTS], 
             postseason_type_id=postseason_type_id)
-        #logger.debug(f"Input of team position with dict {dict_}"
-        #             f" into table {db.TeamSeason.__tablename__} finished,"
-        #             f" index of entry is {position_id}")
+        logger.debug(f"Input of team position with dict {dict_}"
+                     f" into table {db.TeamSeason.__tablename__} finished,"
+                     f" index of entry is {position_id}")
         return position_id
                                                         
 
@@ -567,18 +567,18 @@ class DatabaseMethods():
         query_object = Query(db_session=self.db_session)
         query_insert = query_object._create_table_entry(table=table, 
                                                         **kwargs)
-        #logger.debug(f"Data inserted into table {table.__tablename__}"
-        #             f" with query {query_insert}")
+        logger.debug(f"Data inserted into table {table.__tablename__}"
+                     f" with query {query_insert}")
         self.db_session.add(query_insert)
-        #logger.debug(f"Data added into table {table.__tablename__}"
-        #             f" with query {query_insert}")
+        logger.debug(f"Data added into table {table.__tablename__}"
+                     f" with query {query_insert}")
         self.db_session.commit()
-        #logger.debug(f"Data commited into table {table.__tablename__}"
-        #             f" with query {query_insert}")
+        logger.debug(f"Data commited into table {table.__tablename__}"
+                     f" with query {query_insert}")
         id = query_insert.id
-        #logger.debug(f"Index of the new data inserted in table"
-        #             f" {table.__tablename__} with query {query_insert}"
-        #             f" is {id}")
+        logger.debug(f"Index of the new data inserted in table"
+                     f" {table.__tablename__} with query {query_insert}"
+                     f" is {id}")
         return id
     
     def _input_unique_data(self, table, **kwargs) -> int:
@@ -591,12 +591,12 @@ class DatabaseMethods():
         query_object = Query(db_session=self.db_session)
         id = query_object._find_id_in_table(table=table, **kwargs)
         if id is None:
-          #  logger.debug(f"Data is not in db in table {table.__tablename__}"
-          #               f" yet, data insert will follow")
+            logger.debug(f"Data is not in db in table {table.__tablename__}"
+                         f" yet, data insert will follow")
             id = self._input_data(table=table, **kwargs)
-        #else:
-           # logger.debug(f"Data is already in db in table"
-            #             f" {table.__tablename__} at index {id}")
+        else:
+            logger.debug(f"Data is already in db in table"
+                         f" {table.__tablename__} at index {id}")
         return id
 
     def _update_data(self, table, where_col, where_val, **kwargs):
@@ -613,14 +613,14 @@ class DatabaseMethods():
         query_object = Query(db_session=self.db_session)
         update_query = query_object._update_entry(
             table=table, where_col=where_col, where_val=where_val, **kwargs)
-        #logger.debug(f"Update query for table {table.__tablename__}: "
-        #             f" {update_query}")
+        logger.debug(f"Update query for table {table.__tablename__}: "
+                     f" {update_query}")
         self.db_session.execute(update_query)
-        #logger.debug(f"Update query for table {table.__tablename__}"
-        #             f" {update_query} executed")
+        logger.debug(f"Update query for table {table.__tablename__}"
+                     f" {update_query} executed")
         self.db_session.commit()
-        #logger.debug(f"Update query for table {table.__tablename__}" 
-        #             f" {update_query}  commited")
+        logger.debug(f"Update query for table {table.__tablename__}" 
+                     f" {update_query}  commited")
 
     def _input_uid(self, table, uid_val, **kwargs) -> int:
         """method for inputing uid in database
@@ -633,11 +633,11 @@ class DatabaseMethods():
         id = query_object._find_id_in_table(table=table, uid=uid_val)
         if id is None:
             id = self._input_unique_data(table=table, **kwargs)
-         #   logger.debug(f"UID {uid_val} not found in table"
-         #                f" {table.__tablename__}, added at index {id}")
-        #else:
-          #  logger.debug(f"UID {uid_val} already found in table"
-          #               f" {table.__tablename__}, at index {id}")
+            logger.debug(f"UID {uid_val} not found in table"
+                         f" {table.__tablename__}, added at index {id}")
+        else:
+            logger.debug(f"UID {uid_val} already found in table"
+                         f" {table.__tablename__}, at index {id}")
         return id
         
 
