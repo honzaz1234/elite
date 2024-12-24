@@ -1,5 +1,8 @@
 import hockeydata.insert_db.insert_db as insert_db
+
 from hockeydata.constants import *
+from hockeydata.decorators import time_execution
+from hockeydata.logger.logger import logger
 from sqlalchemy.orm import Session
 
 
@@ -12,6 +15,7 @@ class InputTeamDict():
         self.session_db=session_db
         pass
 
+    @time_execution
     def input_team_dict(self, team_dict: dict):
         """wrapper method for putting  team data from dictionary into DB"""
 
@@ -25,6 +29,8 @@ class InputTeamDict():
             ret_num_dict=team_dict[RETIRED_NUMBERS], team_id=team_id)
         self._input_team_titles_dict(
             titles_dict=team_dict[HISTORIC_NAMES], team_id=team_id)
+        logger.info(f"Team dictionary ({team_dict[GENERAL_INFO][SHORT_NAME]})"
+                    " succesfully inputted into db")
 
     def _input_stadium_dict(self, stadium_dict: dict) -> int:
         """method for putting  info of stadium team plays in into DB"""
@@ -34,6 +40,7 @@ class InputTeamDict():
                  if type(value) is not dict]) == {None}):
             return None
         stadium_id =  db_pipe._input_stadium_data(stadium_dict=stadium_dict)
+        logger.debug(f"Team stadium dict succesfully inputted into db")
         return stadium_id
     
     def _input_team_info_dict(self, info_dict: dict, stadium_id: int) -> int:
@@ -45,6 +52,8 @@ class InputTeamDict():
                                                    stadium_id=stadium_id)
         self._input_color_list(colour_list=info_dict[COLOUR_LIST], 
                                team_id=team_id)
+        logger.debug(f"Team info dict ({info_dict[SHORT_NAME]})"
+                     " succesfully inputted into db")
         return team_id
     
     def _input_color_list(self, colour_list: list, team_id: int):

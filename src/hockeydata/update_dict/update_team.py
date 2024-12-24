@@ -1,5 +1,8 @@
 import re
+
 from hockeydata.constants import * 
+from hockeydata.logger.logger import logger 
+from hockeydata.decorators import time_execution 
 
 
 class UpdateTeamDict():
@@ -13,6 +16,7 @@ class UpdateTeamDict():
     def __init__(self):
         pass
 
+    @time_execution
     def update_team_dict(self, dict: dict) -> dict:
         """wrapper method for updating team dict in order to prepared it for insertion into the database
         """
@@ -29,6 +33,9 @@ class UpdateTeamDict():
             num_dict=new_dict[RETIRED_NUMBERS])
         new_dict[AFFILIATED_TEAMS] = self._update_urls(
             list_url=new_dict[AFFILIATED_TEAMS], regex=TEAM_UID_REGEX)
+        logger.debug(f"Team dict updated: {new_dict}")
+        logger.info(f"Team dictionary ({new_dict[GENERAL_INFO][SHORT_NAME]})"
+                     " succesfully updated")
         return new_dict
         
     def _update_general_info(self, gi_dict: dict) -> dict:

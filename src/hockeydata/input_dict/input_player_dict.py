@@ -1,5 +1,9 @@
 import hockeydata.insert_db.insert_db as insert_db
+
 from hockeydata.constants import *
+from hockeydata.decorators import time_execution
+from hockeydata.logger.logger import logger
+
 from sqlalchemy.orm import Session
 
 
@@ -23,6 +27,7 @@ class InputPlayerDict():
         else:
             self.is_goalie = False
 
+    @time_execution
     def input_player_dict(self, player_dict: dict):
         """wrapper method for inputting  player dict into database"""
 
@@ -35,6 +40,9 @@ class InputPlayerDict():
                                player_id=player_id)
         self._input_achievement_dict(achiev_dict=player_dict[ACHIEVEMENTS],
                                      player_id=player_id)
+        logger.info(f"Player dict ({player_dict[GENERAL_INFO][PLAYER_NAME]}, "
+                    f" {player_dict[GENERAL_INFO][PLAYER_UID]}) succesfully" 
+                    f" inputted into db")
 
     def _input_player_info_dict(self, info_dict: dict) -> int:
         """method for inserting general info dict into database"""
@@ -45,6 +53,8 @@ class InputPlayerDict():
                                       player_id=player_id)
         player_info._input_nationalities(nation_list=info_dict[NATIONALITY], 
                                          player_id=player_id)
+        logger.debug(f"Player info dict ({player_id}) succesfully inputted"
+                     " into db")
         return player_id
 
     def _input_relation_dict(self, relation_dict: dict, player_id: int):
@@ -62,6 +72,8 @@ class InputPlayerDict():
         stats_info._input_stats_dict(stat_dict=stat_dict, 
                                     player_id=player_id,
                                     is_goalie=self.is_goalie)
+        logger.debug(f"Player stats dict ({player_id}) succesfully inputted"
+                     " into db")
 
     def _input_achievement_dict(self, achiev_dict: dict, player_id: int):
         """wrapper method for uploading player achievements into database"""
@@ -69,6 +81,8 @@ class InputPlayerDict():
         achiev_info = InputAchievementDict(db_session=self.db_session)
         achiev_info._input_achievements(dict_achievements=achiev_dict, 
                                         player_id=player_id)
+        logger.debug(f"Player achiev dict (uid: {player_id}) succesfully"
+                     " inputted into db")
         
 
 class InputPlayerInfo():

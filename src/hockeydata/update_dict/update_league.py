@@ -1,5 +1,7 @@
 import re
+
 from hockeydata.constants import *
+from hockeydata.logger.logger import logger
 
 
 class UpdateLeagueDict():
@@ -18,6 +20,9 @@ class UpdateLeagueDict():
         new_league_dict = league_dict.copy()
         new_league_dict[SEASON_STANDINGS] = self._update_standing_dict(
             standing_dict=new_league_dict[SEASON_STANDINGS])
+        logger.debug(f"League dict updated: {new_league_dict}")
+        logger.info(f"League dict ({new_league_dict[LEAGUE_UID]})"
+                     " succesfully updated")
         return new_league_dict
 
     def _update_standing_dict(self, standing_dict: dict) -> dict:

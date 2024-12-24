@@ -1,4 +1,5 @@
 import hockeydata.get_urls.get_urls as league_url
+
 from sqlalchemy import Boolean, Column, Date, Index, Integer, ForeignKey, Float, String
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -384,7 +385,7 @@ class TeamSeason(Base):
         self.postseason_type_id = postseason_type_id
 
     def __repr__(self):
-        return f"({self.id}, {self.position}, {self.league_id}, {self.team_id}, {self.divison_id}, {self.conference_id}, {self.season_id}, {self.gp}, {self.w}, {self.t}, {self.l}, {self.otw}, {self.otl}, {self.gf}, {self.ga}, {self.plus_minus}, {self.tp}, {self.postseason_type_id})"
+        return f"({self.id}, {self.position}, {self.league_id}, {self.team_id}, {self.division_id}, {self.conference_id}, {self.season_id}, {self.gp}, {self.w}, {self.t}, {self.l}, {self.otw}, {self.otl}, {self.gf}, {self.ga}, {self.plus_minus}, {self.tp}, {self.postseason_type_id})"
 
 Index('team_season_league_id_season_id_index',
       TeamSeason.league_id, TeamSeason.season_id)

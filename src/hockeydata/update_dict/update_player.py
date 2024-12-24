@@ -1,7 +1,11 @@
 import datetime
 import re
+
 from hockeydata.constants import *
-from hockeydata.common_functions import convert_season_format
+from hockeydata.decorators import time_execution
+from hockeydata.logger.logger import logger
+from hockeydata.common_functions import convert_season_format, convert_to_seconds
+
 
 class UpdatePlayer:
 
@@ -23,6 +27,7 @@ class UpdatePlayer:
         else:
             self.is_goalie = False
 
+    @time_execution
     def update_player_dict(self, dict: dict) -> dict:
         """wrapper method for updating whole player dict"""
 
@@ -34,9 +39,11 @@ class UpdatePlayer:
         player_stats = UpdatePlayerStats(is_goalie=self.is_goalie)
         new_dict[SEASON_STATS] = player_stats._update_stats_dict(
             dict_stats= new_dict[SEASON_STATS])
-        player_relation = UpdateRelations()
+        #player_relation = UpdateRelations()
         #new_dict[RELATIONS] = player_relation._update_relation_dict(
         #    relation_dict=new_dict[RELATIONS])
+        logger.info(f"Player info dict for player "
+                    f"({new_dict[GENERAL_INFO][PLAYER_NAME]}) updated")
         return new_dict
     
 class UpdatePlayerInfo():
@@ -360,6 +367,7 @@ class UpdatePlayerInfo():
         info_dict_updated[AGE] = self._update_age(
             age=info_dict_updated[AGE])
         info_dict_updated[PLAYER_UID] = int(info_dict_updated[PLAYER_UID])
+        logger.debug(f"Player info dict updated: {info_dict_updated}")
         return info_dict_updated
     
     def _update_missing_values(self, info_dict: dict) -> dict:
@@ -368,6 +376,8 @@ class UpdatePlayerInfo():
         for key in info_dict:
             if info_dict[key] == NA or info_dict[key] == "":
                 info_dict[key] = None
+        logger.debug(f"Missing values in Player info dict updated:"
+                     f" {info_dict}")
         return info_dict
     
     def _delete_redundant_keys(self, info_dict: dict) -> dict:
@@ -376,6 +386,8 @@ class UpdatePlayerInfo():
         new_info_dict = info_dict.copy()
         for key in UpdatePlayerInfo.DELETE_KEYS:
             del  new_info_dict[key]
+        logger.debug(f"Redundant values in Player info dict updated:"
+                     f" {new_info_dict}")
         return new_info_dict
 
     def _update_info_dict(self, info_dict: dict) -> dict:
@@ -449,6 +461,8 @@ class UpdatePlayerStats:
             new_competition_dict = self._update_competition_dict(
                 competition_dict=comptetition_dict)
             new_dict_stats[competition_type] = new_competition_dict
+        logger.debug(f"Player stats dict updated:"
+                     f" {new_dict_stats}")
         return new_dict_stats
 
     def _update_competition_dict(self, competition_dict: dict) -> dict:
@@ -473,6 +487,8 @@ class UpdatePlayerStats:
             league_dict = new_year_dict[league_key]
             league_dict_new = self._update_league_dict(league_dict=league_dict)
             new_year_dict[league_key] = league_dict_new
+        logger.debug(f"Player stats year dict updated:"
+                     f" {new_year_dict}")
         return new_year_dict
 
     def _update_league_dict(self, league_dict: dict) -> dict:
@@ -513,6 +529,8 @@ class UpdatePlayerStats:
             season_dict = SeasonDict(is_goalie=self.is_goalie)
             stat_dict = season_dict._update_season(season_list=list_season)
             new_team_dict[season_type] = stat_dict
+        logger.debug(f"Player team dict updated:"
+                     f" {new_team_dict}")
         return new_team_dict
 
     def update_leadership(self, lead_value: str|None) -> str|None:
@@ -538,13 +556,6 @@ class SeasonDict():
     def __init__(self, is_goalie):
         self.is_goalie = is_goalie
 
-    @staticmethod
-    def convert_to_seconds(time_str):
-        """converts TOI from format mintues::seconds to just seconds"""
-        
-        minutes, seconds = map(int, time_str.split(":"))
-        return minutes * 60 + seconds
-
     def _update_season(self, season_list: list) -> dict:
         """wrapper method for updating season stats of player"""
 
@@ -566,7 +577,6 @@ class SeasonDict():
                 season_list=season_list)
         return dict_stats
 
-
     def _update_season_goalkeeper(self, season_list: list) -> dict:
         """update seasonal stat for goalkeeper
         two attributes SVP - save percentage and GAA - goal against average are float numbers, otherwise all statistics are integers 
@@ -586,7 +596,7 @@ class SeasonDict():
                 stat = float(season_list[ind])
                 dict_stats[SeasonDict.GOALIE_ATT[ind]] = stat
             elif ind == 8:
-                dict_stats[SeasonDict.GOALIE_ATT[ind]] = SeasonDict.convert_to_seconds(season_list[ind])
+                dict_stats[SeasonDict.GOALIE_ATT[ind]] = convert_to_seconds(season_list[ind])
             else:
                 stat = self.stat_to_int(stat=season_list[ind])
                 dict_stats[SeasonDict.GOALIE_ATT[ind]] = stat

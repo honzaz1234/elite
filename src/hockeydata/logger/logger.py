@@ -1,27 +1,27 @@
-import atexit
+#code created by mCodingLLC github account, original code available at:
+#https://github.com/mCodingLLC/VideosSampleCode/tree/master/videos/135_modern_logging
+
 import json
 import logging.config
 import logging.handlers
 import pathlib
 
-logger = logging.getLogger("my_app") 
+
+CONFIG_PATH = './src/hockeydata/logger/logger_config.json'
 
 
 def setup_logging():
-    config_file = pathlib.Path("logger_config.json")
+    config_file = pathlib.Path(CONFIG_PATH)
     with open(config_file) as f_in:
         config = json.load(f_in)
-
     logging.config.dictConfig(config)
-    queue_handler = logging.getHandlerByName("queue_handler")
-    if queue_handler is not None:
-        queue_handler.listener.start()
-        atexit.register(queue_handler.listener.stop)
+
+
+setup_logging()
+logger = logging.getLogger("elite") 
 
 
 def main():
-    setup_logging()
-    logging.basicConfig(level="INFO")
     logger.debug("debug message", extra={"x": "hello"})
     logger.info("info message")
     logger.warning("warning message")
