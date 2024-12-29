@@ -36,7 +36,6 @@ TEAM_URLS = [
 ]
 
 LEAGUE_URLS = [
-    "https://www.eliteprospects.com/league/nhl",
     "https://www.eliteprospects.com/league/czechia",
     "https://www.eliteprospects.com/league/liiga",
 ]
@@ -77,13 +76,12 @@ def league_pipeline_test(league_url, session):
 def player_urls_pipeline_test():
     pst_o = ps.PlaywrightSetUp()
     lu_o = get_urls.LeagueUrlDownload(page=pst_o.page)
-    dict_player_ref = lu_o.get_player_refs(league='NHL')
-    dict_player_ref
+    lu_o.get_player_refs(league='NHL')
 
 def team_urls_pipeline_test():
     pst_o = ps.PlaywrightSetUp()
     lu_o = get_urls.LeagueUrlDownload(page=pst_o.page)
-    dict_team_ref = lu_o.get_team_refs(league='NHL')
+    lu_o.get_team_refs(league='NHL')
   
 
 def main():
