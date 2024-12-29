@@ -4,8 +4,9 @@ import re
 import scrapy
 import time
 
-from . import logger
 from hockeydata.constants import *
+from hockeydata.decorators import time_execution
+from hockeydata.logger.logger import logger
 
 
 class PlayerScraper:
@@ -18,7 +19,7 @@ class PlayerScraper:
     """
 
 
-    TABLE_ROW_XPATH = ("xpath=//section[@id='player-statistics']"
+    TABLE_ROW_XPATH = ("//section[@id='player-statistics']"
                       + "//tr[@class='SortTable_tr__L9yVC']")
 
 
@@ -32,14 +33,10 @@ class PlayerScraper:
 
         self.url = url
         self.page = page
-        self.START_TIME = time.time()
-        self.page.goto(url)
-        self.page.wait_for_selector(PlayerScraper.TABLE_ROW_XPATH)
-        self.END_TIME = None
-        #ps.click_on_button_optional(self.page, ps.COOKIES_AGREE_XPATH)
-        #self.page.evaluate("document.body.style.zoom=1.1")
-        self.selector = scrapy.Selector(text=self.page.content())
+        self.selector = None
 
+
+    @time_execution
     def get_info_all(self, years: list=None) -> dict:
         """Wrapper method containing all individual methods for scrapping data 
             Output: dictionary used  for storing data on a player
@@ -55,27 +52,28 @@ class PlayerScraper:
                     Achievements  - keys are seasons, values are lists with award names
             Arguments: years - list of years for which data is downloaded 
             """
-        
+        logger.info(f'Scraping of new player info at web adress: {self.url}'
+                    f' started')
+        ps.go_to_page_wait_selector(
+            page=self.page, url=self.url,
+            sel_wait=PlayerScraper.TABLE_ROW_XPATH)
+        self.selector = scrapy.Selector(text=self.page.content())
         dict_player = {}
         gi_o = PlayerGeneralInfo(selector=self.selector,
                                  url=self.url)
-        dict_player[GENERAL_INFO] = gi_o.get_general_info()
+        dict_player[GENERAL_INFO] = gi_o._get_general_info()
         a_o = PlayerAchievements(selector=self.selector)
         #f_r_o = FamilyRelations(selector=self.selector)
         #dict_player[RELATIONS] = f_r_o._get_relation_dict()
-        dict_player[ACHIEVEMENTS] = a_o.get_achievements()
+        dict_player[ACHIEVEMENTS] = a_o._get_achievements()
         stats_object = self.stats_factory(
             general_info=dict_player[GENERAL_INFO])
-        dict_player[SEASON_STATS] = stats_object.get_all_stats(years=years)
-        logger.debug("player dict: {dict_player}")
-        logger.info(
-            "Dict from player with name" 
-            "{dict_player[GENERAL_INFO][PLAYER_NAME]} "
-            "({dict_player[GENERAL_INFO][PLAYER_UID])"
-            " succesfully scraped")
-        self.END_TIME = time.time()
-        execution_time = self.END_TIME - self.START_TIME
-        print(f"Execution time: {execution_time} seconds")
+        dict_player[SEASON_STATS] = stats_object._get_all_stats(years=years)
+        logger.debug(f"player dict: {dict_player}")
+        logger.info(f"Dict from player with name " 
+                    f"{dict_player[GENERAL_INFO][PLAYER_NAME]} "
+                    f"({dict_player[GENERAL_INFO][PLAYER_UID]})"
+                    f" succesfully scraped")
         return dict_player
     
     def stats_factory(self, general_info: dict) -> 'Stats':
@@ -145,17 +143,17 @@ class PlayerGeneralInfo():
         self.selector = selector
         self.url = url
 
-    def get_general_info(self) -> dict:
+    def _get_general_info(self) -> dict:
         """wrapper method for attaining all available info on player"""
         
         dict_gi = self._get_info_wrapper()
         dict_gi[PLAYER_NAME] = self._get_name()
         dict_gi[PLAYER_UID] = re.findall(PLAYER_UID_REGEX,
                                          self.url)[0]
-        logger.debug("player dict: {dict_gi}")
-        logger.info("Dictionary with general info of player" 
-                    "{dict_gi[PLAYER_NAME]}"
-                    " succesfully scraped")
+        logger.debug(f"player dict: {dict_gi}")
+        logger.debug(f"Dictionary with general info of player " 
+                    f"{dict_gi[PLAYER_NAME]}"
+                    f" succesfully scraped")
         return dict_gi
 
     def _get_name(self) -> str:
@@ -166,9 +164,9 @@ class PlayerGeneralInfo():
                 .getall())
         name = [string.strip() for string in name]
         name = [string for string in name if string != ""]
-        logger.info("Name of player:" 
-                    " {name}"
-                    " succesfully scraped")
+        logger.debug(f"Name of player:" 
+                    f" {name[0]}"
+                    f" succesfully scraped")
         return name[0].strip()
 
     def _get_info_wrapper(self) -> dict:
@@ -200,8 +198,9 @@ class PlayerGeneralInfo():
             info_val = self.get_drafts(info_val)
         if info_val == []:
             info_val = [None]
-        logger.info("Info ({info_name}):" 
-                    " succesfully scraped")
+        logger.debug(f"Info ({info_name}):" 
+                     f"with value {info_val}"
+                     f" succesfully scraped")
         if keep_list == False:
             if info_val[0] is not None:
                 return ' '.join(info_val)
@@ -293,8 +292,7 @@ class FamilyRelations():
             if list_uid == []:
                 continue
             relations_uid[relation] = list_uid
-        logger.debug("Relation Dict: {relations_uid}")
-        logger.info("Dict with relations of player succesfully scraped")
+        logger.debug(f"Relation Dict: {relations_uid}")
         return relations_uid
 
 
@@ -325,18 +323,17 @@ class Stats():
         self.season_type = None
 
 
-    def get_all_stats(self, years: list=None) -> dict:
+    def _get_all_stats(self, years: list=None) -> dict:
         """wrapper method for downloading stats from both league and tournament tables
         """
 
         dict_stats = {}
         dict_stats["leagues"] = self._get_table_stats_wrapper(years=years,
                                                          type_="leagues")
+        
         dict_stats["tournaments"] = self._get_table_stats_wrapper(years=years,
                                                     type_="tournaments")
-        logger.debug("Stats Dict: {dict_stats}")
-        logger.info("Dict with stats (both leagues and tournaments)" 
-                    "of player succesfully scraped")
+        logger.debug(f"Stats Dict: {dict_stats}")
         assert len(dict_stats["leagues"]) > 0, 'League dictionary is empty'
         return dict_stats
     
@@ -361,12 +358,13 @@ class Stats():
         new_merged_dict = old_dict.copy()
         for league in new_dict:
             if  league in old_dict:
-                logger.debug("League: {league} is already present in"
+                logger.debug(f"League: {league} is already present in"
                              "the dictionary")
                 new_merged_dict[league] = {
                     **old_dict[league], **new_dict[league]
                 }
-                logger.debug("Old and new dictionary succesfully merged")
+                logger.debug(f"Old and new dictionary succesfully merged: "
+                             f"{new_merged_dict}")
             else:
                 new_merged_dict[league] = new_dict[league]
         return new_merged_dict
@@ -406,10 +404,8 @@ class Stats():
                 dict_stats[season] = {}
             dict_stats[season] = self._get_season_stats_wrapper(
                 season_dict=dict_stats[season], path_type=path_type, ind=ind)
-            logger.debug("Stats Dict (Season: {season}, Type: {type}):" 
-                        " {relations_uid}")
-        logger.info("Dict with stats for all season for Type: {type}"
-                    "succesfully scraped")
+            logger.debug(f"Stats Dict (Season: {season}, Type: {path_type}):" 
+                        f"{dict_stats[season]}")
         return dict_stats
     
     def _get_season_stats_wrapper(
@@ -466,6 +462,8 @@ class SkaterStats(Stats):
         path_type, path_years = self.get_path_type_and_years(type_=type_)
         list_years = self._get_years_list(path_years)
         dict_stats = self._get_table_stats(path_type, list_years, years)
+        logger.debug(f"Dict with stats for all season for Type: {type_} "
+                    f"succesfully scraped")
         return dict_stats
     
         
@@ -573,12 +571,12 @@ class OneRowStat():
         league_dict = {}
         team = self._get_stat_atribute(key="team")
         if team is None or team == OneRowStat.PROJECTED:
-            logger.debug("League dict equal to {{}} given the team name" 
-                         "is equal to None")
+            logger.debug(f"League dict equal to {{}} given the team name" 
+                         f"is equal to None")
             return {}
         league_dict[team] = self._get_team_dict()
         league_dict[LEAGUE_URL] = self._get_league_url(league=league)
-        logger.debug("League dict extracted: {league_dict}")
+        logger.debug(f"League dict extracted: {league_dict}")
         return league_dict
 
     def _get_league_url(self, league: str) -> str:
@@ -587,10 +585,10 @@ class OneRowStat():
         if league is not None:
             league_url = self._extract_url(key_path="url_league", 
                                                    key_regex="league")
-            logger.debug("League url extracted: {league_url}")
+            logger.debug(f"League url extracted: {league_url}")
         else:
-            logger.debug("League url equal to None")
             league_url = None
+            logger.debug(f"League url equal to {league_url}")
         return league_url
     
     def _get_team_dict(self):
@@ -606,13 +604,13 @@ class OneRowStat():
         stat_list = self.selector.xpath(path_stat).getall()
         stat_list = [string.strip() for string in stat_list]
         if stat_list == [] or set(stat_list)=={""}:
-            logger.debug("Attribute: {key} equal to None")
+            logger.debug(f"Attribute {key} equal to None")
             return None
         elif keep_list==True:
-            logger.debug("Attribute: {key} extracted: {stat_list}")
+            logger.debug(f"Attribute {key} extracted: {stat_list}")
             return stat_list
         else:
-            logger.debug("Attribute: {key} extracted: {stat_list[0]}")
+            logger.debug(f"Attribute {key} extracted: {stat_list[0]}")
             return stat_list[0]
         
     def _extract_url(self, key_path: str, key_regex: str) -> str:
@@ -623,7 +621,7 @@ class OneRowStat():
         path_url = self.path_to_row + OneRowStat.PATHS[key_path]
         list_data = self.selector.xpath(path_url).getall()
         url = list_data[0]
-        logger.debug(" General url for {key_regex}: {url}")
+        logger.debug(f" General url for {key_regex}: {url}")
         return url
 
    
@@ -647,7 +645,7 @@ class OneRowSkaterStat(OneRowStat):
         dict_team[PLAY_OFF] = stat_play_off
         dict_team[LEADERSHIP] = leadership
         dict_team[TEAM_URL] = team_url
-        logger.debug("Dict for team extracted: {dict_team}")
+        logger.debug(f"Dict for team extracted: {dict_team}")
         return dict_team
     
     
@@ -676,7 +674,7 @@ class OneRowGoalieStat(OneRowStat):
         dict_team[key_stats] = stats
         dict_team[LEADERSHIP] = leadership
         dict_team[TEAM_URL] = team_url
-        logger.debug("Dict for team extracted: {dict_team}")
+        logger.debug(f"Dict for team extracted: {dict_team}")
         return dict_team
     
 
@@ -699,7 +697,7 @@ class PlayerAchievements():
 
         self.selector = selector
 
-    def get_achievements(self, years: list=None) -> dict:
+    def _get_achievements(self, years: list=None) -> dict:
         """method for downloading achievements of player into dictionary"""
 
         dict_achiev = {}

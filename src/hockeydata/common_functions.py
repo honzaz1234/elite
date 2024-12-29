@@ -22,3 +22,9 @@ def convert_season_format(season):
     except ValueError:
         raise ValueError("Invalid season format. Expected 'yyyy-yy'"
                          " or 'yyyy-yyyy'.")
+
+def convert_to_seconds(time_str):
+    """converts TOI from format mintues::seconds to just seconds"""
+    
+    minutes, seconds = map(int, time_str.split(":"))
+    return minutes * 60 + seconds

@@ -5,6 +5,8 @@ import requests
 import scrapy
 
 from hockeydata.constants import *
+from hockeydata.decorators import time_execution
+from hockeydata.logger.logger import logger
 
 
 class LeagueScrapper():
@@ -27,26 +29,33 @@ class LeagueScrapper():
         self.url = url
         self.html = requests.get(url).content
         self.page = page
-        self.page.goto(url)
-        #self.page.wait_for_selector(PlayerScraper.TABLE_ROW_XPATH)
-        self.selector = scrapy.Selector(text=self.page.content())
 
+    @time_execution
     def get_info(self) -> dict:
         """method that creates dictionary of all data that is available for scrappping within this class
         """
-
+        logger.info(f'Scraping of new league info at web adress: {self.url}'
+                    f' started')
         league_dict = {}
+        self.page.goto(self.url)
+        self.selector = scrapy.Selector(text=self.page.content())
         league_dict[LEAGUE_UID] = self._get_uid()
         league_dict[LEAGUE_NAME] = self._get_name()
         league_dict[LEAGUE_ACHIEVEMENTS] = self.get_achievements()
         league_dict[SEASON_STANDINGS] = self.get_season_data()
+        logger.debug(f"League dict: {league_dict}")
+        logger.info(f"Dict of league with name " 
+                    f"{league_dict[LEAGUE_NAME]} "
+                    f"({league_dict[LEAGUE_UID]})"
+                    f"scraped")
         return league_dict
 
     def _get_uid(self) -> str:
         """method for accessing uid of league from url"""
 
-        u_id = re.findall(LEAGUE_UID_REGEX, self.url)[0]
-        return u_id
+        uid = re.findall(LEAGUE_UID_REGEX, self.url)[0]
+        logger.debug(f"League uid: {uid}")
+        return uid
 
     def _get_name(self) -> str:
         """method for scraping league name"""
@@ -54,6 +63,7 @@ class LeagueScrapper():
         long_name = self.selector.xpath(
             LeagueScrapper.PATHS["long_name"]).getall()
         long_name = long_name[0].strip()
+        logger.debug(f"League name: {long_name}")
         return long_name
 
     def get_achievements(self) -> list:
@@ -64,6 +74,7 @@ class LeagueScrapper():
             LeagueScrapper.PATHS["achievements"]).getall()
         achievements_list = [achievement.strip()
                              for achievement in achievements_list]
+        logger.debug(f"League achievements: {achievements_list}")
         return achievements_list
 
     def get_season_data(self) -> dict:
@@ -79,6 +90,7 @@ class LeagueScrapper():
             league_season_o = LeagueSeasonScraper(url=season_link)
             season_dict = league_season_o.get_season_standings()
             league_standings_dict[season] = season_dict
+        logger.debug(f"All season data: {league_standings_dict}")
         return league_standings_dict
 
 
@@ -109,6 +121,7 @@ class LeagueSeasonScraper():
     
     def __init__(self, url: str):
         self.url = url
+        self.season = re.findall('([0-9\-]+)$', self.url)
         self.html = requests.get(self.url).content
         self.selector = scrapy.Selector(text=self.html)
 
@@ -126,6 +139,7 @@ class LeagueSeasonScraper():
         for section_ind in range(1, n_sections + 1):
             dict_season[section_names[section_ind - 1]] = self._get_section(
                 section_ind=section_ind)
+        logger.debug(f"League standings ({self.season}): {dict_season}")
         return dict_season
     
     def _get_section(self, section_ind: int) -> dict:
@@ -139,6 +153,7 @@ class LeagueSeasonScraper():
                             + LeagueSeasonScraper.PATHS["table_section_r"])
         dict_section = self._get_section_standings(
                 path_section=path_section)
+        logger.debug(f"Section standings: {dict_section}")
         return dict_section
 
     def _get_section_standings(self, path_section: str) -> dict:
@@ -164,6 +179,7 @@ class LeagueSeasonScraper():
         for ind in range(len(row_stats)):
             dict_row[LeagueSeasonScraper.STAT_NAMES[ind]
                         ] = row_stats[ind].strip()
+        logger.debug(f"One Row standings: {dict_row}")
         return dict_row
 
     def _get_row_stats(self, path_section: str, row_ind: int) -> list:
