@@ -567,14 +567,8 @@ class DatabaseMethods():
         query_object = Query(db_session=self.db_session)
         query_insert = query_object._create_table_entry(table=table, 
                                                         **kwargs)
-        logger.debug(f"Data inserted into table {table.__tablename__}"
-                     f" with query {query_insert}")
         self.db_session.add(query_insert)
-        logger.debug(f"Data added into table {table.__tablename__}"
-                     f" with query {query_insert}")
         self.db_session.commit()
-        logger.debug(f"Data commited into table {table.__tablename__}"
-                     f" with query {query_insert}")
         id = query_insert.id
         logger.debug(f"Index of the new data inserted in table"
                      f" {table.__tablename__} with query {query_insert}"
@@ -613,11 +607,7 @@ class DatabaseMethods():
         query_object = Query(db_session=self.db_session)
         update_query = query_object._update_entry(
             table=table, where_col=where_col, where_val=where_val, **kwargs)
-        logger.debug(f"Update query for table {table.__tablename__}: "
-                     f" {update_query}")
         self.db_session.execute(update_query)
-        logger.debug(f"Update query for table {table.__tablename__}"
-                     f" {update_query} executed")
         self.db_session.commit()
         logger.debug(f"Update query for table {table.__tablename__}" 
                      f" {update_query}  commited")
