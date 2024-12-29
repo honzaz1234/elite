@@ -1,5 +1,8 @@
 import hockeydata.insert_db.insert_db as insert_db
+
 from hockeydata.constants import *
+from hockeydata.decorators import time_execution
+from hockeydata.logger.logger import logger
 from sqlalchemy.orm import Session
 
 
@@ -10,6 +13,7 @@ class InputLeagueDict():
     def __init__(self, session_db: Session):
         self.db_session = session_db
 
+    @time_execution
     def input_league_dict(self, league_dict: dict):
         """wrapper method for inputting  all scraped data from dict to DB"""
 
@@ -21,6 +25,8 @@ class InputLeagueDict():
         league_standings._input_league_standings_dict(
             stat_dict=league_dict[SEASON_STANDINGS],
             league_id=league_id)
+        logger.info(f"League dict ({league_dict[LEAGUE_UID]})"
+                    f" succesfully inputted into db")
         
     def _input_league_info_dict(self, info_dict: dict) -> int:
         """method for inputting  general info abour league in DB"""
@@ -28,6 +34,8 @@ class InputLeagueDict():
         db_pipe = insert_db.DatabasePipeline(db_session=self.db_session)
         league_id = db_pipe._input_data_in_league_table(
             league_uid=info_dict[LEAGUE_UID], long_name=info_dict[LEAGUE_NAME])
+        logger.debug(f"League info dict ({info_dict[LEAGUE_UID]})"
+                    f"succesfully inputted into database")
         return league_id
     
     def _input_league_achievements(self, achiev_dict: dict, league_id: int):
@@ -36,7 +44,9 @@ class InputLeagueDict():
         db_pipe = insert_db.DatabasePipeline(db_session=self.db_session)
         for achiev in achiev_dict:
             db_pipe._input_achievement(achiev=achiev, 
-                                       league_id=league_id)    
+                                       league_id=league_id)
+        logger.debug(f"League achievements dict succesfully inputted into"
+                     f" database")    
 
 
 class InputLeagueStandings():

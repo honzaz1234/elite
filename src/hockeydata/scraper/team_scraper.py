@@ -2,8 +2,10 @@ import hockeydata.playwright_setup.playwright_setup as ps
 import playwright.sync_api as sync_api
 import re
 import scrapy
-import time
+
 from hockeydata.constants import *
+from hockeydata.decorators import time_execution
+from hockeydata.logger.logger import logger
 
 
 class TeamScraper():
@@ -74,29 +76,32 @@ class TeamScraper():
 
         self.url = url
         self.page = page
-        self.START_TIME = time.time()
-        self.page.goto(url)
-        ps.wait_click_wait(self.page, 
-                           TeamScraper.COMPLETE_HISTORY_BUTTON_XPATH,
-                           TeamScraper.TEAM_NAME_SELECTOR_XPATH)
-        self.selector = scrapy.Selector(text=self.page.content())
-        self.END_TIME = None
+        self.selector = None
 
+    @time_execution
     def get_info(self) -> dict:
         """ wrapper method for downloading all of the info from one team webpage"""
 
+        logger.info(f'Scraping of new team info at web adress: {self.url}'
+                    f' started')
         dict_info = {}
+        ps.go_to_page_wait_click_wait(
+            page=self.page, url=self.url, 
+            sel_click=TeamScraper.COMPLETE_HISTORY_BUTTON_XPATH,
+            sel_wait=TeamScraper.TEAM_NAME_SELECTOR_XPATH)
+        self.selector = scrapy.Selector(text=self.page.content())
         dict_info[GENERAL_INFO] = self._get_general_info_dict()
-        dict_info[STADIUM_INFO] = self._get_dict_info(
-            list_info=TeamScraper.STADIUM_INFO_NAMES,
-            key_left="si_left", key_right="si_right")
+        dict_info[STADIUM_INFO] = self._get_stadium_info_dict()
         dict_info[AFFILIATED_TEAMS] = self.get_affiliated_teams()
         dict_info[RETIRED_NUMBERS] = self.get_retired_numbers()
         hist_names = HistoricNames(selector=self.selector)
         dict_info[HISTORIC_NAMES] = hist_names.get_historic_names_dict()
-        self.END_TIME = time.time()
-        execution_time = self.END_TIME - self.START_TIME
-        print(f"Execution time: {execution_time} seconds")
+        logger.debug(f"Team dict: {dict_info}")
+        logger.info(f"Dictionary of team " 
+                    f"{dict_info[GENERAL_INFO][SHORT_NAME]} "
+                    f"({dict_info[GENERAL_INFO][TEAM_UID]})"
+                    f" succesfully scraped")
+
         return dict_info
 
     def _get_general_info_dict(self) -> dict:
@@ -110,7 +115,16 @@ class TeamScraper():
         gi_dict[SHORT_NAME] = self._get_short_name()
         gi_dict[TEAM_UID] = int(re.findall(TEAM_UID_REGEX,
                                         self.url)[0])
+        logger.debug(f'General Info dict succesfully scraped: {gi_dict}')
         return gi_dict
+    
+    def _get_stadium_info_dict(self):
+        stadium_dict = self._get_dict_info(
+            list_info=TeamScraper.STADIUM_INFO_NAMES,
+            key_left="si_left", key_right="si_right")
+        logger.debug(f"Stadium Info dict succesfully scraped: "
+                     f"{stadium_dict}")
+        return stadium_dict
            
     def _get_dict_info(
             self, list_info: list, key_left: str, key_right: str
@@ -159,10 +173,10 @@ class TeamScraper():
     def get_affiliated_teams(self) -> list:
         """returns list of urls of affiliated team"""
 
-        list_at = []
         list_at = (self.selector
                    .xpath(TeamScraper.OTHER_PATHS["affiliated_teams"])
                    .getall())
+        logger.debug(f"Urls of affiliated team scraped: {list_at}")
         return list_at
 
     def get_retired_numbers(self) -> dict:
@@ -176,6 +190,7 @@ class TeamScraper():
         numbers = self.selector.xpath(path_num).getall()
         for ind in range(len(urls)):
             dict_num[urls[ind]] = numbers[ind].strip()
+        logger.debug(f"Retired numbers scraped: {dict_num}")
         return dict_num
 
 
@@ -212,6 +227,7 @@ class HistoricNames():
                 .xpath(HistoricNames.HN_PATHS["num_titles"])
                 .getall()[0])
         n_names = int(float(n_names))
+        logger.debug(f"Number of unique historical names: {n_names}")
         return n_names
     
     def _get_team_names(self) -> list:
@@ -230,6 +246,7 @@ class HistoricNames():
                 occ_count[name] += 1
                 name =  name + " (" + str(occ_count[name]) + ")"
             names_wo_duplicates.append(name)
+        logger.debug(f"Historical names: {names_wo_duplicates}")
         return names_wo_duplicates
     
     def _get_season(self, tbody_n: int, season_n: int|str) -> list:
@@ -270,5 +287,7 @@ class HistoricNames():
         for ind in range(1, n_names + 1):
             season_range = self.get_season_range(ind * 2) 
             dict_titles[team_names[ind-1]] = season_range
+        logger.debug(f"Historic Names scraped: "
+                     f"{dict_titles}")
         return dict_titles
     

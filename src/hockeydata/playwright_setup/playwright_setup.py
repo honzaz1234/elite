@@ -1,4 +1,6 @@
-from playwright.sync_api import sync_playwright
+import playwright.sync_api as sync_api
+
+from hockeydata.logger.logger import logger
 
 
 COOKIES_AGREE_XPATH = "//button[./*[contains(text(), 'AGREE')]]"
@@ -26,7 +28,7 @@ class PlaywrightSetUp():
         self.initiate_sync_playwright()
 
     def initiate_sync_playwright(self):
-        self.p = sync_playwright().start()
+        self.p = sync_api.sync_playwright().start()
         self.browser = self.p.chromium.launch(headless=True)
         self.page = self.browser.new_page()
         self.page.route("**/*", self.intercept_requests)
@@ -41,7 +43,7 @@ class PlaywrightSetUp():
             route.continue_()
 
 
-def get_xpath(path):
+def get_xpath(path: str) -> str:
     """
     transform xpath in the form it can be used in scrapy selector
      to the form used in playwright
@@ -50,7 +52,7 @@ def get_xpath(path):
     xpath = 'xpath=' + path
     return xpath
     
-def click_on_button_optional(page, path):
+def click_on_button_optional(page: sync_api.Page, path: str) -> None:
     """wait for button for a specified amount of time and then continue
     either click it or contineu if it does not exist
     """
@@ -62,7 +64,7 @@ def click_on_button_optional(page, path):
     except:
         return
     
-def click_on_button(page, path, wait=500):
+def click_on_button(page: sync_api.Page, path: str, wait=500) -> None:
     """wait for button for a specified amount of time and then continue
     either click it or contineu if it does not exist
     """
@@ -71,20 +73,42 @@ def click_on_button(page, path, wait=500):
     page.wait_for_selector(xpath, timeout=wait)
     page.click(xpath)
 
-def wait_click_wait(page, path_click, path_wait, wait=300, max_retries=3):
+def wait_click_wait(
+        page: sync_api.Page, sel_click: str, sel_wait: str, wait=300, max_retries=3) -> None:
     for attempt in range(max_retries):
         try:
             # Wait for the selector with a timeout of 10 seconds
-            page.wait_for_selector(path_wait, timeout=wait)
-            print("Target selector appeared!")
+            page.wait_for_selector(sel_wait, timeout=wait)
+            logger.info("Target selector appeared!")
             break
         except:
-            print(f"Attempt {attempt + 1}: Selector not found. Clicking fallback button...")
+            logger.info(f"Attempt {attempt + 1}: Selector not found. Clicking"
+                  f" fallback button...")
             try:
                 # Click the fallback button
-                page.click(path_click)
+                page.click(sel_click)
             except Exception as e:
-                print(f"Error clicking fallback button: {e}")
+                logger.info(f"Error clicking fallback button: {e}")
                 break
     else:
-        print("Failed to find the selector after maximum retries.")
+        logger.info(f"Failed to find the selector after maximum retries.")
+
+def go_to_page_wait_selector(
+        page: sync_api.Page, url: str, sel_wait: str) -> None:
+    sel_wait = get_xpath(sel_wait)
+    page.goto(url)
+    page.wait_for_selector(sel_wait)
+
+def go_to_page_wait_click_wait(
+        page: sync_api.Page, url: str, sel_click: str, sel_wait: str,
+        wait: int=None, max_retires: int=3) -> None:
+    sel_click = get_xpath(sel_click)
+    sel_wait = get_xpath(sel_wait)
+    page.goto(url)
+    wait_click_wait(
+        page=page,
+        sel_click=sel_click,
+        sel_wait=sel_wait,
+        wait=wait,
+        max_retries=max_retires
+        )
