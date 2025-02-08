@@ -47,231 +47,242 @@ class PBPTableParser():
     
 class PlayerOnIceParser():
 
+
+    XPATHS = {
+        "player_name": ".//font//@title"
+    }
+
     def __init__(self, poit_sel: Selector):
         self.sel = poit_sel
 
     def get_team_players_on_ice(self):
-        pass
+        player_nums = self.sel.xpath(self.XPATHS["player_name"]).getall()
+        
+        return player_nums
 
 
 class PBPDescriptionParser():
 
 
-    REGEXES = {
-        "number": "#([0-9]+)\s"
-    }
+    PATTERN = None
 
 
     def __init__(self, play_desc: str):
-        self.play_desc = play_desc
+        self.play_desc = play_desc.replace("\xa0", " ")
 
-    @abstractmethod
     def parse_play_desc(self) -> dict:
-        pass
+        pattern = re.compile(self.PATTERN)
+        match = pattern.match(self.play_desc)
+        play_dict =  match.groupdict()
+
+        return play_dict
 
 
 class PBPGoalParser(PBPDescriptionParser):
 
 
-    def parse_play_desc(self) -> dict:
-        play_list = self.play_desc.split("\n")
-        play_dict = self.parse_goal_scorer_info(play_list[0])
-        if len(play_list) > 1:
-            assist_dict = self.parse_assist_list(play_list[1])
-            play_dict = play_dict | assist_dict
-        return play_dict
-
-    def parse_goal_scorer_info(self, line: str) -> dict:
-        play_list = line.split(",")
-        scorer_dict = {}
-        scorer_dict["team"], scorer_dict["number"], scorer_dict["player"] = self.parse_goal_scorer_team(play_list[0])
-        scorer_dict["shot_type"] = play_list[1].strip()
-        scorer_dict["playing_area"] = play_list[2].strip()
-        scorer_dict["shot_distance"] = play_list[3].strip()
-        return scorer_dict
-
-    def parse_goal_scorer_team(self, team_player: str) -> dict:
-        team = re.findall("^([A-Z]+)\s", team_player)
-        number = re.findall("#([0-9]+)\s", team_player)
-        player = re.findall("([A-Z]+)(", team_player)
-        return team, number, player
-
-    def parse_assist_list(self, line):
-        assist_all_dict = {}
-        if 'Assists' in line:
-            assits_list = line.split(";")
-        else:
-            assits_list = [line]
-        for assist in assits_list:
-            assist_dict = self.parse_assist(assist=assist)
-            assist_all_dict = assist_all_dict | assist_dict
-        return assist_all_dict
+    PATTERN_GS = (
+        r"(?P<team>\w+)\s+#(?P<number>\d+)\s+(?P<player>[A-Z]+\(\d+\)),\s+"
+        r"(?P<play_type>[\w\s]+),\s+(?P<zone>[\w.\s]+),\s+(?P<distance>\d+)"
+        "\s*ft\."
+    )
     
-    def parse_assist(self, assist: str) -> dict:
-        assist_dict = {}
-        assist_dict['assist_provider'] = re.findall("\s([A-Z]+)\(", assist)
-        assist_dict['assist_provider_n'] = re.findall("#([A-Z]+)\s", assist)
-        return assist_dict
+    PATTERN_A = r"Assists?:\s+(?P<assists>(?:#\d+\s+[A-Z]+\(\d+\);?\s*)+)"
+
+    PATTERN_AD = r"#(?P<number>\d+)\s+(?P<player>[A-Z]+)\((?P<points>\d+)\)"
+
+
+    def parse_play_desc(self) -> dict:
+        pattern = re.compile(self.PATTERN_GS)
+        assist_pattern = re.compile(self.PATTERN_A)
+        assist_details_pattern = re.compile(self.PATTERN_AD)
+        main_match = pattern.search(self.play_desc)
+        assist_match = assist_pattern.search(self.play_desc)
+        
+        if not main_match:
+            return None
+        
+        play_dict = {
+            'team': main_match.group('team'),
+            'player_number': main_match.group('number'),
+            'player': main_match.group('player'),
+            'play_type': main_match.group('play_type').strip(),
+            'zone': main_match.group('zone').strip(),
+            'distance_ft': int(main_match.group('distance')),
+            'assists': []
+        }
+        
+        if assist_match:
+            assists_text = assist_match.group('assists')
+            assists = [m.groupdict() for m in assist_details_pattern.finditer(assists_text)]
+            play_dict['assists'] = assists
+        
+        return play_dict
 
 
 class PBPShotParser(PBPDescriptionParser):
 
 
-    def parse_play_desc(self) -> dict:
-        play_dict = {}
-        play_list = self.play_desc.split(",")
-        play_dict["team"], play_dict["number"], play_dict["player"] = self.parse_team_player(play_list[0])
-        play_dict["shot_type"] = play_list[1].strip()
-        play_dict["playing_area"] = play_list[2].strip()
-        play_dict["shot_distance"] = play_list[3].strip()
-        return play_dict
-        
-    def parse_team_player(self, team_player: str) -> tuple:
-        team = re.findall("^([A-Z]+)\s", team_player)
-        number = re.findall("#([0-9]+)\s", team_player)
-        player = re.findall("([A-Z]+)$", team_player)
-        return team, number, player
+    PATTERN = (
+        r"(?P<team>[A-Z]+) ONGOAL\s*-\s*#(?P<player_number>\d+) "
+        r"(?P<player_name>[A-Z]+(?: [A-Z]+)*), "
+        r"(?P<shot_type>[A-Za-z-]+) , (?P<zone>"
+        "(?:Off|Def|Neu|Neutral|Offensive"
+        r"|Defensive)\.?) Zone, (?P<distance>\d+) ft\."
+    )
     
     
 class PBPHitParser(PBPDescriptionParser):
 
 
-    def parse_play_desc(self) -> dict:
-        play_list = self.play_desc.split(",")
-        play_dict = self.get_hit_data(play_list[0])
-        play_dict['playing_area'] = play_list[1].strip()
-        return play_dict
-    
-    def get_hit_data(self, hit: str) -> dict:
-        hit_dict = {}
-        hit_list = hit.split("HIT")
-        hit_dict["player_hitter"] = self.get_player_hit_info(hit=hit_list[0])
-        hit_dict["player_hitted"] = self.get_player_hit_info(hit=hit_list[1])
-        return hit_dict
-    
-    def get_player_hit_info(self, hit: str) -> dict:
-        hit_dict = {}
-        hit_dict['team'] = re.findall('^([A-Z+])\s', hit)
-        hit_dict['number'] = re.findall('#([0-9]+)\s', hit)
-        hit_dict['player'] = re.findall('\s([A-Z]+)\s*$', hit)
-        return hit_dict
+    PATTERN = (
+        r"(?P<team>[A-Z]+) #(?P<player_number>\d+) (?P<player_name>"
+        "[A-Z]+(?: [A-Z]+)*) HIT "
+        r"(?P<opponent_team>[A-Z]+) #(?P<opponent_player_number>\d+) "
+        r"(?P<opponent_player_name>[A-Z]+(?: [A-Z]+)*), "
+        r"(?P<zone>(?:Off|Def|Neu|Neutral|Offensive|Defensive)\.?) Zone"
+    )
     
 
 class PBPFaceoffParser(PBPDescriptionParser):
 
 
-    def parse_play_desc(self) -> dict:
-        play_list = self.play_desc.split('-')
-        play_dict = self.parse_faceoff_general_info(
-            faceoff=play_list[0])
-        play_dict["player_info"] = self.parse_faceoff_general_info(
-            faceoff=play_list[1])
+    PATTERN = (r"(?P<winning_team>[A-Z]+) won (?P<zone>(?:Off|Def|Neu|Neutral|"
+            r"Offensive|Defensive)\.?) Zone - "
+            r"(?P<losing_team>[A-Z]+) #(?P<losing_player_number>\d+) "
+            r"(?P<losing_player_name>[A-Z]+(?: [A-Z]+)*) vs "
+            r"(?P<winning_team_again>[A-Z]+) #(?P<winning_player_number>\d+) "
+            r"(?P<winning_player_name>[A-Z]+(?: [A-Z]+)*)")
 
-    def parse_faceoff_general_info(self, faceoff: str) -> dict:
-        faceoff_dict = {}
-        faceoff_dict['team_winner'] = re.findall("^([A-Z]+)\s", faceoff)
-        faceoff_dict['playing_area'] = re.findall(
-            "won\s([A-Za-z\.\s]+)$", faceoff)
-        return faceoff_dict
-    
-    def parse_player_faceoff_info(self, faceoff: str) -> dict:
-        faceoff_list = faceoff.split('vs')
-        faceoff_dict = {}
-        faceoff_dict["player_l"] = self.parse_one_player_faceoff_info(
-            faceoff_list[0])
-        faceoff_dict["player_r"] = self.parse_one_player_faceoff_info(
-            faceoff_list[1])
-        return faceoff_dict
-
-    def parse_one_player_faceoff_info(self, faceoff: str) -> dict:
-        play_dict = {}
-        play_dict["team"] = re.findall("^([A-Z]+)\s", faceoff)
-        play_dict["number"] = re.findall("#([0-9]+)\s", faceoff)
-        play_dict["player"] = re.findall("([A-Z]+)\s*$", faceoff)
-        return play_dict
-    
 
 class PBPGiveAwayParser(PBPDescriptionParser):
 
 
-    def parse_play_desc(self) -> dict:
-        play_dict = {}
-        play_dict["team"] = re.findall("^([A-Z]+)\s", self.play_desc)
-        play_dict["number"] = re.findall("#([0-9]+)\s", self.play_desc)
-        play_dict["player"] = re.findall("\s([A-Z]+),", self.play_desc)
-        play_dict["playing_area"] = re.findall(",\s([A-Za-z\.\s]+)$", self.play_desc)
-        return play_dict
+    PATTERN = (
+        r"(?P<team>[A-Z]+) GIVEAWAY\s*-\s*#(?P<player_number>\d+) (?P<player_name>"
+        r"[A-Z]+(?: [A-Z]+)*), "
+        r"(?P<zone>(?:Off|Def|Neu|Neutral|Offensive|Defensive)\.?) Zone"
+    )
+
     
 class PBPTakeawayParser(PBPDescriptionParser):
 
 
-    def parse_play_desc(self) -> dict:
-        play_dict = {}
-        play_dict["team"] = re.findall("^([A-Z]+)\s", self.play_desc)
-        play_dict["number"] = re.findall("#([0-9]+)\s", self.play_desc)
-        play_dict["player"] = re.findall("\s([A-Z]+),", self.play_desc)
-        play_dict["playing_area"] = re.findall(
-            ",\s([A-Za-z\.\s]+)$", self.play_desc)
-        return play_dict
+    PATTERN = (
+        r"(?P<team>[A-Z]+) TAKEAWAY - #(?P<player_number>\d+) "
+        r"(?P<player_name>[A-Z]+(?: [A-Z]+)*), "
+        r"(?P<zone>(?:Off|Def|Neu|Neutral|Offensive|Defensive)\.?) Zone"
+    )
+
     
 class PBPMissedShotParser(PBPDescriptionParser):
 
 
-    def parse_play_desc(self) -> dict:
-        play_list = self.play_desc.split(",")
-        play_dict = self.get_missed_shot_general_info(info=play_list[0])
-        play_dict["shot_type"] = play_list[1].strip()
-        play_dict["playing_area"] = play_list[2].strip()
-        play_dict["shot_distance"] = play_list[3].strip()
-        return play_dict
-    
-    def get_missed_shot_general_info(self, info: str) -> dict:
-        general_info = {}
-        general_info["team"] = re.findall("^([A-Z]+)\s", info)
-        general_info["number"] = re.findall("#([0-9]+)\s", info)
-        general_info["player"] = re.findall("\s([A-Z]+)$", info)
-        return general_info
-    
+    PATTERN = (
+        r"(?P<team>[A-Z]+) #(?P<player_number>\d+) (?P<player_name>"
+        "[A-Z]+(?: [A-Z]+)*), "
+        r"(?P<shot_type>[A-Za-z-]+), (?P<shot_result>[A-Za-z\s]+), "
+        r"(?P<zone>(?:Off|Def|Neu|Neutral|Offensive|Defensive)\.?) Zone, "
+        r"(?P<distance>\d+) ft\."""
+    )
+
 
 class PBPBlockedShotParser(PBPDescriptionParser):
 
-    OPPONENT_BLOCK = "OPPONENT-BLOCKED BY"
 
+    PATTERN_TEAMATE = (
+        r"(?P<team>\w+)\s+#(?P<player_number>\d+)\s+(?P<player_name>"
+        "[A-Z]+(?: [A-Z]+)*)\s+BLOCKED BY TEAMMATE,\s*"
+        r"(?P<shot_type>[\w\s]+),\s*(?P<zone>(?:Off|Def|Neu|Neutral|Offensive"
+        "|Defensive)\.?\s*Zone)"
+    )
+    
+    PATTERN_OPPONENT = (
+        r"(?P<team>\w+)\s+#(?P<player_number>\d+)\s+"
+        r"(?P<player_name>[A-Z]+(?: [A-Z]+)*)\s+"
+        r"OPPONENT-BLOCKED BY\s+(?P<blocked_team>\w+)\s+#(?"
+        r"P<blocked_player_number>\d+)\s+(?P<blocked_player_name>"
+        r"[A-Z]+(?: [A-Z]+)*),\s*(?P<shot_type>[\w\s]+),\s*(?P<zone>"
+        "(?:Off|Def|Neu|Neutral|Offensive|Defensive)\.?\s*Zone)"
+    )
 
     def parse_play_desc(self) -> dict:
-        play_list = self.play_desc.split(",")
-        play_dict = self.player_info(play_list[0])
-        play_dict["shot_type"] = play_list[1].strip()
-        play_dict["playing_area"] = play_list[2].strip()
+        if "TEAMMATE" in self.play_desc:
+            pattern = re.compile(self.PATTERN_TEAMATE)
+        else:
+            pattern = re.compile(self.PATTERN_OPPONENT)
+        match = pattern.match(self.play_desc)
+        play_dict =  match.groupdict()
+
         return play_dict
 
-    def player_info(self, player_block: str) -> dict:
-        player_block_info = {}
-        if "OPPONENT-BLOCKED BY" in player_block:
-            player_list = player_block_info.split("")
-            player_block_info["player_blocked"] = self.get_player_info(
-                player_list[0])
-            player_block_info["player_blocking"] = self.get_player_info(
-                player_list[1])
-        else:
-            player_block_info["player_blocked"] = self.get_player_info(
-                player_block)
-        return player_block_info
-
-    def get_player_info(self, player_info: str) -> dict:
-        player_info = {}
-        player_info["team"] = re.findall("^\s*([A-Z]+)\s", player_info)
-        player_info["player"] = re.findall("\s([A-Z]+)\s*$", player_info)
-        player_info["number"] = re.findall("#([0-9]+)\s", player_info)
-        return player_info
-    
 
 class PBPPenaltyParser(PBPDescriptionParser):
 
 
-    def parse_play_desc(self) -> dict:
-        pass
+    PATTERN_PP = (
+        r"(?P<team>[A-Z]+)\s+#(?P<player_number>\d+)\s+(?"
+        r"P<player_name>[A-Z]+(?: [A-Z]+)*)\s+"
+        r"(?P<penalty_type>[\w\s]+)\((?P<penalty_minutes>\d+)\s*min\),\s*"
+        r"(?P<zone>[A-Za-z.]+) Zone\s*Drawn By:\s*"
+        r"(?P<drawn_team>[A-Z]+)\s+#(?P<drawn_player_number>\d+)\s+"
+        r"(?P<drawn_player_name>[A-Z]+(?: [A-Z]+)*)"
+        )
     
+    PATTERN_TP = (
+        r"(?P<team>[A-Z]+) TEAM (?P<penalty_type>[A-Za-z\s/-]+)\("
+        r"(?P<penalty_minutes>\d+) min\) "
+        r"Served By: #(?P<served_player_number>\d+) "
+        r"(?P<served_player_name>[A-Z]+(?: [A-Z]+)*), "
+        r"(?P<zone>(?:Off|Def|Neu|Neutral|Offensive|Defensive)\.?)"
+        " Zone"
+        )
+    
+    PATTERN_PPO = (
+        r"(?P<team>[A-Z]{2,3})\s+#(?P<offender_number>\d+)\s+"
+        r"(?P<offender_name>[A-Z]+)"
+        r"\s+(?P<penalty_type>[\w-]+)\((?P<penalty_minutes>\d+)"
+        "\s+min\)\s+Served\s"
+        r"+By:\s+#(?P<served_player_number>\d+)\s+"
+        r"(?P<served_player_name>[A-Z]+),\s+(?"
+        r"P<Zone>[\w\s.]+)\s+Drawn\s+By:\s+(?P<drawn_team>[A-Z]{2,3})\s+#"
+        r"(?P<drawn_player_number>\d+)\s+(?P<drawn_player_name>[A-Z]+)"
+        )
+    
+
+    def parse_play_desc(self) -> dict:
+
+        for pat in [self.PATTERN_PP, self.PATTERN_PPO, self.PATTERN_TP]:
+            pattern = re.compile(pat)
+            match = pattern.match(self.play_desc)
+            if match:
+                break
+        play_dict =  match.groupdict()
+        
+        return play_dict
+    
+    
+class PBPGameStopageParser(PBPDescriptionParser):
+
+
+    def parse_play_desc(self) -> dict:
+        play_dict = {}
+        play_dict["game_stopage_type"] = self.play_desc
+
+        return play_dict
+    
+
+class PBPPeriod(PBPDescriptionParser):
+
+
+    def parse_play_desc(self) -> dict:
+        play_dict = {}
+        play_dict["time"] = re.findall(
+            "Local time:\s([0-9]+:[0-9]+)", self.play_desc)[0]
+        play_dict["time_zone"] = re.findall("([A-Z]+)$", self.play_desc)[0]
+
+        return play_dict
+
 
 class PBPRowParser():
 
@@ -283,7 +294,11 @@ class PBPRowParser():
         "GOAL": PBPGoalParser,
         "HIT": PBPHitParser,
         "MISS": PBPMissedShotParser,
+        "PEND": PBPPeriod,
+        "PENL": PBPPenaltyParser,
+        "PSTR": PBPPeriod,
         "SHOT": PBPShotParser,
+        "STOP": PBPGameStopageParser,
         "TAKE": PBPTakeawayParser
     }
 
@@ -292,9 +307,11 @@ class PBPRowParser():
         "play_desc": "./td[6]/text()",
         "play_type": "./td[5]/text()",
         "time": "./td[3]/text()",
-        "team_l": "./td[6]",
-        "team_r": "./td[7]"
+        "team_l": "./td[7]",
+        "team_r": "./td[8]"
     }
+
+    SKIP_PLAY = ["PGSTR", "PGEND", "ANTHEM", "GEND"]
 
 
     def __init__(self, row_sel: Selector):
@@ -310,16 +327,19 @@ class PBPRowParser():
         row_dict = {}
         row_dict['period'] = self.get_period()
         row_dict['play_type'] = self.get_play_type()
-       # row_dict['play_info'] = self.get_play_description(
-       #     play_type=row_dict['play_type'])
-       # row_dict["poi"] = self.get_players_on_ice()
+        if row_dict['play_type'] not in self.SKIP_PLAY:
+            row_dict['play_info'] = self.get_play_description(
+                play_type=row_dict['play_type'])
+        row_dict["poi"] = self.get_players_on_ice()
         return row_dict
     
     def get_players_on_ice(self) -> dict:
         poi_dict = {}
-        poi_parser = PlayerOnIceParser(poit_sel=PBPRowParser.XPATHS["team_l"])
+        poi_parser = PlayerOnIceParser(poit_sel=self.sel.xpath(
+            PBPRowParser.XPATHS["team_l"]))
         poi_dict["players_l"] = poi_parser.get_team_players_on_ice()
-        poi_parser = PlayerOnIceParser(poit_sel=PBPRowParser.XPATHS["team_r"])
+        poi_parser = PlayerOnIceParser(poit_sel=self.sel.xpath(
+            PBPRowParser.XPATHS["team_r"]))
         poi_dict["players_r"] = poi_parser.get_team_players_on_ice()
         return poi_dict
 
@@ -327,7 +347,7 @@ class PBPRowParser():
         play_desc = self.sel.xpath(PBPRowParser.XPATHS["play_desc"]).get()
         row_desc_parser = self.row_desc_parser_factory(
             play_type=play_type, play_desc=play_desc)
-        play_desc_dict = row_desc_parser.parse_play_desc(play_desc)
+        play_desc_dict = row_desc_parser.parse_play_desc()
         return play_desc_dict
 
     def row_desc_parser_factory(
