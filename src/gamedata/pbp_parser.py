@@ -1,28 +1,55 @@
 import re
 
-from abc import ABC, abstractmethod
 from scrapy import Selector
+
+from logger.logger import logger
+
 
 class PBPParser():
 
 
     XPATHS = {
+        "attendance": "//td[contains(text(), 'Attendance')]",
         "table": "//div[@class='page']/table",
     }
 
 
-    def __init__(self, htm):
+    def __init__(self, htm, report_id: int):
         self.htm = htm
         self.sel = Selector(text=self.htm)
+        self.report_id = report_id
 
-    def parse_htm_file(self):
+
+    def parse_htm_file(self) -> list:
+        logger.info("Scraping of game PBP data from report" 
+                    f"{self.report_id} started")
         parsed_data = []
         sel_tables = self.sel.xpath(PBPParser.XPATHS["table"])
+        table_idx = 0
         for sel in sel_tables:
+            table_idx += 1
             table_parser = PBPTableParser(table_sel=sel)
-            parsed_data_table = table_parser.parse_table()
+            parsed_data_table = table_parser.parse_table(table_idx=table_idx)
             parsed_data.extend(parsed_data_table)
+        if not parsed_data:
+            error_message = (
+                f"No PBP data was scraped for match: " 
+                f"{self.report_id}"
+            )
+            logger.error(error_message)
+            raise ValueError(error_message)
+        logger.info("Scraping of game PBP data from report" 
+                    f"{self.report_id} finished")
+
         return parsed_data
+    
+
+    def get_attendance(self) -> str:
+        attendance_string = self.sel.xpath(self.XPATHS["attendance"]).get()
+        attendance = re.findall("[0-9,]+", attendance_string)
+        attendance = attendance.replace(",", "")
+
+        return attendance
             
             
 class PBPTableParser():
@@ -32,17 +59,37 @@ class PBPTableParser():
         "play_row": "./tr[contains(@id, 'PL')]"
     }
 
+
     def __init__(self, table_sel: Selector):
         self.sel = table_sel
 
-    def parse_table(self) -> list:
+
+    def parse_table(self, table_idx: int) -> list:
         parsed_data = []
         row_sel = self.sel.xpath(PBPTableParser.XPATHS["play_row"])
+        logger.debug("Scraping of game PBP data from table: " 
+                    f"{table_idx} started")
+        row_idx = 0
         for play_row_sel in row_sel:
-            row_parser = PBPRowParser(row_sel=play_row_sel)
-            row_dict = row_parser.parse_row()
+            row_idx += 1
+            row_dict = self.parse_row(row_sel=play_row_sel,
+                                      row_idx=row_idx,
+                                      table_idx=table_idx)
             parsed_data.append(row_dict)
+        logger.debug("Scraping of game PBP data from table: " 
+                    f"{table_idx} finished")
         return parsed_data
+
+    def parse_row(
+            self, row_sel: Selector, row_idx: int, table_idx: int) -> dict:
+        logger.debug(f"Scraping of game PBP data from row: {row_idx} table: " 
+                    f"{table_idx} started")
+        row_parser = PBPRowParser(row_sel=row_sel)
+        row_dict = row_parser.parse_row()
+        logger.debug(f"Scraping of game PBP data from row: {row_idx} table: " 
+                    f"{table_idx} finished")
+
+        return row_dict
 
     
 class PlayerOnIceParser():
@@ -52,8 +99,10 @@ class PlayerOnIceParser():
         "player_name": ".//font//@title"
     }
 
+
     def __init__(self, poit_sel: Selector):
         self.sel = poit_sel
+
 
     def get_team_players_on_ice(self):
         player_nums = self.sel.xpath(self.XPATHS["player_name"]).getall()
@@ -70,6 +119,7 @@ class PBPDescriptionParser():
     def __init__(self, play_desc: str):
         self.play_desc = play_desc.replace("\xa0", " ")
 
+
     def parse_play_desc(self) -> dict:
         pattern = re.compile(self.PATTERN)
         match = pattern.match(self.play_desc)
@@ -82,14 +132,14 @@ class PBPGoalParser(PBPDescriptionParser):
 
 
     PATTERN_GS = (
-        r"(?P<team>\w+)\s+#(?P<number>\d+)\s+(?P<player>[A-Z]+\(\d+\)),\s+"
+        r"(?P<team>\w+)\s+#(?P<number>\d+)\s+(?P<player>[A-Z]+)\(\d+\),\s+"
         r"(?P<play_type>[\w\s]+),\s+(?P<zone>[\w.\s]+),\s+(?P<distance>\d+)"
         "\s*ft\."
     )
     
-    PATTERN_A = r"Assists?:\s+(?P<assists>(?:#\d+\s+[A-Z]+\(\d+\);?\s*)+)"
+    PATTERN_A = r"Assists*?:\s*(?P<assists>(?:#\d+\s+[A-Z]+\(\d+\);?\s*)+)"
 
-    PATTERN_AD = r"#(?P<number>\d+)\s+(?P<player>[A-Z]+)\((?P<points>\d+)\)"
+    PATTERN_AD = r"#(?P<number>\d+)\s+(?P<player>[A-Z]+)\(\d+\)"
 
 
     def parse_play_desc(self) -> dict:
@@ -147,12 +197,14 @@ class PBPHitParser(PBPDescriptionParser):
 class PBPFaceoffParser(PBPDescriptionParser):
 
 
-    PATTERN = (r"(?P<winning_team>[A-Z]+) won (?P<zone>(?:Off|Def|Neu|Neutral|"
+    PATTERN = (
+        r"(?P<winning_team>[A-Z]+) won (?P<zone>(?:Off|Def|Neu|Neutral|"
             r"Offensive|Defensive)\.?) Zone - "
-            r"(?P<losing_team>[A-Z]+) #(?P<losing_player_number>\d+) "
-            r"(?P<losing_player_name>[A-Z]+(?: [A-Z]+)*) vs "
-            r"(?P<winning_team_again>[A-Z]+) #(?P<winning_player_number>\d+) "
-            r"(?P<winning_player_name>[A-Z]+(?: [A-Z]+)*)")
+        r"(?P<losing_team>[A-Z]+) #(?P<losing_player_number>\d+) "
+        r"(?P<losing_player_name>[A-Z]+(?: [A-Z]+)*) vs "
+        r"(?P<winning_team_again>[A-Z]+) #(?P<winning_player_number>\d+) "
+        r"(?P<winning_player_name>[A-Z]+(?: [A-Z]+)*)"
+        )
 
 
 class PBPGiveAwayParser(PBPDescriptionParser):
@@ -205,6 +257,7 @@ class PBPBlockedShotParser(PBPDescriptionParser):
         r"[A-Z]+(?: [A-Z]+)*),\s*(?P<shot_type>[\w\s]+),\s*(?P<zone>"
         "(?:Off|Def|Neu|Neutral|Offensive|Defensive)\.?\s*Zone)"
     )
+
 
     def parse_play_desc(self) -> dict:
         if "TEAMMATE" in self.play_desc:
@@ -317,11 +370,15 @@ class PBPRowParser():
     def __init__(self, row_sel: Selector):
         self.sel = row_sel
 
+
     def get_play_type(self) -> str: 
         return self.sel.xpath(PBPRowParser.XPATHS['play_type']).get()
     
+    
     def get_period(self) -> str:
+
         return self.sel.xpath(PBPRowParser.XPATHS['period']).get()
+    
     
     def parse_row(self) -> dict:
         row_dict = {}
@@ -331,7 +388,10 @@ class PBPRowParser():
             row_dict['play_info'] = self.get_play_description(
                 play_type=row_dict['play_type'])
         row_dict["poi"] = self.get_players_on_ice()
+        logger.debug(f"Parsed row: {row_dict}")
+
         return row_dict
+    
     
     def get_players_on_ice(self) -> dict:
         poi_dict = {}
@@ -341,17 +401,23 @@ class PBPRowParser():
         poi_parser = PlayerOnIceParser(poit_sel=self.sel.xpath(
             PBPRowParser.XPATHS["team_r"]))
         poi_dict["players_r"] = poi_parser.get_team_players_on_ice()
+
         return poi_dict
 
+
     def get_play_description(self, play_type: str) -> dict:
-        play_desc = self.sel.xpath(PBPRowParser.XPATHS["play_desc"]).get()
+        play_desc = self.sel.xpath(PBPRowParser.XPATHS["play_desc"]).getall()
+        play_desc = " ".join(play_desc)
         row_desc_parser = self.row_desc_parser_factory(
             play_type=play_type, play_desc=play_desc)
         play_desc_dict = row_desc_parser.parse_play_desc()
+
         return play_desc_dict
+
 
     def row_desc_parser_factory(
             self, play_type: str, play_desc: str) -> 'PBPDescriptionParser':
+        
         return PBPRowParser.PARSER_OBJECTS[play_type](play_desc=play_desc)
 
 
