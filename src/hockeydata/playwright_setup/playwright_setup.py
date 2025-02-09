@@ -1,6 +1,6 @@
 import playwright.sync_api as sync_api
 
-from hockeydata.logger.logger import logger
+from logger.logger import logger
 
 
 COOKIES_AGREE_XPATH = "//button[./*[contains(text(), 'AGREE')]]"
@@ -29,7 +29,7 @@ class PlaywrightSetUp():
 
     def initiate_sync_playwright(self):
         self.p = sync_api.sync_playwright().start()
-        self.browser = self.p.chromium.launch(headless=True)
+        self.browser = self.p.chromium.launch(headless=False)
         self.page = self.browser.new_page()
         self.page.route("**/*", self.intercept_requests)
 

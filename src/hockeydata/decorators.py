@@ -3,7 +3,7 @@ import requests
 import ssl
 import time
 
-from hockeydata.logger.logger import logger
+from logger.logger import logger
 
 
 MAX_ATTEMPT = 15

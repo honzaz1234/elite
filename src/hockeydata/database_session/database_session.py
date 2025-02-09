@@ -15,7 +15,7 @@ import re
 
 from hockeydata.constants import *
 from hockeydata.decorators import repeat_request_until_success, time_execution
-from hockeydata.logger.logger import logger
+from logger.logger import logger
 from hockeydata.database_creator.database_creator import *
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session

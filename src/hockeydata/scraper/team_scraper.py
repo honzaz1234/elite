@@ -5,7 +5,7 @@ import scrapy
 
 from hockeydata.constants import *
 from hockeydata.decorators import time_execution
-from hockeydata.logger.logger import logger
+from logger.logger import logger
 
 
 class TeamScraper():

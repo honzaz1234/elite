@@ -1,7 +1,7 @@
 import hockeydata.database_creator.database_creator as db
 
 from hockeydata.constants import *
-from hockeydata.logger.logger import logger
+from logger.logger import logger
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 

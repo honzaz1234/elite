@@ -7,7 +7,7 @@ import logging.handlers
 import pathlib
 
 
-CONFIG_PATH = './src/hockeydata/logger/logger_config.json'
+CONFIG_PATH = './src/logger/logger_config.json'
 
 
 def setup_logging():

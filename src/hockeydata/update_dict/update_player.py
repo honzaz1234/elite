@@ -3,7 +3,7 @@ import re
 
 from hockeydata.constants import *
 from hockeydata.decorators import time_execution
-from hockeydata.logger.logger import logger
+from logger.logger import logger
 from hockeydata.common_functions import convert_season_format, convert_to_seconds
 
 
