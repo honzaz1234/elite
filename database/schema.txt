@@ -1,0 +1,504 @@
+CREATE TABLE places
+(
+  id INT NOT NULL,
+  place VARCHAR NOT NULL,
+  region VARCHAR NOT NULL,
+  country_s VARCHAR NOT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE nationalities
+(
+  id INT NOT NULL,
+  nationality VARCHAR NOT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE leagues
+(
+  id INT NOT NULL,
+  league_elite INT NOT NULL,
+  league INT NOT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE achievements
+(
+  ID INT NOT NULL,
+  achievement INT NOT NULL,
+  league_id INT NOT NULL,
+  PRIMARY KEY (ID),
+  FOREIGN KEY (league_id) REFERENCES leagues(id)
+);
+
+CREATE TABLE seasons
+(
+  id INT NOT NULL,
+  season VARCHAR NOT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE divisons
+(
+  id INT NOT NULL,
+  divison INT NOT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE stadions
+(
+  id INT NOT NULL,
+  arena VARCHAR NOT NULL,
+  capacity INT NOT NULL,
+  construction_year INT NOT NULL,
+  place_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (place_id) REFERENCES places(id)
+);
+
+CREATE TABLE postseason_types
+(
+  id INT NOT NULL,
+  postseason_type INT NOT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE colours
+(
+  id INT NOT NULL,
+  colour VARCHAR NOT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE relations
+(
+  id INT NOT NULL,
+  relation INT NOT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE play_types
+(
+  id INT NOT NULL,
+  play_type VARCHAR NOT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE shot_types
+(
+  id INT NOT NULL,
+  shot_type VARCHAR NOT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE zones
+(
+  id INT NOT NULL,
+  zone VARCHAR NOT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE shot_results
+(
+  id INT NOT NULL,
+  shot_result VARCHAR NOT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE penalty_types
+(
+  id INT NOT NULL,
+  penalty_type VARCHAR NOT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE teams
+(
+  id INT NOT NULL,
+  team VARCHAR NOT NULL,
+  team_colours VARCHAR NOT NULL,
+  founded INT NOT NULL,
+  u_id INT NOT NULL,
+  long_name VARCHAR NOT NULL,
+  place_id INT NOT NULL,
+  stadion_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (place_id) REFERENCES places(id),
+  FOREIGN KEY (stadion_id) REFERENCES stadions(id)
+);
+
+CREATE TABLE team_seasons
+(
+  id INT NOT NULL,
+  w INT NOT NULL,
+  t INT NOT NULL,
+  l INT NOT NULL,
+  gp INT NOT NULL,
+  otw INT NOT NULL,
+  otl INT NOT NULL,
+  gf INT NOT NULL,
+  ga INT NOT NULL,
+  plus_minus INT NOT NULL,
+  tp INT NOT NULL,
+  ppg INT NOT NULL,
+  position INT NOT NULL,
+  team_id INT NOT NULL,
+  season_id INT NOT NULL,
+  division_id INT NOT NULL,
+  conference_id INT NOT NULL,
+  league_id INT NOT NULL,
+  postseason_type_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (team_id) REFERENCES teams(id),
+  FOREIGN KEY (season_id) REFERENCES seasons(id),
+  FOREIGN KEY (division_id) REFERENCES divisons(id),
+  FOREIGN KEY (conference_id) REFERENCES divisons(id),
+  FOREIGN KEY (league_id) REFERENCES leagues(id),
+  FOREIGN KEY (postseason_type_id) REFERENCES postseason_types(id)
+);
+
+CREATE TABLE affiliated_teams
+(
+  id INT NOT NULL,
+  team_1_id INT NOT NULL,
+  team_2_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (team_1_id) REFERENCES teams(id),
+  FOREIGN KEY (team_2_id) REFERENCES teams(id)
+);
+
+CREATE TABLE team_colours
+(
+  id INT NOT NULL,
+  colour_id INT NOT NULL,
+  team_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (colour_id) REFERENCES colours(id),
+  FOREIGN KEY (team_id) REFERENCES teams(id)
+);
+
+CREATE TABLE team_names
+(
+  id INT NOT NULL,
+  team_name VARCHAR NOT NULL,
+  year_from INT NOT NULL,
+  year_to INT NOT NULL,
+  team_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (team_id) REFERENCES teams(id)
+);
+
+CREATE TABLE matches
+(
+  id INT NOT NULL,
+  attendance VARCHAR NOT NULL,
+  time  NOT NULL,
+  date DATE NOT NULL,
+  home_team_id INT NOT NULL,
+  away_team_id INT NOT NULL,
+  stadium_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (home_team_id) REFERENCES teams(id),
+  FOREIGN KEY (away_team_id) REFERENCES teams(id),
+  FOREIGN KEY (stadium_id) REFERENCES stadions(id)
+);
+
+CREATE TABLE players
+(
+  position INT NOT NULL,
+  age INT NOT NULL,
+  handedness INT NOT NULL,
+  contract_end INT NOT NULL,
+  cap_hit INT NOT NULL,
+  signed_nhl INT NOT NULL,
+  name INT NOT NULL,
+  ID INT NOT NULL,
+  date_birth DATE NOT NULL,
+  drafted INT NOT NULL,
+  height INT NOT NULL,
+  weight INT NOT NULL,
+  catches VARCHAR NOT NULL,
+  u_id INT NOT NULL,
+  place_birth_id INT NOT NULL,
+  nhl_rights_id INT NOT NULL,
+  nationality_id INT NOT NULL,
+  PRIMARY KEY (ID),
+  FOREIGN KEY (place_birth_id) REFERENCES places(id),
+  FOREIGN KEY (nhl_rights_id) REFERENCES teams(id),
+  FOREIGN KEY (nationality_id) REFERENCES nationalities(id)
+);
+
+CREATE TABLE players_achievements
+(
+  id INT NOT NULL,
+  player_id INT NOT NULL,
+  achievement_id INT NOT NULL,
+  season_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (player_id) REFERENCES players(ID),
+  FOREIGN KEY (achievement_id) REFERENCES achievements(ID),
+  FOREIGN KEY (season_id) REFERENCES seasons(id)
+);
+
+CREATE TABLE player_stats
+(
+  regular_season INT NOT NULL,
+  gp INT NOT NULL,
+  g INT NOT NULL,
+  a INT NOT NULL,
+  tp INT NOT NULL,
+  pm INT NOT NULL,
+  plus_minus INT NOT NULL,
+  id INT NOT NULL,
+  player_id INT NOT NULL,
+  league_id INT NOT NULL,
+  team_id INT NOT NULL,
+  season_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (player_id) REFERENCES players(ID),
+  FOREIGN KEY (league_id) REFERENCES leagues(id),
+  FOREIGN KEY (team_id) REFERENCES teams(id),
+  FOREIGN KEY (season_id) REFERENCES seasons(id)
+);
+
+CREATE TABLE goalie_stats
+(
+  regular_season INT NOT NULL,
+  gp INT NOT NULL,
+  gaa INT NOT NULL,
+  svp FLOAT NOT NULL,
+  ga INT NOT NULL,
+  svs INT NOT NULL,
+  gd INT NOT NULL,
+  so INT NOT NULL,
+  w INT NOT NULL,
+  l INT NOT NULL,
+  t INT NOT NULL,
+  toi INT NOT NULL,
+  id INT NOT NULL,
+  goalie_id INT NOT NULL,
+  league_id INT NOT NULL,
+  team_id INT NOT NULL,
+  season_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (goalie_id) REFERENCES players(ID),
+  FOREIGN KEY (league_id) REFERENCES leagues(id),
+  FOREIGN KEY (team_id) REFERENCES teams(id),
+  FOREIGN KEY (season_id) REFERENCES seasons(id)
+);
+
+CREATE TABLE retired_numbers
+(
+  id INT NOT NULL,
+  number INT NOT NULL,
+  team_id INT NOT NULL,
+  player_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (team_id) REFERENCES teams(id),
+  FOREIGN KEY (player_id) REFERENCES players(ID)
+);
+
+CREATE TABLE players_drafts
+(
+  id INT NOT NULL,
+  draft_position INT NOT NULL,
+  draft_round INT NOT NULL,
+  draft_year INT NOT NULL,
+  player_id INT NOT NULL,
+  team_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (player_id) REFERENCES players(ID),
+  FOREIGN KEY (team_id) REFERENCES teams(id)
+);
+
+CREATE TABLE players_nationalities
+(
+  id INT NOT NULL,
+  player_id INT NOT NULL,
+  nationality_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (player_id) REFERENCES players(ID),
+  FOREIGN KEY (nationality_id) REFERENCES nationalities(id)
+);
+
+CREATE TABLE players_relations
+(
+  id INT NOT NULL,
+  player_id_from INT NOT NULL,
+  player_id_to INT NOT NULL,
+  relation_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (player_id_from) REFERENCES players(ID),
+  FOREIGN KEY (player_id_to) REFERENCES players(ID),
+  FOREIGN KEY (relation_id) REFERENCES relations(id)
+);
+
+CREATE TABLE plays
+(
+  id INT NOT NULL,
+  play_type_id INT NOT NULL,
+  match_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (play_type_id) REFERENCES play_types(id),
+  FOREIGN KEY (match_id) REFERENCES matches(id)
+);
+
+CREATE TABLE goal_plays
+(
+  id INT NOT NULL,
+  distance INT NOT NULL,
+  match_id INT NOT NULL,
+  team_id INT NOT NULL,
+  player_id INT NOT NULL,
+  shot_type_id INT NOT NULL,
+  zone_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (match_id) REFERENCES matches(id),
+  FOREIGN KEY (team_id) REFERENCES teams(id),
+  FOREIGN KEY (player_id) REFERENCES players(ID),
+  FOREIGN KEY (shot_type_id) REFERENCES shot_types(id),
+  FOREIGN KEY (zone_id) REFERENCES zones(id)
+);
+
+CREATE TABLE shot_plays
+(
+  id INT NOT NULL,
+  distance INT NOT NULL,
+  match_id INT NOT NULL,
+  player_id INT NOT NULL,
+  team_id INT NOT NULL,
+  zone_id INT NOT NULL,
+  shot_type_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (match_id) REFERENCES matches(id),
+  FOREIGN KEY (player_id) REFERENCES players(ID),
+  FOREIGN KEY (team_id) REFERENCES teams(id),
+  FOREIGN KEY (zone_id) REFERENCES zones(id),
+  FOREIGN KEY (shot_type_id) REFERENCES shot_types(id)
+);
+
+CREATE TABLE hit_plays
+(
+  id INT NOT NULL,
+  match_id INT NOT NULL,
+  hitter_id INT NOT NULL,
+  team_id INT NOT NULL,
+  victim_id INT NOT NULL,
+  zone_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (match_id) REFERENCES matches(ID),
+  FOREIGN KEY (hitter_id) REFERENCES players(ID),
+  FOREIGN KEY (team_id) REFERENCES teams(id),
+  FOREIGN KEY (victim_id) REFERENCES players(ID),
+  FOREIGN KEY (zone_id) REFERENCES zones(id)
+);
+
+CREATE TABLE faceoff_plays
+(
+  id INT NOT NULL,
+  match_id INT NOT NULL,
+  winner_id INT NOT NULL,
+  loser_id INT NOT NULL,
+  winner_team_id INT NOT NULL,
+  loser_team_id INT NOT NULL,
+  zone_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (match_id) REFERENCES matches(ID),
+  FOREIGN KEY (winner_id) REFERENCES players(ID),
+  FOREIGN KEY (loser_id) REFERENCES players(ID),
+  FOREIGN KEY (winner_team_id) REFERENCES teams(id),
+  FOREIGN KEY (loser_team_id) REFERENCES teams(id),
+  FOREIGN KEY (zone_id) REFERENCES zones(id)
+);
+
+CREATE TABLE giveaway_plays
+(
+  id INT NOT NULL,
+  match_id INT NOT NULL,
+  player_id INT NOT NULL,
+  team_id INT NOT NULL,
+  zone_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (match_id) REFERENCES matches(ID),
+  FOREIGN KEY (player_id) REFERENCES players(ID),
+  FOREIGN KEY (team_id) REFERENCES teams(id),
+  FOREIGN KEY (zone_id) REFERENCES zones(id)
+);
+
+CREATE TABLE takeaway_plays
+(
+  id INT NOT NULL,
+  match_id INT NOT NULL,
+  player_id INT NOT NULL,
+  team_id INT NOT NULL,
+  zone_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (match_id) REFERENCES matches(ID),
+  FOREIGN KEY (player_id) REFERENCES players(ID),
+  FOREIGN KEY (team_id) REFERENCES teams(id),
+  FOREIGN KEY (zone_id) REFERENCES zones(id)
+);
+
+CREATE TABLE missed_shot_plays
+(
+  id INT NOT NULL,
+  match_id INT NOT NULL,
+  player_id INT NOT NULL,
+  team_id INT NOT NULL,
+  zone_id INT NOT NULL,
+  shot_type_id INT NOT NULL,
+  shot_result_id INT NOT NULL,
+  distance INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (match_id) REFERENCES matches(ID),
+  FOREIGN KEY (player_id) REFERENCES players(ID),
+  FOREIGN KEY (team_id) REFERENCES teams(id),
+  FOREIGN KEY (zone_id) REFERENCES zones(id)
+  FOREIGN KEY (shot_type_id) REFERENCES shot_types(id),
+  FOREIGN KEY (shot_result_id) REFERENCES shot_results(id),
+);
+
+CREATE TABLE blocked_shot_plays
+(
+  id INT NOT NULL,
+  match_id INT NOT NULL,
+  shooter_id INT NOT NULL,
+  shooter_team_id INT NOT NULL,
+  blocker_id INT,
+  blocker_team_id INT, 
+  zone_id INT NOT NULL,
+  shot_type_id INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (match_id) REFERENCES matches(ID),
+  FOREIGN KEY (shooter_id) REFERENCES players(ID),
+  FOREIGN KEY (shooter_team_id) REFERENCES teams(id),
+  FOREIGN KEY (blocker_id) REFERENCES players(ID),
+  FOREIGN KEY (blocker_team_id) REFERENCES teams(id),
+  FOREIGN KEY (zone_id) REFERENCES zones(id)
+  FOREIGN KEY (shot_type_id) REFERENCES shot_types(id),
+);
+
+CREATE TABLE penalty_plays
+(
+  id INT NOT NULL,
+  match_id INT NOT NULL,
+  offender_id INT NOT NULL,
+  offender_team_id INT NOT NULL,
+  served_by_id INT,
+  victim_id INT NOT NULL,
+  victim_team_id INT NOT NULL, 
+  zone_id INT NOT NULL,
+  penalty_type_id INT NOT NULL,
+  penalty_minutes INT NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (match_id) REFERENCES matches(ID),
+  FOREIGN KEY (offender_id) REFERENCES players(ID),
+  FOREIGN KEY (offender_team_id) REFERENCES teams(id),
+  FOREIGN KEY (served_by_id) REFERENCES players(ID),
+  FOREIGN KEY (victim_id) REFERENCES players(ID),
+  FOREIGN KEY (victim_team_id) REFERENCES teams(id),
+  FOREIGN KEY (zone_id) REFERENCES zones(id)
+  FOREIGN KEY (penalty_type_id) REFERENCES penalty_types(id),
+);
+
+

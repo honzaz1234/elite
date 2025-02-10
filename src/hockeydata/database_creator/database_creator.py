@@ -13,7 +13,7 @@ class Player(Base):
     __tablename__ = "players"
 
     id = Column("id", Integer, primary_key=True)
-    uid = Column("uid", Integer)
+    uid = Column("uid", Integer, nullable=False, unique=True)
     name = Column("name", String)
     position = Column("position", String)
     active = Column("active", Boolean)
@@ -61,11 +61,17 @@ class PlayerDraft(Base):
     __tablename__ = "players_draft"
 
     id = Column("id", Integer, primary_key=True)
-    player_id = Column("player_id", Integer, ForeignKey("players.id"))
-    team_id = Column("team_id", Integer, ForeignKey("teams.id"))
-    draft_round = Column("draft_round", Integer)
-    draft_position = Column("draft_position", Integer)
-    draft_year = Column("draft_year", Integer, index=True)
+    player_id = Column("player_id", 
+                       Integer, 
+                       ForeignKey("players.id"), 
+                       nullable=False)
+    team_id = Column("team_id", 
+                     Integer, 
+                     ForeignKey("teams.id"), 
+                     nullable=False)
+    draft_round = Column("draft_round", Integer, nullable=False)
+    draft_position = Column("draft_position", Integer, nullable=False)
+    draft_year = Column("draft_year", Integer, index=True, nullable=False)
 
     def __init__(self, player_id, team_id, draft_round, 
                 draft_position, draft_year):
@@ -84,7 +90,7 @@ class Stadium(Base):
     __tablename__ = "stadiums"
 
     id = Column("id", Integer, primary_key=True)
-    stadium = Column("stadium", String)
+    stadium = Column("stadium", String, nullable=False)
     capacity = Column("capacity", Integer)
     construction_year = Column("construction_year", Integer)
     place_id = Column("place_id", ForeignKey("places.id"))
@@ -104,7 +110,7 @@ class Team(Base):
     __tablename__ = "teams"
 
     id = Column("id", Integer, primary_key=True)
-    uid = Column("uid", Integer)
+    uid = Column("uid", Integer, nullable=False, unique=True)
     team = Column("team", String)
     long_name = Column("long_name", String)
     active = Column("active", Integer)
@@ -131,7 +137,7 @@ class Colour(Base):
     __tablename__ = "colours"
 
     id = Column("id", Integer, primary_key=True)
-    colour = Column("colour", String)
+    colour = Column("colour", String, nullable=False, unique=True)
 
     def __init__(self, colour):
         self.colour = colour
@@ -145,8 +151,11 @@ class TeamColour(Base):
     __tablename__ = "team_colours"
 
     id = Column("id", Integer, primary_key=True)
-    team_id = Column("team_id", ForeignKey("teams.id"))
-    colour_id = Column("colour_id", ForeignKey("colours.id"), index=True)
+    team_id = Column("team_id", ForeignKey("teams.id"), nullable=False)
+    colour_id = Column("colour_id", 
+                       ForeignKey("colours.id"), 
+                       index=True, 
+                       nullable=False)
 
     def __init__(self, team_id, colour_id):
         self.team_id = team_id
@@ -161,8 +170,8 @@ class AffiliatedTeam(Base):
     __tablename__ = "affiliated_teams"
 
     id = Column("id", Integer, primary_key=True)
-    team_1_id = Column("team_1_id", ForeignKey("teams.id"))
-    team_2_id = Column("team_2_id", ForeignKey("teams.id"))
+    team_1_id = Column("team_1_id", ForeignKey("teams.id"), nullable=False)
+    team_2_id = Column("team_2_id", ForeignKey("teams.id"), nullable=False)
 
     def __init__(self, team_1_id, team_2_id):
         self.team_1_id = team_1_id
@@ -177,9 +186,9 @@ class RetiredNumber(Base):
     __tablename__ = "retired_numbers"
 
     id = Column("id", Integer, primary_key=True)
-    team_id = Column("team_id", ForeignKey("teams.id"))
-    player_id = Column("player_id", ForeignKey("players.id"))
-    number = Column("number", Integer, index=True)
+    team_id = Column("team_id", ForeignKey("teams.id"), nullable=False)
+    player_id = Column("player_id", ForeignKey("players.id"), nullable=False)
+    number = Column("number", Integer, index=True, nullable=False)
 
     def __init__(self, team_id, player_id, number):
         self.team_id = team_id
@@ -195,7 +204,7 @@ class League(Base):
     __tablename__ = "leagues"
 
     id = Column("id", Integer, primary_key=True)
-    uid = Column("uid", String)
+    uid = Column("uid", String, nullable=False, unique=True)
     league = Column("league", String)
 
     def __init__(self,  uid, league):
@@ -211,7 +220,7 @@ class Nationality(Base):
     __tablename__ = "nationalities"
 
     id = Column("id", Integer, primary_key=True)
-    nationality = Column("nationality", String)
+    nationality = Column("nationality", String, nullable=False, unique=True)
 
     def __init__(self, nationality):
         self.nationality = nationality
@@ -225,9 +234,15 @@ class PlayerNationality(Base):
     __tablename__ = "players_nationalities"
 
     id = Column("id", Integer, primary_key=True)
-    player_id = Column("player_id", Integer, ForeignKey("players.id"))
-    nationality_id = Column("nationality_id", Integer,
-                            ForeignKey("nationalities.id"), index=True)
+    player_id = Column("player_id", 
+                       Integer, 
+                       ForeignKey("players.id"), 
+                       nullable=False)
+    nationality_id = Column("nationality_id", 
+                            Integer,
+                            ForeignKey("nationalities.id"), 
+                            index=True, 
+                            nullable=False)
 
     def __init__(self, player_id, nationality_id):
         self.player_id = player_id
@@ -242,7 +257,7 @@ class Relation(Base):
     __tablename__ = "relations"
 
     id = Column("id", Integer, primary_key=True)
-    relation = Column("relation", String)
+    relation = Column("relation", String, nullable=False, unique=True)
 
     def __init__(self, relation):
         self.relation = relation
@@ -256,11 +271,19 @@ class PlayerRelation(Base):
     __tablename__ = "players_relations"
 
     id = Column("id", Integer, primary_key=True)
-    player_from_id = Column("player_from_id", Integer,
-                            ForeignKey("players.id"))
-    player_to_id = Column("player_to_id", Integer, ForeignKey("players.id"))
-    relation_id = Column("relation_id", Integer,
-                         ForeignKey("relations.id"), index=True)
+    player_from_id = Column("player_from_id", 
+                            Integer,
+                            ForeignKey("players.id"),
+                            nullable=False)
+    player_to_id = Column("player_to_id", 
+                          Integer, 
+                          ForeignKey("players.id"),
+                          nullable=False)
+    relation_id = Column("relation_id", 
+                         Integer,
+                         ForeignKey("relations.id"), 
+                         index=True,
+                         nullable=False)
 
     def __init__(self, player_from_id, player_to_id, relation_id):
         self.player_from_id = player_from_id
@@ -276,7 +299,7 @@ class Place(Base):
     __tablename__ = "places"
 
     id = Column("id", Integer, primary_key=True)
-    place = Column("place", String)
+    place = Column("place", String, nullable=False)
     region = Column("region", String)
     country_s = Column("country_s", String, index=True)
 
@@ -294,7 +317,7 @@ class Season(Base):
     __tablename__ = "seasons"
 
     id = Column("id", Integer, primary_key=True)
-    season = Column("season", String)
+    season = Column("season", String, nullable=False, unique=True)
 
     def __init__(self, season):
         self.season = season
@@ -308,10 +331,16 @@ class TeamName(Base):
     __tablename__ = "team_names"
 
     id = Column("id", Integer, primary_key=True)
-    team_name = Column("team_name", String)
-    year_from = Column("year_from", Integer, ForeignKey("seasons.id"))
+    team_name = Column("team_name", String, nullable=False)
+    year_from = Column("year_from", 
+                       Integer, 
+                       ForeignKey("seasons.id"), 
+                       nullable=False)
     year_to = Column("year_to", Integer, ForeignKey("seasons.id"))
-    team_id = Column("team_id", Integer, ForeignKey("teams.id"))
+    team_id = Column("team_id", 
+                     Integer, 
+                     ForeignKey("teams.id"), 
+                     nullable=False)
 
     def __init__(self, team_name, year_from, year_to, team_id):
         self.team_name = team_name
@@ -328,7 +357,7 @@ class Divison(Base):
     __tablename__ = "divisions"
 
     id = Column("id", Integer, primary_key=True)
-    division = Column("division", String)
+    division = Column("division", String, nullable=False, unique=True)
 
     def __init__(self, division):
         self.division = division
@@ -343,8 +372,15 @@ class TeamSeason(Base):
 
     id = Column("id", Integer, primary_key=True)
     position = Column("position", Integer)
-    league_id = Column("league_id", Integer, ForeignKey("leagues.id"))
-    team_id = Column("team_id", Integer, ForeignKey("teams.id"), index=True)
+    league_id = Column("league_id", 
+                       Integer, 
+                       ForeignKey("leagues.id"), 
+                       nullable=False)
+    team_id = Column("team_id", 
+                     Integer, 
+                     ForeignKey("teams.id"), 
+                     index=True, 
+                     nullable=False)
     division_id = Column("division_id", Integer, ForeignKey("divisions.id"))
     conference_id = Column("conference_id", Integer,
                            ForeignKey("divisions.id"))
@@ -396,7 +432,10 @@ class PostseasonType(Base):
     __tablename__ = "postseason_types"
 
     id = Column("id", Integer, primary_key=True)
-    postseason_type = Column("postseason_type", String)
+    postseason_type = Column("postseason_type", 
+                             String, 
+                             nullable=False, 
+                             unique=True)
 
     def __init__(self, postseason_type):
         self.postseason_type = postseason_type
@@ -410,7 +449,7 @@ class Achievement(Base):
     __tablename__ = "achievements"
 
     id = Column("id", Integer, primary_key=True)
-    uid = Column("achievement", String)
+    uid = Column("achievement", String, nullable=False)
     league_id = Column("league_id", Integer, ForeignKey("leagues.id"))
 
     def __init__(self, uid, league_id):
@@ -426,10 +465,18 @@ class PlayerAchievement(Base):
     __tablename__ = "players_achievements"
 
     id = Column("id", Integer, primary_key=True)
-    player_id = Column("player_id", Integer, ForeignKey("players.id"))
-    achievement_id = Column("achievement_id", Integer,
-                            ForeignKey("achievements.id"))
-    season_id = Column("season_id", Integer, ForeignKey("seasons.id"))
+    player_id = Column("player_id", 
+                       Integer, 
+                       ForeignKey("players.id"), 
+                       nullable=False)
+    achievement_id = Column("achievement_id", 
+                            Integer,
+                            ForeignKey("achievements.id"), 
+                            nullable=False)
+    season_id = Column("season_id", 
+                       Integer, 
+                       ForeignKey("seasons.id"), 
+                       nullable=False)
 
     def __init__(self, player_id, achievement_id, season_id):
         self.player_id = player_id
@@ -445,12 +492,24 @@ class PlayerStats(Base):
     __tablename__ = "player_stats"
 
     id = Column("id", Integer, primary_key=True)
-    player_id = Column("player_id", Integer,
-                       ForeignKey("players.id"), index=True)
+    player_id = Column("player_id", 
+                       Integer,
+                       ForeignKey("players.id"), 
+                       index=True,
+                       nullable=False)
     regular_season = Column("regular_season", Boolean)
-    season_id = Column("season_id", Integer, ForeignKey("seasons.id"))
-    league_id = Column("league_id", Integer, ForeignKey("leagues.id"))
-    team_id = Column("team_id", Integer, ForeignKey("teams.id"))
+    season_id = Column("season_id", 
+                       Integer, 
+                       ForeignKey("seasons.id"),
+                         nullable=False)
+    league_id = Column("league_id", 
+                       Integer, 
+                       ForeignKey("leagues.id"), 
+                       nullable=False)
+    team_id = Column("team_id", 
+                     Integer, 
+                     ForeignKey("teams.id"),
+                     nullable=False)
     captaincy = Column("captaincy", String)
     games_played = Column("gp", Integer)
     goals = Column("g", Integer)
@@ -477,7 +536,6 @@ class PlayerStats(Base):
     def __repr__(self):
         return f"({self.id}, {self.player_id}, {self.regular_season}, {self.season_id}, {self.league_id}, {self.team_id}, {self.captaincy}, {self.games_played}, {self.goals}, {self.assists}, {self.total_points}, {self.PM}, {self.plus_minus})"
 
-
 Index('player_stats_league_id_season_id_index',
       PlayerStats.league_id, PlayerStats.season_id)
 
@@ -487,12 +545,23 @@ class GoalieStats(Base):
     __tablename__ = "goalie_stats"
 
     id = Column("id", Integer, primary_key=True)
-    player_id = Column("player_id", Integer,
-                       ForeignKey("players.id"), index=True)
+    player_id = Column("player_id", 
+                       Integer,
+                       ForeignKey("players.id"), 
+                       index=True,
+                       nullable=False)
     regular_season = Column("regular_season", Boolean)
-    season_id = Column("season_id", ForeignKey("seasons.id"))
-    league_id = Column("league_id", Integer, ForeignKey("leagues.id"))
-    team_id = Column("team_id", Integer, ForeignKey("teams.id"))
+    season_id = Column("season_id", 
+                       ForeignKey("seasons.id"), 
+                       nullable=False)
+    league_id = Column("league_id", 
+                       Integer, 
+                       ForeignKey("leagues.id"),
+                       nullable=False)
+    team_id = Column("team_id", 
+                     Integer, 
+                     ForeignKey("teams.id"),
+                     nullable=False)
     captaincy = Column("captaincy", String)
     games_played = Column("gp", Integer)
     gd = Column("gd", Integer)
@@ -530,8 +599,175 @@ class GoalieStats(Base):
     def __repr__(self):
         return f"({self.id}, {self.player_id}, {self.regular_season}, {self.season_id}, {self.league_id}, {self.team_id}, {self.captaincy}, {self.games_played}, {self.gd}, {self.goal_against_average}, {self.save_percentage}, {self.goal_against}, {self.shot_saved}, {self.shotouts}, {self.wins}, {self.looses}, {self.ties}, {self.toi})"
 
-
 Index('goalie_stats_league_id_season_id_index',
       GoalieStats.league_id, GoalieStats.season_id)
+
+
+class PlayType(Base):
+    
+    __tablename__ = 'play_types'
+
+    id = Column(Integer, primary_key=True)
+    play_type = Column(String, nullable=False, unique=True)
+
+class ShotType(Base):
+
+    __tablename__ = 'shot_types'
+
+    id = Column(Integer, primary_key=True)
+    shot_type = Column(String, nullable=False, unique=True)
+
+
+class Zone(Base):
+
+    __tablename__ = 'zones'
+
+    id = Column(Integer, primary_key=True)
+    zone = Column(String, nullable=False, unique=True)
+
+
+class ShotResult(Base):
+
+    __tablename__ = 'shot_results'
+
+    id = Column(Integer, primary_key=True)
+    shot_result = Column(String, nullable=False, unique=True)
+
+
+class PenaltyType(Base):
+
+    __tablename__ = 'penalty_types'
+
+    id = Column(Integer, primary_key=True)
+    penalty_type = Column(String, nullable=False, unique=True)
+
+
+class Play(Base):
+
+    __tablename__ = 'plays'
+
+    id = Column(Integer, primary_key=True)
+    play_type_id = Column(Integer, ForeignKey('play_types.id'), nullable=False)
+    match_id = Column(Integer, ForeignKey('matches.id'), nullable=False)
+
+
+class GoalPlay(Base):
+
+    __tablename__ = 'goal_plays'
+
+    id = Column(Integer, primary_key=True)
+    distance = Column(Integer, nullable=False)
+    match_id = Column(Integer, ForeignKey('matches.id'), nullable=False)
+    team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
+    player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
+    shot_type_id = Column(Integer, ForeignKey('shot_types.id'), nullable=False)
+    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+
+
+class ShotPlay(Base):
+
+    __tablename__ = 'shot_plays'
+
+    id = Column(Integer, primary_key=True)
+    distance = Column(Integer, nullable=False)
+    match_id = Column(Integer, ForeignKey('matches.id'), nullable=False)
+    player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
+    team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
+    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+    shot_type_id = Column(Integer, ForeignKey('shot_types.id'), nullable=False)
+
+
+class HitPlay(Base):
+
+    __tablename__ = 'hit_plays'
+
+    id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, ForeignKey('matches.id'), nullable=False)
+    hitter_id = Column(Integer, ForeignKey('players.id'), nullable=False)
+    team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
+    victim_id = Column(Integer, ForeignKey('players.id'), nullable=False)
+    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+
+
+class FaceoffPlay(Base):
+
+    __tablename__ = 'faceoff_plays'
+
+    id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, ForeignKey('matches.id'), nullable=False)
+    winner_id = Column(Integer, ForeignKey('players.id'), nullable=False)
+    loser_id = Column(Integer, ForeignKey('players.id'), nullable=False)
+    winner_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
+    loser_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
+    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+
+
+class GiveawayPlay(Base):
+
+    __tablename__ = 'giveaway_plays'
+
+    id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, ForeignKey('matches.id'), nullable=False)
+    player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
+    team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
+    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+
+
+class TakeawayPlay(Base):
+
+    __tablename__ = 'takeaway_plays'
+
+    id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, ForeignKey('matches.id'), nullable=False)
+    player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
+    team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
+    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+
+class MissedShotPlay(Base):
+
+    __tablename__ = 'missed_shot_plays'
+
+    id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, ForeignKey('matches.id'), nullable=False)
+    player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
+    team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
+    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+    shot_type_id = Column(Integer, ForeignKey('shot_types.id'), nullable=False)
+    shot_result_id = Column(Integer, 
+                            ForeignKey('shot_results.id'), 
+                            nullable=False)
+    distance = Column(Integer, nullable=False)
+
+
+class BlockedShotPlay(Base):
+
+    __tablename__ = 'blocked_shot_plays'
+
+    id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, ForeignKey('matches.id'), nullable=False)
+    shooter_id = Column(Integer, ForeignKey('players.id'), nullable=False)
+    shooter_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
+    blocker_id = Column(Integer, ForeignKey('players.id'))
+    blocker_team_id = Column(Integer, ForeignKey('teams.id'))
+    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+    shot_type_id = Column(Integer, ForeignKey('shot_types.id'), nullable=False)
+
+
+class PenaltyPlay(Base):
+
+    __tablename__ = 'penalty_plays'
+
+    id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, ForeignKey('matches.id'), nullable=False)
+    offender_id = Column(Integer, ForeignKey('players.id'), nullable=False)
+    offender_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
+    served_by_id = Column(Integer, ForeignKey('players.id'))
+    victim_id = Column(Integer, ForeignKey('players.id'), nullable=False)
+    victim_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
+    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+    penalty_type_id = Column(Integer, 
+                             ForeignKey('penalty_types.id'), 
+                             nullable=False)
+    penalty_minutes = Column(Integer, nullable=False)
 
 
