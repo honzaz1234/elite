@@ -27,9 +27,8 @@ class DatabasePipeline():
             table=db.Team, uid_val=dict_info[NHL_RIGHTS_UID], 
             uid=dict_info[NHL_RIGHTS_UID], team=None, long_name=None, active=None, founded=None, place_id=None, stadium_id=None)
         place_dict = dict_info[PLACE_DICT]
-        place_birth_id = database_method._input_unique_data(
-            table=db.Place, country_s=place_dict[COUNTRY],
-            place = place_dict[PLACE], region=place_dict[REGION])
+        place_birth_id = database_method._input_unique_data_NA_excluded(
+            table=db.Place, non_condition=place_dict[PLACE], country_s=place_dict[COUNTRY], place=place_dict[PLACE], region=place_dict[REGION])
         player_id = query_object._find_id_in_table(
             table=db.Player, uid=dict_info[PLAYER_UID])
         if player_id == None:
@@ -71,15 +70,17 @@ class DatabasePipeline():
         if place_dict == None:
             place_id = None
         else:
-            place_id = database_method._input_unique_data(
+            place_id = database_method._input_unique_data_NA_excluded(
                 table=db.Place, place=place_dict[PLACE],
+                non_condition=place_dict[PLACE],
                 region=place_dict[REGION], 
                 country_s=place_dict[COUNTRY])
         team_id = query_object._find_id_in_table(
             table=db.Team, uid=dict_info[TEAM_UID])
         if team_id == None:
             team_id = database_method._input_unique_data(
-            table=db.Team, uid=dict_info[TEAM_UID],
+            table=db.Team,
+            uid=dict_info[TEAM_UID],
             team=dict_info[SHORT_NAME],
             long_name=dict_info[LONG_NAME],
             active=dict_info[ACTIVE],
@@ -115,8 +116,10 @@ class DatabasePipeline():
         league_id = query_object._find_id_in_table(table=db.League,
                                                     uid=league_uid)
         if league_id is None:
-            league_id = database_method._input_unique_data(table=db.League,
-                                                            league=long_name, uid=league_uid)
+            league_id = database_method._input_unique_data(
+                table=db.League,
+                league=long_name, 
+                uid=league_uid)
         else:
             database_method._update_data(table=db.League, 
                                          where_col=db.League.uid, where_val=league_uid,
@@ -140,9 +143,9 @@ class DatabasePipeline():
         achiev_id = query_object._find_id_in_table(
             table=db.Achievement, uid=achiev)
         if achiev_id is None:
-            database_method._input_unique_data(
-                table=db.Achievement, uid=achiev,
-                league_id=league_id)
+            achiev_id = database_method._input_unique_data_NA_excluded(
+                table=db.Achievement, non_condition=achiev, 
+                uid=achiev, league_id=league_id)
         else:
             database_method._update_data(
                 table=db.Achievement, where_col=db.Achievement.uid, 
@@ -173,8 +176,7 @@ class DatabasePipeline():
         season_id = database_method._input_unique_data(
             table=db.Season, season=season)
         relation_id = database_method._input_unique_data(
-            table=db.PlayerAchievement, season_id=season_id,
-            achievement_id=achiev_id, player_id=player_id)
+            table=db.PlayerAchievement, season_id=season_id, achievement_id=achiev_id, player_id=player_id)
         logger.debug(f"Input of player achievement relation {achiev} and"
                      f" index from {db.Player.__tablename__} table into"
                      f" table {db.PlayerAchievement.__tablename__} finished, "
@@ -263,15 +265,17 @@ class DatabasePipeline():
             return None
         dict_place = stadium_dict[PLACE_DICT]
         if set(dict_place.values()) != {None}:
-            place_id = database_method._input_unique_data(
+            place_id = database_method._input_unique_data_NA_excluded(
                 table=db.Place, 
+                non_condition=dict_place[PLACE],
                 place=dict_place[PLACE],
                 region=dict_place[REGION],
                 country_s=dict_place[COUNTRY])
         else:
             place_id = None
-        stadium_id = database_method._input_unique_data(
+        stadium_id = database_method._input_unique_data_NA_excluded(
             table=db.Stadium, 
+            non_condition=stadium_dict[ARENA_NAME],
             stadium=stadium_dict[ARENA_NAME],
             capacity=stadium_dict[CAPACITY],
             construction_year=stadium_dict[CONSTRUCTION_YEAR],
@@ -337,11 +341,10 @@ class DatabasePipeline():
         if team_id is None or colour is None:
             return None
         database_method = DatabaseMethods(db_session=self.db_session)
-        colour_id = database_method._input_unique_data(
-            table=db.Colour, colour=colour)
+        colour_id = database_method._input_unique_data_NA_excluded(
+            table=db.Colour, non_condition=colour, colour=colour)
         relation_id = database_method._input_unique_data(
-            table=db.TeamColour,
-            team_id=team_id, colour_id=colour_id)
+            table=db.TeamColour, team_id=team_id, colour_id=colour_id)
         logger.debug(f"Input of team colour {colour} and id from table"
                      f" {db.Team.__tablename__} {team_id} into table"
                      f" {db.TeamColour.__tablename__} finished, "
@@ -391,6 +394,8 @@ class DatabasePipeline():
                      f" at players table and nationality {nationality}"
                      f" into table {db.PlayerNationality.__tablename__}"
                      f" started")
+        if nationality is None:
+            return None
         database_method = DatabaseMethods(db_session=self.db_session)
         nation_id = database_method._input_unique_data(
             table=db.Nationality,
@@ -424,8 +429,8 @@ class DatabasePipeline():
         player_from_id = database_method._input_uid(
             table=db.Player, uid_val=player_from_uid, name=None, uid=player_from_uid, position=None, active=None, age=None, shoots=None, catches=None, contract=None, cap_hit=None, signed_nhl=None, date_birth=None, drafted=None, 
             height=None, weight=None, nhl_rights_id=None, place_birth_id=None)
-        relation_id=database_method._input_unique_data(table=db.Relation,
-                                                       relation=relation)
+        relation_id = database_method._input_unique_data(
+            table=db.Relation, relation=relation)
         table_relation_id = database_method._input_unique_data(
             table=db.PlayerRelation, player_from_id=player_from_id,
             player_to_id=player_to_id, relation_id=relation_id)
@@ -519,12 +524,13 @@ class DatabasePipeline():
                                              founded=None, 
                                              place_id=None, 
                                              stadium_id=None)
-        division_id = database_method._input_unique_data(
-            table=db.Divison, division=dict_[SECTION_TYPE])
-        season_id = database_method._input_unique_data(table=db.Season,
-                                                        season=dict_[SEASON_NAME])
-        postseason_type_id = database_method._input_unique_data(
-            table=db.PostseasonType, postseason_type=dict_[POSTSEASON])
+        division_id = database_method._input_unique_data_NA_excluded(
+            table=db.Divison, non_condition=dict_[SECTION_TYPE], 
+            division=dict_[SECTION_TYPE])
+        season_id = database_method._input_unique_data(
+            table=db.Season, season=dict_[SEASON_NAME])
+        postseason_type_id = database_method._input_unique_data_NA_excluded(
+            table=db.PostseasonType, non_condition=dict_[POSTSEASON],postseason_type=dict_[POSTSEASON])
         position_id = database_method._input_unique_data(
             table=db.TeamSeason, 
             position=dict_[LEAGUE_POSITION], 
@@ -575,6 +581,14 @@ class DatabaseMethods():
                      f" is {id}")
         return id
     
+
+    def _input_unique_data_NA_excluded(
+            self, table, non_condition, **kwargs) -> int:
+        if non_condition == None:
+            return None
+        id = self._input_unique_data(table=table, **kwargs)
+        return id
+        
     def _input_unique_data(self, table, **kwargs) -> int:
         """inputs data into database when it is not there already 
             and returns the id of entry
@@ -618,11 +632,13 @@ class DatabaseMethods():
                        uid_val - inputted uid
                        **kwargs -uid=uid_val ad other column value pairs of the table, all of them need to be specified
         """
-
+        if uid_val == None:
+            return None
         query_object = Query(db_session=self.db_session)
         id = query_object._find_id_in_table(table=table, uid=uid_val)
         if id is None:
-            id = self._input_unique_data(table=table, **kwargs)
+            id = self._input_unique_data_NA_excluded(
+                table=table, non_condition=uid_val, **kwargs)
             logger.debug(f"UID {uid_val} not found in table"
                          f" {table.__tablename__}, added at index {id}")
         else:
