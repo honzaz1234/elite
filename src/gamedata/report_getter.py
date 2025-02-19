@@ -35,15 +35,16 @@ class ReportIDGetter():
             self.season_ranges = json.load(f)
 
     
-    def get_all_season_ids(self):
-
+    def get_selected_season_ids(self, selected_seasons: list=None) -> dict:
+        if selected_seasons is None:
+            selected_seasons = self.season_ranges.keys()
         report_ids = {
             season: self.get_season_ids(season_dict=self.season_ranges[season],
                                         season=season)
-            for season in self.season_ranges
+            for season in self.season_ranges if season in selected_seasons
         }
 
-        report_ids
+        return report_ids
 
 
     def get_season_ids(self, season_dict: dict, season: str) -> dict:
@@ -118,6 +119,7 @@ class GetReportData():
             f"https://www.nhl.com/scores/htmlreports"
             f"/{self.season}/{self.PBP_id}.HTM"
         )
+        print(request_url)
         htm = requests.get(request_url).content
         pbp_o = pbp_parser.PBPParser(htm=htm,
                                      report_id=self.report_id)
