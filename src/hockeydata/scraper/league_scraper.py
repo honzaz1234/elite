@@ -1,11 +1,11 @@
 import hockeydata.playwright_setup.playwright_setup as ps
 import playwright.sync_api as sync_api
 import re
-import requests
 import scrapy
 
 from hockeydata.constants import *
-from hockeydata.decorators import time_execution
+from common_functions import get_valid_request
+from decorators import time_execution
 from logger.logger import logger
 
 
@@ -27,7 +27,7 @@ class LeagueScrapper():
         """url is the web address of league on elite prospect website"""
 
         self.url = url
-        self.html = requests.get(url).content
+        self.html = get_valid_request(url=url, return_type="content")
         self.page = page
 
     @time_execution
@@ -122,7 +122,7 @@ class LeagueSeasonScraper():
     def __init__(self, url: str):
         self.url = url
         self.season = re.findall('([0-9\-]+)$', self.url)
-        self.html = requests.get(self.url).content
+        self.html = get_valid_request(url=url, return_type="content")
         self.selector = scrapy.Selector(text=self.html)
 
     def get_season_standings(self) -> dict:

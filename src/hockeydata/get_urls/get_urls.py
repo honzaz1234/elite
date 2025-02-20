@@ -3,8 +3,8 @@ import requests
 import scrapy
 import time
 
+from common_functions import get_valid_request, time_execution
 from hockeydata.constants import *
-from hockeydata.decorators import time_execution
 from logger.logger import logger
 
 
@@ -39,7 +39,7 @@ class LeagueUrlDownload():
 
         dict_leagues = {}
         path_all_leagues = ELITE_URL + LeagueUrlDownload.PATHS["all_leagues"]
-        html_leagues = requests.get(path_all_leagues).content
+        html_leagues = get_valid_request(path_all_leagues, return_type="content")
         leagues_sel = scrapy.Selector(text=html_leagues)
         leagues_ref = leagues_sel.xpath(LeagueUrlDownload.PATHS["league_names_ref"]).getall()
         leagues_names = leagues_sel.xpath(LeagueUrlDownload.PATHS["league_name"]).getall()
@@ -196,7 +196,7 @@ class SeasonUrlDownload():
                      + "/" 
                      + season)
         dict_season = {}
-        page_html = requests.get(stats_path).content
+        page_html = get_valid_request(stats_path, return_type="content")
         selector_players = scrapy.Selector(text=page_html)
         block_check = selector_players.xpath(BLOCK_SELECTOR).get()
         if block_check != None:
@@ -276,7 +276,7 @@ class SeasonUrlDownload():
         """downloads urls of player profiles from 1 page of seasonal statistic board"""
 
         subpage_path = path + "?page=" + str(index)
-        subpage_html = requests.get(subpage_path).content
+        subpage_html = get_valid_request(subpage_path, return_type="content")
         selector_subpage = scrapy.Selector(text=subpage_html)
         block_check = selector_subpage.xpath(BLOCK_SELECTOR).get()
         if block_check != None:
@@ -291,7 +291,7 @@ class SeasonUrlDownload():
         subpage_path = (path 
                         + SeasonUrlDownload.PATHS["page_goalie"] 
                         + str(index))
-        subpage_html = requests.get(subpage_path).content
+        subpage_html = get_valid_request(subpage_path, return_type="content")
         selector_subpage = scrapy.Selector(text=subpage_html)
         block_check = selector_subpage.xpath(BLOCK_SELECTOR).get()
         if block_check != None:
@@ -309,7 +309,7 @@ class SeasonUrlDownload():
                     " started")
         url_season = (ELITE_URL 
                       + season_ref)
-        season_html = requests.get(url_season).content
+        season_html = get_valid_request(url_season, return_type="content")
         sel_season = scrapy.Selector(text=season_html)
         team_refs = sel_season.xpath(
             SeasonUrlDownload.PATHS["team_url"]).getall()

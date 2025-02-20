@@ -2,9 +2,9 @@ import datetime
 import re
 
 from hockeydata.constants import *
-from hockeydata.decorators import time_execution
+from decorators import time_execution
 from logger.logger import logger
-from hockeydata.common_functions import convert_season_format, convert_to_seconds
+from common_functions import convert_season_format, convert_to_seconds
 
 
 class UpdatePlayer:

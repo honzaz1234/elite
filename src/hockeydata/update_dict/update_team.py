@@ -2,7 +2,7 @@ import re
 
 from hockeydata.constants import * 
 from logger.logger import logger 
-from hockeydata.decorators import time_execution 
+from decorators import time_execution 
 
 
 class UpdateTeamDict():

@@ -5,7 +5,7 @@ import scrapy
 import time
 
 from hockeydata.constants import *
-from hockeydata.decorators import time_execution
+from decorators import time_execution
 from logger.logger import logger
 
 
