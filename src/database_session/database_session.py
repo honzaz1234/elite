@@ -126,7 +126,21 @@ class DatabaseSession():
             manage_league.add_league_to_db(league_uid=league_uid)
         logger.info(f"Process of obtaining data of leagues from following"
                     f" list: {league_uids} finished")
+        
 
+    @time_execution
+    def add_games_from_seasons_to_db(self, seasons: list) -> None:
+        logger.info(f"Process of obtaining data of games from following"
+                    f" list: {seasons} started")
+        manage_game = ManageGame(done_folder_path=self.done_folder_path,
+                                 links_folder_path=self.links_folder_path,
+                                 session=self.session)
+        manage_game.set_up_manage_game()
+        for season in seasons:
+            manage_game.add_one_season_in_db(season=season)
+        logger.info(f"Process of obtaining data of games from following"
+                    f" list: {seasons} finished")
+        
 
 class ManagePlayer():
 
@@ -439,18 +453,18 @@ class ManageGame():
 
     def __init__(
             self, done_folder_path: str, links_folder_path: str, 
-            seeason_ranges_path: str, session: Session):
+            session: Session):
         self.games_done_path = done_folder_path + "/done_games.json"
         self.games_done = None
         self.game_data_path = links_folder_path + "/games.json"
         self.game_data = None
-        self.season_ranges_path = seeason_ranges_path + "/season_ranges.json"
+        self.season_ranges_path = links_folder_path + "/season_ranges.json"
         self.season_ranges = None
         self.report_id_getter = report_getter.ReportIDGetter()
         self.session = session
 
 
-    def set_up_manage_league(self) -> None:
+    def set_up_manage_game(self) -> None:
         self.load_games_done_file()
         self.load_games_url_file()
         self.load_season_ranges()
