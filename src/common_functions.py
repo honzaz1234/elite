@@ -1,3 +1,8 @@
+import requests
+
+from decorators import repeat_request_until_success
+
+
 def convert_season_format(season):
     """
     Converts a season string from 'yyyy-yy' to 'yyyy-yyyy' or returns it unchanged 
@@ -28,3 +33,17 @@ def convert_to_seconds(time_str):
     
     minutes, seconds = map(int, time_str.split(":"))
     return minutes * 60 + seconds
+
+
+@repeat_request_until_success
+def get_valid_request(url: str, return_type: str, params: dict=None, 
+    headers: dict=None) -> requests.Response:
+    response = requests.get(url, params=params, headers=headers)
+    assert response.status_code == 200
+    if return_type=="json":
+
+        return response.json()
+    elif return_type=="content":
+
+        return response.content
+
