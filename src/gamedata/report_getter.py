@@ -39,21 +39,22 @@ class ReportIDGetter():
         if selected_seasons is None:
             selected_seasons = self.season_ranges.keys()
         report_ids = {
-            season: self.get_season_ids(season_dict=self.season_ranges[season],
-                                        season=season)
+            season: self.get_season_ids(
+                season_ranges_dict=self.season_ranges[season],
+                season=season)
             for season in self.season_ranges if season in selected_seasons
         }
 
         return report_ids
 
 
-    def get_season_ids(self, season_dict: dict, season: str) -> dict:
+    def get_season_ids(self, season_ranges_dict: dict, season: str) -> dict:
         logger.info(f"Scraping of Report IDs for season: "
                     f"{season} started")
         report_data_all = []
         season_dates = generate_dates_between(
-            start_date=season_dict["start_date"],
-            end_date=season_dict["end_date"])
+            start_date=season_ranges_dict["start_date"],
+            end_date=season_ranges_dict["end_date"])
         for date in season_dates:
             report_data = self.get_daily_report_ids(date=date)
             report_data_all = report_data_all + report_data
@@ -107,49 +108,77 @@ class GetReportData():
 
 
     def get_all_report_data(self) -> dict:
+        logger.info(f"Scraping of data for a game {self.report_id} from date"
+                    f" {self.report_dict["date"]} and season {self.season}"    f"started...")
         self.report_dict["PBP"] = self.get_PBP_data()
         self.report_dict["TH"] = self.get_HTS_data()
         self.report_dict["TV"] = self.get_VTS_data()
+        logger.info(f"Scraping of data for a game {self.report_id} from date"
+                    f" {self.report_dict["date"]} and season {self.season}"    f"finished.")
 
         return self.report_dict
 
 
     def get_PBP_data(self) -> list:
+        logger.debug(f"Scraping of PBP data for report {self.report_id} from"
+                     f"season {self.season} started...")
         request_url = (
             f"https://www.nhl.com/scores/htmlreports"
             f"/{self.season}/{self.PBP_id}.HTM"
         )
         print(request_url)
-        htm = requests.get(request_url).content
-        pbp_o = pbp_parser.PBPParser(htm=htm,
-                                     report_id=self.report_id)
-        plays = pbp_o.parse_htm_file()
+        try:
+            htm = requests.get(request_url).content
+            pbp_o = pbp_parser.PBPParser(htm=htm,
+                                        report_id=self.report_id)
+            plays = pbp_o.parse_htm_file()
+        except Exception as e:
+            logger.error(f"Scraping of PBP data for report {self.report_id}"
+                         f"season {self.season} failed: {e}") 
+        logger.debug(f"Scraping of PBP data for report {self.report_id} from"
+                     f"season {self.season} finished.")
 
         return plays
     
     
     def get_VTS_data(self) -> list:
+        logger.debug(f"Scraping of VTS data for report {self.report_id} from"
+                     f"season {self.season} started...")
         request_url = (
             f"https://www.nhl.com/scores/htmlreports"
             f"/{self.season}/{self.VTS_id}.HTM"
         )
-        htm = requests.get(request_url).content
-        ts_o = ts_parser.TSParser(htm=htm,
-                                   report_id=self.report_id)
-        plays = ts_o.parse_htm_file()
+        try:
+            htm = requests.get(request_url).content
+            ts_o = ts_parser.TSParser(htm=htm,
+                                    report_id=self.report_id)
+            plays = ts_o.parse_htm_file()
+        except Exception as e: 
+            logger.error(f"Scraping of VTS data for report {self.report_id}"
+                         f"season {self.season} failed: {e}") 
+        logger.debug(f"Scraping of VTS data for report {self.report_id} from"
+                     f"season {self.season} finished.")
 
         return plays
     
     
     def get_HTS_data(self) -> list:
+        logger.debug(f"Scraping of HTS data for report {self.report_id} from"
+                     f"season {self.season} started...")
         request_url = (
             f"https://www.nhl.com/scores/htmlreports"
             f"/{self.season}/{self.HTS_id}.HTM"
         )
-        htm = requests.get(request_url).content
-        ts_o = ts_parser.TSParser(htm=htm,
-                                   report_id=self.report_id)
-        plays = ts_o.parse_htm_file()
+        try:
+            htm = requests.get(request_url).content
+            ts_o = ts_parser.TSParser(htm=htm,
+                                    report_id=self.report_id)
+            plays = ts_o.parse_htm_file()
+        except Exception as e:
+            logger.error(f"Scraping of HTS data for report {self.report_id}"
+                         f"season {self.season} failed: {e}") 
+        logger.debug(f"Scraping of HTS data for report {self.report_id} from"
+                     f"season {self.season} finished.")
 
         return plays
 
