@@ -53,7 +53,11 @@ class Player(Base):
         self.place_birth_id = place_birth_id
 
     def __repr__(self):
-        return f"({self.id}, {self.uid}, {self.name}, {self.position}, {self.active}, {self.age}, {self.shoots}, {self.catches}, {self.contract}, {self.cap_hit}, {self.signed_nhl}, {self.date_birth}, {self.drafted}, {self.height}, {self.weight}, {self.nhl_rights_id}, {self.place_birth_id})"
+        return (f"({self.id}, {self.uid}, {self.name}, {self.position}, {self.active}, "
+        f"{self.age}, {self.shoots}, {self.catches}, {self.contract}, "
+        f"{self.cap_hit}, {self.signed_nhl}, {self.date_birth}, {self.drafted}, "
+        f"{self.height}, {self.weight}, {self.nhl_rights_id}, "
+        f"{self.place_birth_id})")
 
 
 class PlayerDraft(Base):
@@ -685,7 +689,9 @@ class Match(Base):
         self.away_team_id = away_team_id
 
     def __repr__(self):
-        return f"({self.id}, {self.stadium_id}, {self.date}, {self.time}, {self.attendance}, {self.home_team_id}, {self.away_team_id})"
+        return (f"({self.id}, {self.stadium_id}, {self.date}, "
+               f"{self.time}, {self.attendance}, {self.home_team_id}, "
+               f"{self.away_team_id})")
 
 
 class Play(Base):
@@ -702,7 +708,8 @@ class Play(Base):
         self.time = time
 
     def __repr__(self):
-        return f"({self.id}, {self.play_type_id}, {self.match_id}, {self.time})"
+        return (f"({self.id}, {self.play_type_id}, {self.match_id}, "
+               f"{self.time})")
 
 
 class GoalPlay(Base):
@@ -725,7 +732,9 @@ class GoalPlay(Base):
         self.zone_id = zone_id
 
     def __repr__(self):
-        return f"({self.id}, {self.distance}, {self.match_id}, {self.team_id}, {self.player_id}, {self.shot_type_id}, {self.zone_id})"
+        return (f"({self.id}, {self.distance}, {self.match_id}, "
+               f"{self.team_id}, {self.player_id}, {self.shot_type_id}, "
+               f"{self.zone_id})")
 
 
 class ShotPlay(Base):
@@ -748,7 +757,9 @@ class ShotPlay(Base):
         self.shot_type_id = shot_type_id
 
     def __repr__(self):
-        return f"({self.id}, {self.distance}, {self.match_id}, {self.player_id}, {self.team_id}, {self.zone_id}, {self.shot_type_id})"
+        return (f"({self.id}, {self.distance}, {self.match_id}, "
+               f"{self.player_id}, {self.team_id}, {self.zone_id}, "
+               f"{self.shot_type_id})")
 
 
 class HitPlay(Base):
@@ -769,7 +780,8 @@ class HitPlay(Base):
         self.zone_id = zone_id
 
     def __repr__(self):
-        return f"({self.id}, {self.match_id}, {self.hitter_id}, {self.team_id}, {self.victim_id}, {self.zone_id})"
+        return (f"({self.id}, {self.match_id}, {self.hitter_id}, "
+               f"{self.team_id}, {self.victim_id}, {self.zone_id})")
 
 
 class FaceoffPlay(Base):
@@ -791,6 +803,11 @@ class FaceoffPlay(Base):
         self.loser_team_id = loser_team_id
         self.zone_id = zone_id
 
+    def __repr__(self):
+        return (f"({self.id}, {self.match_id}, {self.winner_id}, "
+               f"{self.loser_id}, {self.winner_team_id}, {self.loser_team_id},"
+               f" {self.zone_id})")
+
 
 class GiveawayPlay(Base):
     __tablename__ = 'giveaway_plays'
@@ -807,6 +824,10 @@ class GiveawayPlay(Base):
         self.team_id = team_id
         self.zone_id = zone_id
 
+    def __repr__(self):
+        return (f"({self.id}, {self.match_id}, {self.player_id}, "
+               f"{self.team_id}, {self.zone_id})")
+
 
 class TakeawayPlay(Base):
     __tablename__ = 'takeaway_plays'
@@ -822,6 +843,10 @@ class TakeawayPlay(Base):
         self.player_id = player_id
         self.team_id = team_id
         self.zone_id = zone_id
+
+    def __repr__(self):
+        return (f"({self.id}, {self.match_id}, {self.player_id}, "
+               f"{self.team_id}, {self.zone_id})")
 
 
 class MissedShotPlay(Base):
@@ -867,6 +892,11 @@ class BlockedShotPlay(Base):
         self.zone_id = zone_id
         self.shot_type_id = shot_type_id
 
+    def __repr__(self):
+        return (f"({self.id}, {self.match_id}, {self.shooter_id}, "
+               f"{self.shooter_team_id}, {self.blocker_id}, "
+               f"{self.blocker_team_id}, {self.zone_id}, {self.shot_type_id})")
+
 
 class PenaltyPlay(Base):
     __tablename__ = 'penalty_plays'
@@ -893,11 +923,87 @@ class PenaltyPlay(Base):
         self.penalty_type_id = penalty_type_id
         self.penalty_minutes = penalty_minutes
 
+    def __repr__(self):
+        return (f"({self.id}, {self.match_id}, {self.offender_id}, "
+               f"{self.offender_team_id}, {self.served_by_id}, "
+               f"{self.victim_id}, {self.victim_team_id}, "
+               f"{self.zone_id}, {self.penalty_type_id}, "
+               f"{self.penalty_minutes})")
+
+
+class ChallengeReason(Base):
+
+    __tablename__ = 'challenge_reasons'
+
+    id = Column(Integer, primary_key=True)
+    challenge_reason = Column("challenge_reason", String, nullable=False)
+
+    def __init__(self, challenge_reason):
+        self.challenge_reason = challenge_reason
+
+    def __repr__(self):
+        return f"({self.challenge_reason})"
+
+
+class ChallengeResult(Base):
+
+    __tablename__ = 'challenge_results'
+
+    id = Column(Integer, primary_key=True)
+    challenge_result = Column("challenge_result", String, nullable=False)
+
+    def __init__(self, challenge_result):
+        self.challenge_result = challenge_result
+
+    def __repr__(self):
+        return f"({self.challenge_result})"
+    
+
+class ChallengePlay(Base):
+    __tablename__ = 'challenge_plays'
+
+    id = Column(Integer, primary_key=True)
+    team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
+    match_id = Column(Integer, ForeignKey('matches.id'), nullable=False)
+    challenge_reason_id = Column(Integer, 
+                                 ForeignKey('challenge_reasons.id'),  
+                                 nullable=False)
+    challenge_result_id = Column(Integer, 
+                                 ForeignKey('challenge_results.id'), 
+                                 nullable=False)
+
+    def __init__(
+            self, match_id, team_id, challenge_reason_id, challenge_result_id):
+        self.match_id = match_id
+        self.team_id = team_id
+        self.challenge_reason_id = challenge_reason_id
+        self.challenge_result_id = challenge_result_id
+
+    def __repr__(self):
+        return (f"({self.id}, {self.match_id}, {self.challenge_reason_id}," 
+                f"{self.challenge_result_id})")
+    
+
+class DelayedPenaltyPlay(Base):
+    __tablename__ = 'delayed_penalty_plays'
+
+    id = Column(Integer, primary_key=True)
+    team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
+    match_id = Column(Integer, ForeignKey('matches.id'), nullable=False)
+
+    def __init__(self, match_id, team_id):
+        self.match_id = match_id
+        self.team_id = team_id
+
+    def __repr__(self):
+        return (f"({self.id}, {self.match_id}, {self.team_id})")
+
 
 class PlayerShift(Base):
     __tablename__ = "player_shifts"
 
     id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, ForeignKey('matches.id'), nullable=False)
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     period = Column(Integer, nullable=False)
     shift_start = Column(Integer, nullable=False)
@@ -909,14 +1015,22 @@ class PlayerShift(Base):
         self.shift_start = shift_start
         self.shift_end = shift_end
 
+    def __repr__(self):
+        return (f"({self.id}, {self.player_id}, {self.period}, "
+               f"{self.shift_start}, {self.shift_end})")
+
 
 class PlayerOnIce(Base):
     __tablename__ = "on_ice_players"
 
     id = Column(Integer, primary_key=True)
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
+    team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
 
     def __init__(self, player_id, play_id):
         self.player_id = player_id
         self.play_id = play_id
+
+    def __repr__(self):
+        return f"({self.id}, {self.player_id}, {self.play_id})"
