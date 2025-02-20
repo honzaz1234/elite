@@ -272,11 +272,17 @@ class PBPBlockedShotParser(PBPDescriptionParser):
 
 class PBPPenaltyParser(PBPDescriptionParser):
 
+    PATTERN_NDP = (
+        r"(?P<team>[A-Z]+)\s+#(?P<player_number>\d+)\s+"
+        r"(?P<player_name>[A-Z]+(?:[-' ][A-Z]+)*)\s+"
+        r"(?P<penalty_type>[A-Za-z-\s]+)\((?P<penalty_minutes>\d+)\s*min\),\s*"
+        r"(?P<zone>[A-Za-z.]+)\s*Zone"
+        )
 
     PATTERN_PP = (
         r"(?P<team>[A-Z]+)\s+#(?P<player_number>\d+)\s+"
         r"(?P<player_name>[A-Z]+(?:[-' ][A-Z]+)*)\s+"
-        r"(?P<penalty_type>[A-Za-z-]+)\((?P<penalty_minutes>\d+)\s*min\),\s*"
+        r"(?P<penalty_type>[A-Za-z-\s]+)\((?P<penalty_minutes>\d+)\s*min\),\s*"
         r"(?P<zone>[A-Za-z.]+)\s*Zone,*\s*Drawn By:\s*"
         r"(?P<drawn_team>[A-Z]+)\s+#(?P<drawn_player_number>\d+)\s+"
         r"(?P<drawn_player_name>[A-Z]+(?:[-' ][A-Z]+)*)"
@@ -303,7 +309,7 @@ class PBPPenaltyParser(PBPDescriptionParser):
 
     def parse_play_desc(self) -> dict:
 
-        for pat in [self.PATTERN_PP, self.PATTERN_PPO, self.PATTERN_TP]:
+        for pat in [self.PATTERN_NDP, self.PATTERN_PP, self.PATTERN_PPO, self.PATTERN_TP]:
             pattern = re.compile(pat)
             match = pattern.match(self.play_desc)
             if match:
@@ -348,8 +354,8 @@ class PBPChallenge(PBPDescriptionParser):
 
 
     PATTERN = (
-        r"(?P<team>\w{3}) Challenge - (?P<reason>[\w\s]+)"
-        r" - Result: (?P<result>.+)"
+        r"(?P<team>\w{3}) Challenge\s*-\s*(?P<reason>[\w\s]+)"
+        r"\s*-\s*Result:\s*(?P<result>.+)"
         )
 
 
