@@ -1,4 +1,4 @@
-import hockeydata.database_session.database_session as ds
+import database_session.database_session as ds
 
 #path to folder with files with already downloaded entities (league, team, #player) must be specified
 
@@ -10,7 +10,7 @@ links_folder_path = "./data/links/"
 
 #path to database must be specifed
 
-db_path = "./database/hockey_v9.db"
+db_path = "./database/hockey_v11.db"
 
 #connection to database, downloading links, scrapping entities and loading #them into database is managed by one wrapper class DatabaseSession
 #only 3 parameters are 3 paths described above

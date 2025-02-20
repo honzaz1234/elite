@@ -1,4 +1,4 @@
-import hockeydata.database_creator.database_creator as db
+import database_creator.database_creator as db
 
 from hockeydata.constants import *
 from logger.logger import logger

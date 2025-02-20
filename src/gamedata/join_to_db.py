@@ -2,7 +2,7 @@ import pandas as pd
 
 from sqlalchemy import Table, TextClause
 
-import hockeydata.database_creator.database_creator as db
+import database_creator.database_creator as db
 
 
 class DBJoiner():

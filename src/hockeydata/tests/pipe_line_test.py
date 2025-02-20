@@ -9,7 +9,7 @@ import hockeydata.playwright_setup.playwright_setup as ps
 import hockeydata.input_dict.input_league_dict as input_dict_league
 import hockeydata.input_dict.input_player_dict as input_dict_player
 import hockeydata.input_dict.input_team_dict as input_dict_team
-import hockeydata.database_session.database_session as ds
+import database_session.database_session as ds
 
 import json
 import re

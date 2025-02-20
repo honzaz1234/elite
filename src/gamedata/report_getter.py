@@ -1,11 +1,12 @@
+import json
+
 import gamedata.ts_parser as ts_parser
 import gamedata.pbp_parser as pbp_parser
 
-import json
-import requests
-
 from datetime import datetime, timedelta
 
+from common_functions import get_valid_request
+from decorators import repeat_request_until_success
 from logger.logger import logger
 
 
@@ -48,49 +49,73 @@ class ReportIDGetter():
         return report_ids
 
 
-    def get_season_ids(self, season_ranges_dict: dict, season: str) -> dict:
+    def get_season_ids(
+            self, season_ranges_dict: dict, season: str, 
+            scraped_data: dict=None) -> dict:
+        if scraped_data == None:
+            scraped_data = {}
+            scraped_data["season_long"] = convert_season_format(season) 
         logger.info(f"Scraping of Report IDs for season: "
                     f"{season} started")
-        report_data_all = []
         season_dates = generate_dates_between(
             start_date=season_ranges_dict["start_date"],
             end_date=season_ranges_dict["end_date"])
-        for date in season_dates:
+        scraped_data["report_data"] = self.get_report_ids(
+            season_dates=season_dates,
+            scraped_data=scraped_data["report_data"])
+        logger.info(f"Scraping of Report IDs for season: "
+                    f"{season} finished")
+
+        return scraped_data
+    
+    
+    def get_report_ids(
+            self, season_dates: list, report_data_all: dict=None) -> list:
+        if report_data_all == None:
+            report_data_all = []
+        scraped_dates = {game['date'] for game in report_data_all}
+        dates_to_scrape = list(set(season_dates) - scraped_dates)
+        for date in dates_to_scrape:
             report_data = self.get_daily_report_ids(date=date)
             report_data_all = report_data_all + report_data
             logger.debug(f"Report data for date {date}: {report_data}")
 
-        season_dict = {}
-        season_long = convert_season_format(season)
-        season_dict["season_long"] = season_long 
-        season_dict["report_data"] = report_data_all
-        logger.info(f"Scraping of Report IDs for season: "
-                    f"{season} finished")
+        return report_data_all
 
-        return season_dict
 
+    @repeat_request_until_success
     def get_daily_report_ids(self, date: str) -> list:
-
+        logger.debug(f"Scraping of daily report IDs for date {date} started..")
         request_url = f"https://api-web.nhle.com/v1/score/{date}"
-        data = requests.get(request_url).json()
+        data = get_valid_request(request_url, 'json')
         report_data = self.parse_response(data=data, date=date)
+        logger.debug(f"Scraping of daily report IDs for date {date} finished.")
 
         return report_data
+
 
     def parse_response(self, data: dict, date: str) -> list:
 
         report_data = []
         for match_data in data["games"]:
-            match_dict = {}
-            match_dict["id"] = str(match_data["id"])[4:]
-            match_dict["stadium"] = match_data["venue"]["default"]
-            match_dict["date"] = date
-            match_dict["start_time_UTC"] = match_data["startTimeUTC"]
-            match_dict["HT"] = match_data["homeTeam"]["abbrev"]
-            match_dict["VT"] = match_data["awayTeam"]["abbrev"]
+            match_dict = self.parse_game(match_data=match_data,
+                                         date=date)
             report_data.append(match_dict)
         
         return report_data
+    
+
+    def parse_game(self, match_data: dict, date: str) -> dict:
+        match_dict = {}
+        match_dict["id"] = str(match_data["id"])[4:]
+        match_dict["stadium"] = match_data["venue"]["default"]
+        match_dict["date"] = date
+        match_dict["start_time_UTC"] = match_data["startTimeUTC"]
+        match_dict["HT"] = match_data["homeTeam"]["abbrev"]
+        match_dict["VT"] = match_data["awayTeam"]["abbrev"]
+        logger.debug(f"{match_dict}")
+
+        return match_dict
     
 
 class GetReportData():
@@ -118,7 +143,7 @@ class GetReportData():
 
         return self.report_dict
 
-
+    @repeat_request_until_success
     def get_PBP_data(self) -> list:
         logger.debug(f"Scraping of PBP data for report {self.report_id} from"
                      f"season {self.season} started...")
@@ -128,7 +153,7 @@ class GetReportData():
         )
         print(request_url)
         try:
-            htm = requests.get(request_url).content
+            htm = get_valid_request(request_url, 'content')
             pbp_o = pbp_parser.PBPParser(htm=htm,
                                         report_id=self.report_id)
             plays = pbp_o.parse_htm_file()
@@ -140,7 +165,7 @@ class GetReportData():
 
         return plays
     
-    
+
     def get_VTS_data(self) -> list:
         logger.debug(f"Scraping of VTS data for report {self.report_id} from"
                      f"season {self.season} started...")
@@ -149,7 +174,7 @@ class GetReportData():
             f"/{self.season}/{self.VTS_id}.HTM"
         )
         try:
-            htm = requests.get(request_url).content
+            htm = get_valid_request(request_url, 'content')
             ts_o = ts_parser.TSParser(htm=htm,
                                     report_id=self.report_id)
             plays = ts_o.parse_htm_file()
@@ -162,6 +187,7 @@ class GetReportData():
         return plays
     
     
+    @repeat_request_until_success
     def get_HTS_data(self) -> list:
         logger.debug(f"Scraping of HTS data for report {self.report_id} from"
                      f"season {self.season} started...")
@@ -170,7 +196,7 @@ class GetReportData():
             f"/{self.season}/{self.HTS_id}.HTM"
         )
         try:
-            htm = requests.get(request_url).content
+            htm = get_valid_request(request_url, 'content')
             ts_o = ts_parser.TSParser(htm=htm,
                                     report_id=self.report_id)
             plays = ts_o.parse_htm_file()
