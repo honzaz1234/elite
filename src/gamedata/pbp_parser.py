@@ -1,11 +1,11 @@
 import re
+import scrapy
 
-from scrapy import Selector
+import common_functions
 
 from logger.logger import logger
 
-PLAYER_PATTERN = "[\wÀ-ÖØ-öø-ÿ]+(?:[-' ][\wÀ-ÖØ-öø-ÿ]+)*"
-ZONE_PATTERN = "(?:Off|Def|Neu|Neutral|Offensive|Defensive)\.?"
+
 
 class PBPParser():
 
@@ -18,7 +18,7 @@ class PBPParser():
 
     def __init__(self, htm, report_id: int):
         self.htm = htm
-        self.sel = Selector(text=self.htm)
+        self.sel = scrapy.Selector(text=self.htm)
         self.report_id = report_id
 
 
@@ -47,7 +47,8 @@ class PBPParser():
     
 
     def get_attendance(self) -> str:
-        attendance_string = self.sel.xpath(self.XPATHS["attendance"]).get()
+        attendance_string = common_functions.get_single_xpath_value(
+            sel=self.sel, xpath=self.XPATHS["attendance"], optional=False)
         attendance = re.findall("[0-9,]+", attendance_string)
         attendance = attendance.replace(",", "")
 
@@ -62,7 +63,7 @@ class PBPTableParser():
     }
 
 
-    def __init__(self, table_sel: Selector):
+    def __init__(self, table_sel: scrapy.Selector):
         self.sel = table_sel
 
 
@@ -83,11 +84,14 @@ class PBPTableParser():
         return parsed_data
 
     def parse_row(
-            self, row_sel: Selector, row_idx: int, table_idx: int) -> dict:
+            self, row_sel: scrapy.Selector, row_idx: int, table_idx: int) -> dict:
         logger.debug(f"Scraping of game PBP data from row: {row_idx} table: " 
                     f"{table_idx} started")
         row_parser = PBPRowParser(row_sel=row_sel)
-        row_dict = row_parser.parse_row()
+        try:
+            row_dict = row_parser.parse_row()
+        except:
+            raise
         logger.debug(f"Scraping of game PBP data from row: {row_idx} table: " 
                     f"{table_idx} finished")
 
@@ -102,20 +106,27 @@ class PlayerOnIceParser():
     }
 
 
-    def __init__(self, poit_sel: Selector):
+    def __init__(self, poit_sel: scrapy.Selector):
         self.sel = poit_sel
 
 
-    def get_team_players_on_ice(self):
-        player_nums = self.sel.xpath(self.XPATHS["player_name"]).getall()
+    def get_team_players_on_ice(self) -> list:
+        player_nums = common_functions.get_list_xpath_values(
+            sel=self.sel, xpath=self.XPATHS["player_name"], optional=True)
         
         return player_nums
 
 
 class PBPDescriptionParser():
 
+    PATTERN =None
 
-    PATTERN = None
+    PLAYER_PATTERN = rf"[\wÀ-ÖØ-öø-ÿ']+(?:[-' ][\wÀ-ÖØ-öø-ÿ]+)*"
+    ZONE_PATTERN = rf"(?:Off|Def|Neu|Neutral|Offensive|Defensive)\.?"
+    TEAM_PATTERN = rf"[A-Z]{{3}}" 
+    NUMBER_PATTERN = rf"[0-9]{{1,2}}" 
+    PENALTY_PATTERN = rf"[A-Za-z-\s]+"
+    SHOT_PATTERN = "[A-Za-z-]+"
 
 
     def __init__(self, play_desc: str):
@@ -134,14 +145,21 @@ class PBPGoalParser(PBPDescriptionParser):
 
 
     PATTERN_GS = (
-        r"(?P<team>\w+)\s+#(?P<number>\d+)\s+(?P<player>[A-Z]+)\(\d+\),\s+"
-        r"(?P<play_type>[\w\s]+),\s+(?P<zone>[\w.\s]+),\s+(?P<distance>\d+)"
-        "\s*ft\."
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
+        rf"(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<player>{PBPDescriptionParser.PLAYER_PATTERN})\(\d+\)\s*,\s+"
+        rf"(?P<play_type>[\w\s]+)\s*,\s+"
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})"
+        rf"\s*,\s+(?P<distance>\d+)"
+        rf"\s*ft\."
     )
     
-    PATTERN_A = r"Assists*?:\s*(?P<assists>(?:#\d+\s+[A-Z]+\(\d+\);?\s*)+)"
+    PATTERN_A = rf"Assists*?:\s*(?P<assists>(?:#\d+\s+[A-Z]+\(\d+\);?\s*)+)"
 
-    PATTERN_AD = r"#(?P<number>\d+)\s+(?P<player>[A-Z]+)\(\d+\)"
+    PATTERN_AD = (
+        rf"#(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<player>{PBPDescriptionParser.PLAYER_PATTERN})\(\d+\)"
+    )
 
 
     def parse_play_desc(self) -> dict:
@@ -176,10 +194,12 @@ class PBPShotParser(PBPDescriptionParser):
 
 
     PATTERN = (
-        r"(?P<team>[A-Z]+) ONGOAL\s*-\s*#(?P<player_number>\d+) "
-        rf"(?P<player_name>{PLAYER_PATTERN}), "
-        r"(?P<shot_type>[A-Za-z-]+) ,"
-        rf"(?P<zone>{ZONE_PATTERN}) Zone, (?P<distance>\d+) ft\."
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN}) ONGOAL\s*-\s*#"
+        rf"(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s*"
+        rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s*,\s*"  
+        rf"(?P<shot_type>{PBPDescriptionParser.SHOT_PATTERN})\s*,\s*"  
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s*Zone,\s*" 
+        rf"(?P<distance>\d+)\s*ft\."  
     )
     
     
@@ -187,11 +207,13 @@ class PBPHitParser(PBPDescriptionParser):
 
 
     PATTERN = (
-        r"(?P<team>[A-Z]+) #(?P<player_number>\d+)" 
-        rf"(?P<player_name>{PLAYER_PATTERN}) HIT "
-        r"(?P<opponent_team>[A-Z]+) #(?P<opponent_player_number>\d+) "
-        rf"(?P<opponent_player_name>{PLAYER_PATTERN}), "
-        rf"(?P<zone>{ZONE_PATTERN}) Zone"
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+" 
+        rf"#(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+" 
+        rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s+HIT "
+        rf"(?P<opponent_team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
+        rf"(?P<opponent_player_number>{PBPDescriptionParser.NUMBER_PATTERN})"
+        rf"\s+(?P<opponent_player_name>{PBPDescriptionParser.PLAYER_PATTERN})"
+        rf"\s*,\s+(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone"
     )
     
 
@@ -199,11 +221,14 @@ class PBPFaceoffParser(PBPDescriptionParser):
 
 
     PATTERN = (
-        rf"(?P<winning_team>[A-Z]+) won (?P<zone>({ZONE_PATTERN}) Zone - "
-        r"(?P<losing_team>[A-Z]+) #(?P<losing_player_number>\d+) "
-        rf"(?P<losing_player_name>{PLAYER_PATTERN}) vs "
-        r"(?P<winning_team_again>[A-Z]+) #(?P<winning_player_number>\d+) "
-        rf"(?P<winning_player_name>{PLAYER_PATTERN})"
+        rf"(?P<winning_team>{PBPDescriptionParser.TEAM_PATTERN})\s+won\s+"
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s*Zone\s*-\s+"
+        rf"(?P<l_team>{PBPDescriptionParser.TEAM_PATTERN})\s+"
+        rf"#(?P<l_player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<l_player_name>{PBPDescriptionParser.PLAYER_PATTERN})"
+        rf"\s*vs\s*(?P<r_team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
+        rf"(?P<r_player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<r_player_name>{PBPDescriptionParser.PLAYER_PATTERN})"
         )
 
 
@@ -211,9 +236,10 @@ class PBPGiveAwayParser(PBPDescriptionParser):
 
 
     PATTERN = (
-        r"(?P<team>[A-Z]+) GIVEAWAY\s*-\s*#(?P<player_number>\d+)"
-        rf" (?P<player_name>{PLAYER_PATTERN}), "
-        rf"(?P<zone>{ZONE_PATTERN}) Zone"
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+GIVEAWAY\s*-\s*"
+        rf"#(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})"
+        rf"\s+(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN}),\s+"
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone"
     )
 
     
@@ -221,9 +247,10 @@ class PBPTakeawayParser(PBPDescriptionParser):
 
 
     PATTERN = (
-        r"(?P<team>[A-Z]+) TAKEAWAY - #(?P<player_number>\d+) "
-        rf"(?P<player_name>{PLAYER_PATTERN}), "
-        rf"(?P<zone>{ZONE_PATTERN}) Zone"
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+TAKEAWAY\s+-\s+"
+        rf"#(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s*,\s+"
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone"
     )
 
     
@@ -231,11 +258,13 @@ class PBPMissedShotParser(PBPDescriptionParser):
 
 
     PATTERN = (
-        r"(?P<team>[A-Z]+) #(?P<player_number>\d+) "
-        rf"(?P<player_name>{PLAYER_PATTERN}), "
-        r"(?P<shot_type>[A-Za-z-]+), (?P<shot_result>[A-Za-z\s]+), "
-        rf"(?P<zone>{ZONE_PATTERN}) Zone, "
-        r"(?P<distance>\d+) ft\."""
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+" 
+        rf"#(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s*,\s*"
+        rf"(?P<shot_type>{PBPDescriptionParser.SHOT_PATTERN})\s*,\s*"
+        rf"(?P<shot_result>[A-Za-z\s]+)\s*,\s*"
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN}) Zone\s*,\s*"
+        rf"(?P<distance>\d+)\s*ft\."""
     )
 
 
@@ -243,18 +272,24 @@ class PBPBlockedShotParser(PBPDescriptionParser):
 
 
     PATTERN_TEAMATE = (
-        r"(?P<team>\w+)\s+#(?P<player_number>\d+)\s+"
-        rf"(?P<player_name>{PLAYER_PATTERN})\s+BLOCKED BY TEAMMATE,\s*"
-        rf"(?P<shot_type>[\w\s]+),\s*(?P<zone>({ZONE_PATTERN})\s*Zone"
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
+        rf"(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})"
+        rf"\s+BLOCKED BY TEAMMATE\s*,\s*"
+        rf"(?P<shot_type>{PBPDescriptionParser.SHOT_PATTERN})\s*,\s*"
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone"
     )
     
     PATTERN_OPPONENT = (
-        r"(?P<team>\w+)\s+#(?P<player_number>\d+)\s+"
-        rf"(?P<player_name>{PLAYER_PATTERN})\s+"
-        r"OPPONENT-BLOCKED BY\s+(?P<blocked_team>\w+)\s+#(?"
-        r"P<blocked_player_number>\d+)\s+(?P<blocked_player_name>"
-        rf"{PLAYER_PATTERN}),\s*(?P<shot_type>[\w\s]+),\s*(?P<zone>"
-        rf"{ZONE_PATTERN}\s*Zone)"
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
+        rf"(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s+"
+        rf"OPPONENT-BLOCKED BY\s+"
+        rf"(?P<blocked_team>{PBPDescriptionParser.TEAM_PATTERN})\s+#(?"
+        rf"P<blocked_player_number>{PBPDescriptionParser.NUMBER_PATTERN})"
+        rf"\s+(?P<blocked_player_name>{PBPDescriptionParser.PLAYER_PATTERN})"
+        rf"\s*,\s*(?P<shot_type>{PBPDescriptionParser.SHOT_PATTERN})"
+        rf"\s*,\s*(?P<zone>{PBPDescriptionParser.ZONE_PATTERN}\s*Zone)"
     )
 
 
@@ -271,41 +306,49 @@ class PBPBlockedShotParser(PBPDescriptionParser):
 
 class PBPPenaltyParser(PBPDescriptionParser):
 
+
     PATTERN_NDP = (
-        r"(?P<team>[A-Z]+)\s+#(?P<player_number>\d+)\s+"
-        rf"(?P<player_name>{PLAYER_PATTERN})\s+"
-        r"(?P<penalty_type>[A-Za-z-\s/]+)\((?P<penalty_minutes>\d+)\s*min\),\s*"
-        r"(?P<zone>[A-Za-z.]+)\s*Zone"
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
+        rf"(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s+"
+        rf"(?P<penalty_type>{PBPDescriptionParser.PENALTY_PATTERN})\("
+        rf"(?P<penalty_minutes>\d+)\s*min\)\s*,\s*"
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s*Zone"
         )
 
     PATTERN_PP = (
-        r"(?P<team>[A-Z]+)\s+#(?P<player_number>\d+)\s+"
-        rf"(?P<player_name>{PLAYER_PATTERN})\s+"
-        r"(?P<penalty_type>[A-Za-z-\s/]+)\((?P<penalty_minutes>\d+)\s*min\),\s*"
-        r"(?P<zone>[A-Za-z.]+)\s*Zone,*\s*Drawn By:\s*"
-        r"(?P<drawn_team>[A-Z]+)\s+#(?P<drawn_player_number>\d+)\s+"
-        rf"(?P<drawn_player_name>{PLAYER_PATTERN})"
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
+        rf"(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s+"
+        rf"(?P<penalty_type>{PBPDescriptionParser.PENALTY_PATTERN})\("
+        rf"(?P<penalty_minutes>\d+)\s*min\)\s*,\s*"
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s*Zone\s*,\s*"
+        rf"*\s*Drawn By:\s*(?P<drawn_team>{PBPDescriptionParser.TEAM_PATTERN})"
+        rf"\s+#(?P<drawn_player_number>{PBPDescriptionParser.NUMBER_PATTERN})"
+        rf"\s+(?P<drawn_player_name>{PBPDescriptionParser.PLAYER_PATTERN})"
         )
     
     PATTERN_TP = (
-        r"(?P<team>[A-Z]+) TEAM (?P<penalty_type>[A-Za-z-\s/]+)\("
-        r"(?P<penalty_minutes>\d+) min\) "
-        r"Served By: #(?P<served_player_number>\d+) "
-        rf"(?P<served_player_name>{PLAYER_PATTERN}), "
-        rf"(?P<zone>{ZONE_PATTERN})"
-        " Zone"
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+TEAM\s+"
+        rf"(?P<penalty_type>{PBPDescriptionParser.PENALTY_PATTERN})\(\s*"
+        rf"(?P<penalty_minutes>\d+)\s*min\)\s+Served By:\s*"
+        rf"#(?P<served_player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<served_player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s*,"
+        rf"\s*(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone"
         )
     
     PATTERN_PPO = (
-        r"(?P<team>[A-Z]{2,3})\s+#(?P<offender_number>\d+)\s+"
-        r"(?P<offender_name>[A-Z]+)\s+(?P<penalty_type>[A-Za-z-\s/]+)"
-        r"\((?P<penalty_minutes>\d+)\s+min\)\s+"
-        r"Served\s+By:\s+#(?P<served_player_number>\d+)\s+"
-        rf"(?P<served_player_name>{PLAYER_PATTERN}),\s+"
-        r"(?P<Zone>[\w\s.]+)\s+"
-        r"Drawn\s+By:\s+(?P<drawn_team>[A-Z]{2,3})\s+#"
-        r"(?P<drawn_player_number>\d+)\s+"
-        rf"(?P<drawn_player_name>{PLAYER_PATTERN})"
+        rf"(?P<team>[{PBPDescriptionParser.TEAM_PATTERN})\s+#"
+        rf"(?P<offender_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<offender_name>{PBPDescriptionParser.PLAYER_PATTERN})\s+"
+        rf"(?P<penalty_type>{PBPDescriptionParser.PENALTY_PATTERN})"
+        rf"\((?P<penalty_minutes>\d+)\s+min\)\s+Served\s+By:\s+#"
+        rf"(?P<served_player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<served_player_name>{PBPDescriptionParser.PLAYER_PATTERN}),\s+"
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Drawn\s+By:\s+"
+        rf"(?P<drawn_team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
+        rf"(?P<drawn_player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<drawn_player_name>{PBPDescriptionParser.PLAYER_PATTERN})"
         )
     
 
@@ -334,11 +377,19 @@ class PBPGameStopageParser(PBPDescriptionParser):
 class PBPPeriod(PBPDescriptionParser):
 
 
+    TIME_PATTERN = (
+        "L\s*o\s*c\s*a\s*l\s*t\s*i\s*m\s*e\s*:\s*([0-9]\s*[0-9]"
+        "?\s*:\s*[0-9]\s*[0-9]?)"
+    )
+    TIME_ZONE_PATTERN = "\s*((?:[A-Z]\s*)+)$"
+
+
     def parse_play_desc(self) -> dict:
         play_dict = {}
         play_dict["time"] = re.findall(
-            "Local time:\s([0-9]+:[0-9]+)", self.play_desc)[0]
-        play_dict["time_zone"] = re.findall("([A-Z]+)$", self.play_desc)[0]
+            self.TIME_PATTERN, self.play_desc)[0]
+        play_dict["time_zone"] = re.findall(
+            self.TIME_ZONE_PATTERN, self.play_desc)[0]
 
         return play_dict
     
@@ -356,8 +407,9 @@ class PBPChallenge(PBPDescriptionParser):
 
 
     PATTERN = (
-        r"(?P<team>\w{3}) Challenge\s*-\s*(?P<reason>[\w\s]+)"
-        r"\s*-\s*Result:\s*(?P<result>.+)"
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN}) Challenge"
+        rf"\s*-\s*(?P<reason>[\w\s]+)"
+        rf"\s*-\s*Result:\s*(?P<result>.+)"
         )
 
 
@@ -393,29 +445,18 @@ class PBPRowParser():
     SKIP_PLAY = ["PGSTR", "PGEND", "ANTHEM", "GEND"]
 
 
-    def __init__(self, row_sel: Selector):
+    def __init__(self, row_sel: scrapy.Selector):
         self.sel = row_sel
 
 
-    def get_play_type(self) -> str: 
-        return self.sel.xpath(PBPRowParser.XPATHS['play_type']).get()
-    
-    
-    def get_period(self) -> str:
-
-        return self.sel.xpath(PBPRowParser.XPATHS['period']).get()
-    
-    
-    def get_time(self) -> str:
-
-        return self.sel.xpath(PBPRowParser.XPATHS['time']).get()
-    
-    
     def parse_row(self) -> dict:
         row_dict = {}
-        row_dict['period'] = self.get_period()
-        row_dict['play_type'] = self.get_play_type()
-        row_dict['time'] = self.get_time()
+        row_dict['period'] = common_functions.get_single_xpath_value(
+            sel=self.sel, xpath=self.XPATHS["period"], optional=False)
+        row_dict['play_type'] = common_functions.get_single_xpath_value(
+            sel=self.sel, xpath=self.XPATHS["play_type"], optional=False)
+        row_dict['time'] = common_functions.get_single_xpath_value(
+            sel=self.sel, xpath=self.XPATHS["time"], optional=False)
         if row_dict['play_type'] not in self.SKIP_PLAY:
             row_dict['play_info'] = self.get_play_description(
                 play_type=row_dict['play_type'])
@@ -438,17 +479,25 @@ class PBPRowParser():
 
 
     def get_play_description(self, play_type: str) -> dict:
-        play_desc = self.sel.xpath(PBPRowParser.XPATHS["play_desc"]).getall()
-        play_desc = " ".join(play_desc)
-        row_desc_parser = self.row_desc_parser_factory(
-            play_type=play_type, play_desc=play_desc)
         try:
+            play_desc = common_functions.get_single_xpath_value(
+            sel=self.sel, xpath=self.XPATHS["play_desc"], optional=False)
+            play_desc = " ".join(play_desc)
+            row_desc_parser = self.row_desc_parser_factory(
+                play_type=play_type, play_desc=play_desc)
             play_desc_dict = row_desc_parser.parse_play_desc()
-        except:
-            logger.info(f"Error in parsing table with string {play_desc}")
-            raise
 
-        return play_desc_dict
+            return play_desc_dict
+            
+        except AttributeError as e:
+            logger.error(f"AttributeError in parsing play description: {e} | Input: {play_desc}")
+            raise
+        except TypeError as e:
+            logger.error(f"TypeError while processing play description: {e} | Input: {play_desc}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error in parsing table with string {play_desc}: {e}", exc_info=True)
+            raise
 
 
     def row_desc_parser_factory(
