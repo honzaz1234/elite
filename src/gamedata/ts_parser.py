@@ -1,4 +1,6 @@
-from scrapy import Selector
+import scrapy
+
+import common_functions
 
 from logger.logger import logger
 
@@ -14,7 +16,7 @@ class TSParser():
 
     def __init__(self, htm, report_id: int):
         self.htm = htm
-        self.sel = Selector(text=self.htm)
+        self.sel = scrapy.Selector(text=self.htm)
         self.report_id = report_id
 
 
@@ -75,13 +77,14 @@ class TSParser():
         return player_dict
 
 
-    def get_player_name(self, sel: Selector) -> str:
-        player_name = sel.xpath("./td/text()").get()    
+    def get_player_name(self, sel: scrapy.Selector) -> str:
+        player_name = common_functions.get_single_xpath_value(
+            sel=sel, xpath="./td/text()", optional=False)
 
         return player_name  
 
 
-    def get_player_shifts(self, row_selectors: Selector) -> list:
+    def get_player_shifts(self, row_selectors: scrapy.Selector) -> list:
         player_shifts = []
         shift_idx = 0
         for shift_sel in row_selectors:
@@ -93,12 +96,15 @@ class TSParser():
         return player_shifts  
 
 
-    def get_player_shift(self, shift_sel: Selector, shift_idx: int) -> dict:
+    def get_player_shift(self, shift_sel: scrapy.Selector, shift_idx: int) -> dict:
 
         shift_dict = {}
-        shift_dict["period"]  = shift_sel.xpath("./td[2]/text()").get()
-        shift_dict["shift_start"]  = shift_sel.xpath("./td[3]/text()").get()
-        shift_dict["shift_end"]  = shift_sel.xpath("./td[4]/text()").get()
+        shift_dict["period"]  = common_functions.get_single_xpath_value(
+            sel=shift_sel, xpath="./td[2]/text()", optional=False)
+        shift_dict["shift_start"]  = common_functions.get_single_xpath_value(
+            sel=shift_sel, xpath="./td[3]/text()", optional=False)
+        shift_dict["shift_end"]  = common_functions.get_single_xpath_value(
+            sel=shift_sel, xpath="./td[4]/text()", optional=False)
         logger.debug(f"Shift n. {shift_idx}: {shift_dict}")
 
         return shift_dict

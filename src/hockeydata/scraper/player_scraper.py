@@ -4,6 +4,8 @@ import re
 import scrapy
 import time
 
+import common_functions
+
 from hockeydata.constants import *
 from decorators import time_execution
 from logger.logger import logger
@@ -191,7 +193,11 @@ class PlayerGeneralInfo():
                          + PlayerGeneralInfo.PATHS["gi_right"]
                          + PlayerGeneralInfo.PROJECT_MAPPING[info_name][1]
                          + "[not(self::comment())]")
-        info_val = self.selector.xpath(info_path_val).getall()
+        info_val = common_functions.get_single_xpath_value(
+            sel=self.selector,
+            sel=info_path_val,
+            optional=True
+        )
         info_val = [string.strip() for string in info_val]
         info_val = [string for string in info_val if string != ""]
         if info_name == 'Drafted':
@@ -375,14 +381,21 @@ class Stats():
         """
 
         list_seasons = []
-        n_rows = len(self.selector
-                     .xpath(path_year).getall())
+        n_rows = len(common_functions.get_single_xpath_value(
+            sel=self.selector,
+            sel=path_year,
+            optional=False
+        ))
         for index in range(1, n_rows + 1):
             xpath = (path_year 
                      + '[' 
                      + str(index) 
                      + ']/td[1]//text()')
-            season = self.selector.xpath(xpath).get()
+            season = len(common_functions.get_single_xpath_value(
+                sel=self.selector,
+                sel=xpath,
+                optional=True
+        ))
             if season is not None:
                 current_season = season
             list_seasons.append(current_season)
@@ -601,7 +614,11 @@ class OneRowStat():
         """
 
         path_stat = self.path_to_row + OneRowStat.PATHS[key]
-        stat_list = self.selector.xpath(path_stat).getall()
+        stat_list = common_functions.get_list_xpath_values(
+            sel=self.selector,
+            xpath=path_stat,
+            optional=True
+        )
         stat_list = [string.strip() for string in stat_list]
         if stat_list == [] or set(stat_list)=={""}:
             logger.debug(f"Attribute {key} equal to None")
@@ -619,7 +636,8 @@ class OneRowStat():
         """
         
         path_url = self.path_to_row + OneRowStat.PATHS[key_path]
-        list_data = self.selector.xpath(path_url).getall()
+        list_data = common_functions.get_list_xpath_values(
+            sel=self.selector, xpath=path_url, optional=False)
         url = list_data[0]
         logger.debug(f" General url for {key_regex}: {url}")
         return url
@@ -639,8 +657,9 @@ class OneRowSkaterStat(OneRowStat):
         stat_regular = self._get_stat_atribute(key="stats_regular", 
                                                keep_list=True)
         leadership = self._get_stat_atribute(key="leadership")
-        team_url = self._extract_url(key_path="url_team", 
-                                             key_regex="team")
+        team_url = self._extract_url(
+            key_path="url_team", 
+            key_regex="team")
         dict_team[REGULAR_SEASON] = stat_regular
         dict_team[PLAY_OFF] = stat_play_off
         dict_team[LEADERSHIP] = leadership

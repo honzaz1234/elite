@@ -1,6 +1,8 @@
 import requests
+import scrapy
 
 from decorators import repeat_request_until_success
+from logger.logger import logger
 
 
 def convert_season_format(season):
@@ -46,4 +48,35 @@ def get_valid_request(url: str, return_type: str, params: dict=None,
     elif return_type=="content":
 
         return response.content
+    
+
+def get_single_xpath_value(
+        sel: scrapy.Selector, xpath: str, optional: bool) -> str|int:
+
+    return_val = sel.xpath(xpath).get()
+    if return_val is None:
+        if optional:
+            logger.debug(f"Value for xpath: {xpath} is {None}")
+        else:
+            logger.error("Error: play_type is None – XPath extraction"
+                            " failed.")
+            raise ValueError("play_type is None – unable to extract play"
+                                " type from XPath.")
+    
+    return return_val
+
+
+def get_list_xpath_values(
+        sel: scrapy.Selector, xpath: str, optional: bool) -> list:
+    return_vals = sel.xpath(xpath).getall()
+    if return_vals == []:
+        if optional:
+            logger.debug(f"Value for Xpath: {xpath} is []")
+        else:
+            logger.error(f"Extracted value from XPath ({xpath}) is []"
+                        f".Extraction failed")
+            raise ValueError(f"Extracted value from XPath ({xpath}) is []."
+                             f".Extraction failed")
+    
+    return return_vals
 
