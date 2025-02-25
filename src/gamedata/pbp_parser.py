@@ -175,18 +175,15 @@ class PBPGoalParser(PBPDescriptionParser):
 
 
     PATTERN_GS = (
-        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s*#"
         rf"(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
         rf"(?P<player>{PBPDescriptionParser.PLAYER_PATTERN})"
         rf"(?:\(\d+\))?\s*,\s*"
-        rf"(?:(?P<penalty_shot>{PBPDescriptionParser.PENALTY_SHOT_PATTERN})\s*"
-        rf",\s*)?" 
-        rf"(?P<play_type>{PBPDescriptionParser.SHOT_PATTERN})\s*,\s*"
-        rf"(?:\s*,\s*(?P<deflection_type>{PBPDescriptionParser.DEFLECTION}"
-        rf"\sDeflection)\s*,\s*)?"
-        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone"
-        rf"\s*,\s+(?P<distance>\d+)"
-        rf"\s*ft\."
+        rf"(?:(?P<penalty_shot>{PBPDescriptionParser.PENALTY_SHOT_PATTERN})\s*,\s*)?"
+        rf"(?P<play_type>{PBPDescriptionParser.SHOT_PATTERN})\s*"
+        rf"(?:,\s*(?P<deflection_type>{PBPDescriptionParser.DEFLECTION}\sDeflection))?"
+        rf"\s*,?\s*(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone\s*,?\s*"
+        rf"(?P<distance>\d+)\s*ft\."
     )
 
     PATTERN_OG = (
@@ -417,7 +414,7 @@ class PBPPenaltyParser(PBPDescriptionParserMultipleOptions):
         )
     
     PATTERN_PPO = (
-        rf"(?P<team>[{PBPDescriptionParser.TEAM_PATTERN})\s+#"
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
         rf"(?P<offender_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
         rf"(?P<offender_name>{PBPDescriptionParser.PLAYER_PATTERN})\s+"
         rf"(?P<penalty_type>{PBPDescriptionParser.PENALTY_PATTERN})\s*"
@@ -432,8 +429,18 @@ class PBPPenaltyParser(PBPDescriptionParserMultipleOptions):
         rf"(?P<drawn_player_name>{PBPDescriptionParser.PLAYER_PATTERN})"
         )
     
+    PATTERN_C = (
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s*#\s*"
+        rf"(?P<penalty_type>{PBPDescriptionParser.PENALTY_PATTERN}"
+        rf"\s*-\s*Head coach)\s*"
+        rf"(?:\s*\((?P<penalty_modifier>maj)\)\s*)?"
+        rf"\s*\((?P<penalty_minutes>\d+)\s+min\)\s*,\s*"
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone"
+        )
+    
     PATTERN_LIST = [
-        PATTERN_NDP, PATTERN_PP, PATTERN_PPO, PATTERN_TP, PATTERN_PPDP
+        PATTERN_NDP, PATTERN_PP, PATTERN_PPO, PATTERN_TP, PATTERN_PPDP,
+        PATTERN_C
         ]
     
     
