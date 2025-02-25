@@ -195,7 +195,7 @@ class PlayerGeneralInfo():
                          + "[not(self::comment())]")
         info_val = common_functions.get_single_xpath_value(
             sel=self.selector,
-            sel=info_path_val,
+            xpath=info_path_val,
             optional=True
         )
         info_val = [string.strip() for string in info_val]
@@ -383,7 +383,7 @@ class Stats():
         list_seasons = []
         n_rows = len(common_functions.get_single_xpath_value(
             sel=self.selector,
-            sel=path_year,
+            xpath=path_year,
             optional=False
         ))
         for index in range(1, n_rows + 1):
@@ -393,7 +393,7 @@ class Stats():
                      + ']/td[1]//text()')
             season = len(common_functions.get_single_xpath_value(
                 sel=self.selector,
-                sel=xpath,
+                xpath=xpath,
                 optional=True
         ))
             if season is not None:
