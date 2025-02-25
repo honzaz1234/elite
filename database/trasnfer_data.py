@@ -3,8 +3,8 @@ from sqlalchemy.orm import sessionmaker
 import pandas as pd
 
 # Define database URLs
-OLD_DB_URL = "sqlite:///./database/hockey_v9.db"
-NEW_DB_URL = "sqlite:///./database/hockey_v10.db"
+OLD_DB_URL = "sqlite:///./database/hockey_v11.db"
+NEW_DB_URL = "sqlite:///./database/hockey_v12.db"
 
 # Create engines and sessions
 old_engine = create_engine(OLD_DB_URL)
