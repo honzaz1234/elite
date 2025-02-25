@@ -136,8 +136,8 @@ class GetReportData():
         logger.info(f"Scraping of data for a game {self.report_id} from date"
                     f" {self.report_dict['date']} and season {self.season}"    f" started...")
         self.report_dict["PBP"] = self.get_PBP_data()
-        self.report_dict["TH"] = self.get_HTS_data()
-        self.report_dict["TV"] = self.get_VTS_data()
+        self.report_dict["HTS"] = self.get_TS_data(self.HTS_id, "HTS")
+        self.report_dict["VTS"] = self.get_TS_data(self.VTS_id, "VTS")
         logger.info(f"Scraping of data for a game {self.report_id} from date"
                     f" {self.report_dict['date']} and season {self.season}"    f" finished.")
 
@@ -160,34 +160,14 @@ class GetReportData():
         
         return plays
         
-
-    def get_VTS_data(self) -> list:
-        logger.debug(f"Scraping of VTS data for report {self.report_id} from"
-                     f"season {self.season} started...")
-        request_url = (
-            f"https://www.nhl.com/scores/htmlreports"
-            f"/{self.season}/{self.VTS_id}.HTM"
-        )
-        try:
-            htm = get_valid_request(request_url, 'content')
-            ts_o = ts_parser.TSParser(htm=htm,
-                                    report_id=self.report_id)
-            plays = ts_o.parse_htm_file()
-        except Exception as e: 
-            logger.error(f"Scraping of VTS data for report {self.report_id}"
-                         f"season {self.season} failed: {e}") 
-        logger.debug(f"Scraping of VTS data for report {self.report_id} from"
-                     f"season {self.season} finished.")
-
-        return plays
     
-    
-    def get_HTS_data(self) -> list:
+    def get_TS_data(self, report_id: str, type_: str) -> list:
+
         logger.debug(f"Scraping of HTS data for report {self.report_id} from"
-                     f"season {self.season} started...")
+                        f"season {self.season} started...")
         request_url = (
             f"https://www.nhl.com/scores/htmlreports"
-            f"/{self.season}/{self.HTS_id}.HTM"
+            f"/{self.season}/{report_id}.HTM"
         )
         try:
             htm = get_valid_request(request_url, 'content')
@@ -195,20 +175,9 @@ class GetReportData():
                                     report_id=self.report_id)
             plays = ts_o.parse_htm_file()
         except Exception as e:
-            logger.error(f"Scraping of HTS data for report {self.report_id}"
-                         f"season {self.season} failed: {e}") 
-        logger.debug(f"Scraping of HTS data for report {self.report_id} from"
-                     f"season {self.season} finished.")
-
+            logger.error(f"Scraping of {type_} data for report "
+                         f"{self.report_id} season {self.season} failed: {e}") 
+        logger.debug(f"Scraping of {type_} data for report "
+                     f"{self.report_id} from season {self.season} finished.")
+        
         return plays
-
-
-
-
-
-
-
-
-
-
-
