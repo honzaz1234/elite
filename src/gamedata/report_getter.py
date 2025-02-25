@@ -134,16 +134,16 @@ class GetReportData():
 
     def get_all_report_data(self) -> dict:
         logger.info(f"Scraping of data for a game {self.report_id} from date"
-                    f" {self.report_dict["date"]} and season {self.season}"    f"started...")
+                    f" {self.report_dict['date']} and season {self.season}"    f" started...")
         self.report_dict["PBP"] = self.get_PBP_data()
         self.report_dict["TH"] = self.get_HTS_data()
         self.report_dict["TV"] = self.get_VTS_data()
         logger.info(f"Scraping of data for a game {self.report_id} from date"
-                    f" {self.report_dict["date"]} and season {self.season}"    f"finished.")
+                    f" {self.report_dict['date']} and season {self.season}"    f" finished.")
 
         return self.report_dict
+    
 
-    @repeat_request_until_success
     def get_PBP_data(self) -> list:
         logger.debug(f"Scraping of PBP data for report {self.report_id} from"
                      f"season {self.season} started...")
@@ -151,20 +151,15 @@ class GetReportData():
             f"https://www.nhl.com/scores/htmlreports"
             f"/{self.season}/{self.PBP_id}.HTM"
         )
-        print(request_url)
-        try:
-            htm = get_valid_request(request_url, 'content')
-            pbp_o = pbp_parser.PBPParser(htm=htm,
-                                        report_id=self.report_id)
-            plays = pbp_o.parse_htm_file()
-        except Exception as e:
-            logger.error(f"Scraping of PBP data for report {self.report_id}"
-                         f"season {self.season} failed: {e}") 
-        logger.debug(f"Scraping of PBP data for report {self.report_id} from"
-                     f"season {self.season} finished.")
-
+        htm = get_valid_request(request_url, 'content')
+        pbp_o = pbp_parser.PBPParser(htm=htm,
+                                    report_id=self.report_id)
+        plays = pbp_o.parse_htm_file()
+        logger.debug(f"Scraping of PBP data for report {self.report_id}"
+                        f" from season {self.season} finished.")
+        
         return plays
-    
+        
 
     def get_VTS_data(self) -> list:
         logger.debug(f"Scraping of VTS data for report {self.report_id} from"
@@ -187,7 +182,6 @@ class GetReportData():
         return plays
     
     
-    @repeat_request_until_success
     def get_HTS_data(self) -> list:
         logger.debug(f"Scraping of HTS data for report {self.report_id} from"
                      f"season {self.season} started...")
