@@ -1,3 +1,4 @@
+import gamedata.join_to_db as jdb
 import gamedata.report_getter as report_getter
 import hockeydata.scraper.league_scraper as league_scraper
 import hockeydata.scraper.player_scraper as player_scraper
@@ -140,6 +141,13 @@ class DatabaseSession():
             manage_game.add_one_season_in_db(season=season)
         logger.info(f"Process of obtaining data of games from following"
                     f" list: {seasons} finished")
+        
+    def get_joined_table(self, selected_seasons: str) -> dict:
+        jdb_o = jdb.DBJoiner(session=self.session)
+        data = jdb_o.get_all_player_season_data(
+            selected_seasons=selected_seasons)
+
+        return data
         
 
 class ManagePlayer():
