@@ -119,14 +119,18 @@ class PlayerOnIceParser():
 
 class PBPDescriptionParser():
 
-    PATTERN =None
+
+    PATTERN = None
 
     PLAYER_PATTERN = rf"[\wÀ-ÖØ-öø-ÿ']+(?:[-' ][\wÀ-ÖØ-öø-ÿ]+)*"
     ZONE_PATTERN = rf"(?:Off|Def|Neu|Neutral|Offensive|Defensive)\.?"
     TEAM_PATTERN = rf"[A-Z]{{3}}" 
     NUMBER_PATTERN = rf"[0-9]{{1,2}}" 
-    PENALTY_PATTERN = rf"[A-Za-z-\s]+"
-    SHOT_PATTERN = "[A-Za-z-]+"
+    PENALTY_PATTERN = rf"[A-Za-z\s/-]+"
+    PENALTY_SHOT_PATTERN = "Penalty\sShot"
+    PERIOD_STRING = "(Period\s+Start|Period\s+End|Shootout Completed)"
+    SHOT_PATTERN = "[A-Za-z\s-]+"
+    DEFLECTION = '(Defensive|Offensive)'
 
 
     def __init__(self, play_desc: str):
@@ -134,9 +138,35 @@ class PBPDescriptionParser():
 
 
     def parse_play_desc(self) -> dict:
-        pattern = re.compile(self.PATTERN)
+        pattern = re.compile(rf"^\s*{self.PATTERN}\s*$")
         match = pattern.match(self.play_desc)
-        play_dict =  match.groupdict()
+        try:
+            play_dict = match.groupdict()
+        except:
+            print(self.PATTERN)
+            raise
+
+        return play_dict
+    
+
+class PBPDescriptionParserMultipleOptions(PBPDescriptionParser):
+
+
+    def parse_play_desc(self) -> dict:
+        for pat in self.PATTERN_LIST:
+            try:
+                pattern = re.compile(rf"^\s*{pat}\s*$")
+            except:
+                print(pat)
+                raise
+            match = pattern.match(self.play_desc)
+            if match:
+                break
+        try:
+            play_dict =  match.groupdict()
+        except:
+            print(pat)
+            raise
 
         return play_dict
 
@@ -147,10 +177,25 @@ class PBPGoalParser(PBPDescriptionParser):
     PATTERN_GS = (
         rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
         rf"(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
-        rf"(?P<player>{PBPDescriptionParser.PLAYER_PATTERN})\(\d+\)\s*,\s+"
-        rf"(?P<play_type>[\w\s]+)\s*,\s+"
-        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})"
+        rf"(?P<player>{PBPDescriptionParser.PLAYER_PATTERN})"
+        rf"(?:\(\d+\))?\s*,\s*"
+        rf"(?:(?P<penalty_shot>{PBPDescriptionParser.PENALTY_SHOT_PATTERN})\s*"
+        rf",\s*)?" 
+        rf"(?P<play_type>{PBPDescriptionParser.SHOT_PATTERN})\s*,\s*"
+        rf"(?:\s*,\s*(?P<deflection_type>{PBPDescriptionParser.DEFLECTION}"
+        rf"\sDeflection)\s*,\s*)?"
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone"
         rf"\s*,\s+(?P<distance>\d+)"
+        rf"\s*ft\."
+    )
+
+    PATTERN_OG = (
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
+        rf"(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<player>{PBPDescriptionParser.PLAYER_PATTERN})"
+        rf"(?:\(\d+\))?\s*,\s*"
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone"
+        rf",\s*(?P<own_goal>Own\sGoal)\s*,\s+(?P<distance>\d+)"
         rf"\s*ft\."
     )
     
@@ -163,25 +208,20 @@ class PBPGoalParser(PBPDescriptionParser):
 
 
     def parse_play_desc(self) -> dict:
-        pattern = re.compile(self.PATTERN_GS)
+        play_dict = {}
+        try:
+            for pattern in [self.PATTERN_GS, self.PATTERN_OG]:
+                goal_pattern = re.compile(pattern)
+                goal_match = goal_pattern.match(self.play_desc)
+                if goal_match is not None:
+                    break
+            play_dict["goal"] = goal_match.groupdict()
+        except:
+            print(pattern)
+            raise
         assist_pattern = re.compile(self.PATTERN_A)
         assist_details_pattern = re.compile(self.PATTERN_AD)
-        main_match = pattern.search(self.play_desc)
         assist_match = assist_pattern.search(self.play_desc)
-        
-        if not main_match:
-            return None
-        
-        play_dict = {
-            'team': main_match.group('team'),
-            'player_number': main_match.group('number'),
-            'player': main_match.group('player'),
-            'play_type': main_match.group('play_type').strip(),
-            'zone': main_match.group('zone').strip(),
-            'distance_ft': int(main_match.group('distance')),
-            'assists': []
-        }
-        
         if assist_match:
             assists_text = assist_match.group('assists')
             assists = [m.groupdict() for m in assist_details_pattern.finditer(assists_text)]
@@ -194,12 +234,17 @@ class PBPShotParser(PBPDescriptionParser):
 
 
     PATTERN = (
-        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN}) ONGOAL\s*-\s*#"
-        rf"(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s*"
-        rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s*,\s*"  
-        rf"(?P<shot_type>{PBPDescriptionParser.SHOT_PATTERN})\s*,\s*"  
-        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s*Zone,\s*" 
-        rf"(?P<distance>\d+)\s*ft\."  
+    rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+ONGOAL\s*-\s*#"
+    rf"(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+    rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s*,?\s*"
+    rf"(?:(?P<penalty_shot>{PBPDescriptionParser.PENALTY_SHOT_PATTERN})\s*,)?"
+    rf"(?P<shot_type>{PBPDescriptionParser.SHOT_PATTERN})\s*,?\s*"
+    rf"(?:(?P<deflection>{PBPDescriptionParser.DEFLECTION})\s+Deflection"
+    rf"\s*,\s*)?"
+    rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone,\s*" 
+    rf"(?P<distance>\d+)\s*ft\."
+    rf"(?:\s*(?P<broken_stick>Broken Stick)\s*)?"
+    rf"(?:\s*(?P<over_board>Flub)\s*)?" 
     )
     
     
@@ -222,7 +267,7 @@ class PBPFaceoffParser(PBPDescriptionParser):
 
     PATTERN = (
         rf"(?P<winning_team>{PBPDescriptionParser.TEAM_PATTERN})\s+won\s+"
-        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s*Zone\s*-\s+"
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone\s*-\s+"
         rf"(?P<l_team>{PBPDescriptionParser.TEAM_PATTERN})\s+"
         rf"#(?P<l_player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
         rf"(?P<l_player_name>{PBPDescriptionParser.PLAYER_PATTERN})"
@@ -254,21 +299,34 @@ class PBPTakeawayParser(PBPDescriptionParser):
     )
 
     
-class PBPMissedShotParser(PBPDescriptionParser):
+class PBPMissedShotParser(PBPDescriptionParserMultipleOptions):
 
 
-    PATTERN = (
+    PATTERN_NORMAL = (
         rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+" 
         rf"#(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
         rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s*,\s*"
         rf"(?P<shot_type>{PBPDescriptionParser.SHOT_PATTERN})\s*,\s*"
         rf"(?P<shot_result>[A-Za-z\s]+)\s*,\s*"
-        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN}) Zone\s*,\s*"
-        rf"(?P<distance>\d+)\s*ft\."""
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone\s*,\s*"
+        rf"(?P<distance>\d+)\s*ft\.\s*"
+        rf"(?:\s*(?P<broken_stick>Broken Stick)\s*)?\s*"
+        rf"(?:(?P<over_board>Flub))?\s*"
     )
 
+    PATTERN_FAILED = (
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+" 
+        rf"#(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s*,\s*"
+        rf"(?P<shot_type>Failed Attempt)"
+        rf"(?:\s*(?P<broken_stick>Broken Stick)\s*)?\s*"
+        rf"(?:\s*(?P<over_board>Flub)\s*)?"
+    )
 
-class PBPBlockedShotParser(PBPDescriptionParser):
+    PATTERN_LIST = [PATTERN_NORMAL, PATTERN_FAILED]
+
+
+class PBPBlockedShotParser(PBPDescriptionParserMultipleOptions):
 
 
     PATTERN_TEAMATE = (
@@ -277,7 +335,9 @@ class PBPBlockedShotParser(PBPDescriptionParser):
         rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})"
         rf"\s+BLOCKED BY TEAMMATE\s*,\s*"
         rf"(?P<shot_type>{PBPDescriptionParser.SHOT_PATTERN})\s*,\s*"
-        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone"
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone\s*"
+        rf"(?:\s*(?P<broken_stick>Broken Stick)\s*)?"
+        rf"(?:\s*(?P<over_board>Flub)\s*)?"    
     )
     
     PATTERN_OPPONENT = (
@@ -289,22 +349,27 @@ class PBPBlockedShotParser(PBPDescriptionParser):
         rf"P<blocked_player_number>{PBPDescriptionParser.NUMBER_PATTERN})"
         rf"\s+(?P<blocked_player_name>{PBPDescriptionParser.PLAYER_PATTERN})"
         rf"\s*,\s*(?P<shot_type>{PBPDescriptionParser.SHOT_PATTERN})"
-        rf"\s*,\s*(?P<zone>{PBPDescriptionParser.ZONE_PATTERN}\s*Zone)"
+        rf"\s*,\s*(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone\s*"
+        rf"(?:\s*(?P<broken_stick>Broken Stick)\s*)?\s*"
+        rf"(?:\s*(?P<over_board>Flub)\s*)?"    
+    )
+
+    PATTERN_OTHER = (
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
+        rf"(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s+"
+        rf"BLOCKED BY OTHER"
+        rf"\s*,\s*(?P<shot_type>{PBPDescriptionParser.SHOT_PATTERN})"
+        rf"\s*,\s*(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone\s*"
+        rf"(?:\s*(?P<broken_stick>Broken Stick)\s*)?\s*"
+        rf"(?:\s*(?P<over_board>Flub)\s*)?"    
     )
 
 
-    def parse_play_desc(self) -> dict:
-        if "TEAMMATE" in self.play_desc:
-            pattern = re.compile(self.PATTERN_TEAMATE)
-        else:
-            pattern = re.compile(self.PATTERN_OPPONENT)
-        match = pattern.match(self.play_desc)
-        play_dict =  match.groupdict()
-
-        return play_dict
+    PATTERN_LIST = [PATTERN_TEAMATE, PATTERN_OPPONENT, PATTERN_OTHER]
 
 
-class PBPPenaltyParser(PBPDescriptionParser):
+class PBPPenaltyParser(PBPDescriptionParserMultipleOptions):
 
 
     PATTERN_NDP = (
@@ -313,19 +378,21 @@ class PBPPenaltyParser(PBPDescriptionParser):
         rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s+"
         rf"(?P<penalty_type>{PBPDescriptionParser.PENALTY_PATTERN})\("
         rf"(?P<penalty_minutes>\d+)\s*min\)\s*,\s*"
-        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s*Zone"
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone"
         )
 
     PATTERN_PP = (
         rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
         rf"(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
         rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s+"
-        rf"(?P<penalty_type>{PBPDescriptionParser.PENALTY_PATTERN})\("
-        rf"(?P<penalty_minutes>\d+)\s*min\)\s*,\s*"
-        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s*Zone\s*,\s*"
-        rf"*\s*Drawn By:\s*(?P<drawn_team>{PBPDescriptionParser.TEAM_PATTERN})"
-        rf"\s+#(?P<drawn_player_number>{PBPDescriptionParser.NUMBER_PATTERN})"
-        rf"\s+(?P<drawn_player_name>{PBPDescriptionParser.PLAYER_PATTERN})"
+        rf"(?P<penalty_type>{PBPDescriptionParser.PENALTY_PATTERN})\s*"
+        rf"(?:\(\s*(?P<penalty_modifier>maj)\s*\))?\s*"
+        rf"\(\s*(?P<penalty_minutes>\d+)\s*min\)\s*,?\s*"
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone\s*,?\s*"
+        rf"Drawn By:\s*"
+        rf"(?P<drawn_team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
+        rf"(?P<drawn_player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<drawn_player_name>{PBPDescriptionParser.PLAYER_PATTERN})"
         )
     
     PATTERN_TP = (
@@ -337,80 +404,76 @@ class PBPPenaltyParser(PBPDescriptionParser):
         rf"\s*(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone"
         )
     
+    PATTERN_PPDP = (
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
+        rf"(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s+"
+        rf"(?P<penalty_type>{PBPDescriptionParser.PENALTY_PATTERN})\("
+        rf"(?P<penalty_minutes>\d+)\s*min\)\s*"
+        rf"Served\s+By:\s*#"
+        rf"(?P<served_player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
+        rf"(?P<served_player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s*,?"
+        rf"\s*(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone"
+        )
+    
     PATTERN_PPO = (
         rf"(?P<team>[{PBPDescriptionParser.TEAM_PATTERN})\s+#"
         rf"(?P<offender_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
         rf"(?P<offender_name>{PBPDescriptionParser.PLAYER_PATTERN})\s+"
-        rf"(?P<penalty_type>{PBPDescriptionParser.PENALTY_PATTERN})"
-        rf"\((?P<penalty_minutes>\d+)\s+min\)\s+Served\s+By:\s+#"
+        rf"(?P<penalty_type>{PBPDescriptionParser.PENALTY_PATTERN})\s*"
+        rf"(?:\s*\((?P<penalty_modifier>maj)\))?"
+        rf"\s*\((?P<penalty_minutes>\d+)\s+min\)\s+Served\s+By:\s+#"
         rf"(?P<served_player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
         rf"(?P<served_player_name>{PBPDescriptionParser.PLAYER_PATTERN}),\s+"
-        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Drawn\s+By:\s+"
+        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone\s+"
+        rf"Drawn\s+By:\s+"
         rf"(?P<drawn_team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
         rf"(?P<drawn_player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
         rf"(?P<drawn_player_name>{PBPDescriptionParser.PLAYER_PATTERN})"
         )
     
-
-    def parse_play_desc(self) -> dict:
-
-        for pat in [self.PATTERN_NDP, self.PATTERN_PP, self.PATTERN_PPO, self.PATTERN_TP]:
-            pattern = re.compile(pat)
-            match = pattern.match(self.play_desc)
-            if match:
-                break
-        play_dict =  match.groupdict()
-        
-        return play_dict
+    PATTERN_LIST = [
+        PATTERN_NDP, PATTERN_PP, PATTERN_PPO, PATTERN_TP, PATTERN_PPDP
+        ]
     
     
 class PBPGameStopageParser(PBPDescriptionParser):
 
 
-    def parse_play_desc(self) -> dict:
-        play_dict = {}
-        play_dict["game_stopage_type"] = self.play_desc
+    PATTERN = rf"(?P<game_stopage_type>.+)"
 
-        return play_dict
-    
 
 class PBPPeriod(PBPDescriptionParser):
 
 
-    TIME_PATTERN = (
-        "L\s*o\s*c\s*a\s*l\s*t\s*i\s*m\s*e\s*:\s*([0-9]\s*[0-9]"
-        "?\s*:\s*[0-9]\s*[0-9]?)"
+    PATTERN =  (
+        rf"{PBPDescriptionParser.PERIOD_STRING}-\s+Local\s+time:\s+"
+        rf"(?P<time>\d+\s*:\s*\d+)\s*(?P<timezone>[A-Z]+)"
     )
-    TIME_ZONE_PATTERN = "\s*((?:[A-Z]\s*)+)$"
 
-
-    def parse_play_desc(self) -> dict:
-        play_dict = {}
-        play_dict["time"] = re.findall(
-            self.TIME_PATTERN, self.play_desc)[0]
-        play_dict["time_zone"] = re.findall(
-            self.TIME_ZONE_PATTERN, self.play_desc)[0]
-
-        return play_dict
-    
 
 class PBPDelayedPenalty(PBPDescriptionParser):
 
 
-    def parse_play_desc(self) -> dict:
-        play_dict = {}
-        play_dict["team"] = self.play_desc.strip()
-
-        return play_dict
+    PATTERN = rf"(?P<team>.+)"
     
-class PBPChallenge(PBPDescriptionParser):
+
+class PBPChallenge(PBPDescriptionParserMultipleOptions):
 
 
     PATTERN = (
-        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN}) Challenge"
+        rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+Challenge"
         rf"\s*-\s*(?P<reason>[\w\s]+)"
         rf"\s*-\s*Result:\s*(?P<result>.+)"
         )
+
+    PATTERN_LEAGUE = (
+        rf"(?P<league_challenge>League)\s+Challenge"
+        rf"\s*-\s*(?P<reason>[\w\s]+)"
+        rf"\s*-\s*Result:\s*(?P<result>.+)"
+        )
+    
+    PATTERN_LIST = [PATTERN, PATTERN_LEAGUE]
 
 
 class PBPRowParser():
@@ -428,6 +491,7 @@ class PBPRowParser():
         "PEND": PBPPeriod,
         "PENL": PBPPenaltyParser,
         "PSTR": PBPPeriod,
+        "SOC": PBPPeriod,
         "SHOT": PBPShotParser,
         "STOP": PBPGameStopageParser,
         "TAKE": PBPTakeawayParser
@@ -442,7 +506,7 @@ class PBPRowParser():
         "team_r": "./td[8]"
     }
 
-    SKIP_PLAY = ["PGSTR", "PGEND", "ANTHEM", "GEND"]
+    SKIP_PLAY = ["PGSTR", "PGEND", "ANTHEM", "GEND", "GOFF"]
 
 
     def __init__(self, row_sel: scrapy.Selector):
@@ -482,7 +546,6 @@ class PBPRowParser():
         try:
             play_desc = common_functions.get_single_xpath_value(
             sel=self.sel, xpath=self.XPATHS["play_desc"], optional=False)
-            play_desc = " ".join(play_desc)
             row_desc_parser = self.row_desc_parser_factory(
                 play_type=play_type, play_desc=play_desc)
             play_desc_dict = row_desc_parser.parse_play_desc()
