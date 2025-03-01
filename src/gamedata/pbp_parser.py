@@ -38,8 +38,8 @@ class PBPParser():
                 f"No PBP data was scraped for match: " 
                 f"{self.report_id}"
             )
-            logger.error(error_message)
-            raise ValueError(error_message)
+            common_functions.log_and_raise(error_message, ValueError)
+
         logger.info("Scraping of game PBP data from report" 
                     f"{self.report_id} finished")
 
@@ -88,10 +88,7 @@ class PBPTableParser():
         logger.debug(f"Scraping of game PBP data from row: {row_idx} table: " 
                     f"{table_idx} started")
         row_parser = PBPRowParser(row_sel=row_sel)
-        try:
-            row_dict = row_parser.parse_row()
-        except:
-            raise
+        row_dict = row_parser.parse_row()
         logger.debug(f"Scraping of game PBP data from row: {row_idx} table: " 
                     f"{table_idx} finished")
 
@@ -133,8 +130,9 @@ class PBPDescriptionParser():
     DEFLECTION = '(Defensive|Offensive)'
 
 
-    def __init__(self, play_desc: str):
+    def __init__(self, play_desc: str, play_type: str):
         self.play_desc = play_desc.replace("\xa0", " ")
+        self.play_type = play_type
 
 
     def parse_play_desc(self) -> dict:
@@ -142,9 +140,13 @@ class PBPDescriptionParser():
         match = pattern.match(self.play_desc)
         try:
             play_dict = match.groupdict()
-        except:
-            print(self.PATTERN)
-            raise
+        except ValueError:
+            error_message = (
+                f"Extracting data with pattern: {self.PATTERN}"
+                f"from string {self.play_desc} ({self.play_type})"
+                f" was not succesfull"
+                )
+            common_functions.log_and_raise(error_message, ValueError)
 
         return play_dict
     
@@ -154,19 +156,19 @@ class PBPDescriptionParserMultipleOptions(PBPDescriptionParser):
 
     def parse_play_desc(self) -> dict:
         for pat in self.PATTERN_LIST:
-            try:
-                pattern = re.compile(rf"^\s*{pat}\s*$")
-            except:
-                print(pat)
-                raise
+            pattern = re.compile(rf"^\s*{pat}\s*$")
             match = pattern.match(self.play_desc)
             if match:
                 break
         try:
             play_dict =  match.groupdict()
-        except:
-            print(pat)
-            raise
+        except ValueError:
+            error_message = (
+                f"Extracting data with pattern: {self.PATTERN}"
+                f"from string {self.play_desc} ({self.play_type})"
+                f" was not succesfull"
+                )
+            common_functions.log_and_raise(error_message, ValueError)
 
         return play_dict
 
@@ -213,9 +215,13 @@ class PBPGoalParser(PBPDescriptionParser):
                 if goal_match is not None:
                     break
             play_dict["goal"] = goal_match.groupdict()
-        except:
-            print(pattern)
-            raise
+        except ValueError:
+            error_message = (
+                f"Extracting data with pattern: {self.PATTERN}"
+                f"from string {self.play_desc} ({self.play_type})"
+                f" was not succesfull"
+                )
+            common_functions.log_and_raise(error_message, ValueError)
         assist_pattern = re.compile(self.PATTERN_A)
         assist_details_pattern = re.compile(self.PATTERN_AD)
         assist_match = assist_pattern.search(self.play_desc)
@@ -560,20 +566,30 @@ class PBPRowParser():
             return play_desc_dict
             
         except AttributeError as e:
-            logger.error(f"AttributeError in parsing play description: {e} | Input: {play_desc}")
-            raise
+            error_message = (
+                f"AttributeError in parsing play description: "
+                f"{e} | Input: {play_desc}"
+            )
+            common_functions.log_and_raise(error_message, AttributeError)
         except TypeError as e:
-            logger.error(f"TypeError while processing play description: {e} | Input: {play_desc}")
-            raise
+            error_message = (
+                f"TypeError while processing play description: {e} | "
+                f"Input: {play_desc}"
+            )
+            common_functions.log_and_raise(error_message, TypeError)
         except Exception as e:
-            logger.error(f"Unexpected error in parsing table with string {play_desc}: {e}", exc_info=True)
-            raise
+            error_message = (
+                f"TypeError while processing play description: {e} | "
+                f"Input: {play_desc}"
+                )
+            common_functions.log_and_raise(error_message, Exception)
 
 
     def row_desc_parser_factory(
             self, play_type: str, play_desc: str) -> 'PBPDescriptionParser':
         
-        return PBPRowParser.PARSER_OBJECTS[play_type](play_desc=play_desc)
+        return PBPRowParser.PARSER_OBJECTS[play_type](
+            play_desc=play_desc, play_type=play_type)
 
 
 

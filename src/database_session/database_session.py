@@ -1,3 +1,4 @@
+import common_functions
 import gamedata.join_to_db as jdb
 import gamedata.report_getter as report_getter
 import hockeydata.scraper.league_scraper as league_scraper
@@ -19,6 +20,7 @@ from hockeydata.constants import *
 from decorators import repeat_request_until_success, time_execution
 from logger.logger import logger
 from database_creator.database_creator import *
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 
@@ -54,10 +56,12 @@ class DatabaseSession():
 
     def clear_all_tables(self) -> None:
         if 'test' not in self.database_path.lower():
-            logger.error(f"Data deletion is not allowed on the" 
-                         f"database  as {self.database_path}' does not"
-                         f" contain 'test'.")
-            raise ValueError
+            error_message = (
+                f"Data deletion is not allowed on the" 
+                f"database  as {self.database_path}' does not"
+                f" contain 'test'."
+                )
+            common_functions.log_and_raise(error_message, ValueError)
         for table in self.meta_data.sorted_tables:
             self.session.execute(text(f"DELETE FROM {table.name};"))
         logger.info(f"Data from all tables in db {self.database_path}"

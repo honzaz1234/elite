@@ -5,7 +5,10 @@ import scrapy
 
 from hockeydata.constants import *
 from decorators import time_execution
+from errors import EmptyReturnXpathValueError
 from logger.logger import logger
+
+import common_functions
 
 
 class TeamScraper():
@@ -148,7 +151,12 @@ class TeamScraper():
                       .xpath(TeamScraper.INFO_PATHS["short_name"])
                       .getall())
         if short_name == []:
-            raise Exception("team html not downloaded")
+            common_functions.log_and_raise(
+                None, 
+                EmptyReturnXpathValueError, 
+                xpath=TeamScraper.INFO_PATHS["short_name"],
+                value="[]"
+                       )
         else:
             short_name = short_name[0].strip()
         return short_name

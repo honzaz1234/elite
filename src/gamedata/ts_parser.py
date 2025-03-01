@@ -37,8 +37,7 @@ class TSParser():
             parsed_players.append(player_dict)
         if not parsed_players:
             error_message = f"No data was scraped for match: {self.report_id}"
-            logger.error(error_message)
-            raise ValueError(error_message)
+            common_functions.log_and_raise(error_message, ValueError)
         logger.info("Scraping of player shift data from report" 
                     f"{self.report_id} finished")
 

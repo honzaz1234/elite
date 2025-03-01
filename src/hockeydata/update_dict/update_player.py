@@ -1,10 +1,11 @@
 import datetime
 import re
 
+import common_functions
+
 from hockeydata.constants import *
 from decorators import time_execution
 from logger.logger import logger
-from common_functions import convert_season_format, convert_to_seconds
 
 
 class UpdatePlayer:
@@ -474,7 +475,7 @@ class UpdatePlayerStats:
         for season_key in list(competition_dict_new.keys()):
             year_dict = competition_dict_new[season_key]
             year_dict_new = self._update_year_dict(year_dict=year_dict)
-            new_season_key = convert_season_format(season_key)
+            new_season_key = common_functions.convert_season_format(season_key)
             del competition_dict_new[season_key]
             competition_dict_new[new_season_key] = year_dict_new
         return competition_dict_new
@@ -499,8 +500,11 @@ class UpdatePlayerStats:
             league_id = re.findall(LEAGUE_UID_REGEX, 
                                    new_league_dict[LEAGUE_URL])[0]
             if not re.match(UpdatePlayerStats.UID_REGEX, league_id):
-                raise ValueError("League uid must contain only lowcase"      
-                                 "letters, numbers or -")
+                error_message = (
+                    "League uid must contain only lowcase"      
+                    "letters, numbers or symbol -"
+                )
+                common_functions.log_and_raise(error_message, ValueError)
         else:
             league_id = None
         new_league_dict[LEAGUE_UID] = league_id
@@ -596,7 +600,7 @@ class SeasonDict():
                 stat = float(season_list[ind])
                 dict_stats[SeasonDict.GOALIE_ATT[ind]] = stat
             elif ind == 8:
-                dict_stats[SeasonDict.GOALIE_ATT[ind]] = convert_to_seconds(season_list[ind])
+                dict_stats[SeasonDict.GOALIE_ATT[ind]] = common_functions.convert_to_seconds(season_list[ind])
             else:
                 stat = self.stat_to_int(stat=season_list[ind])
                 dict_stats[SeasonDict.GOALIE_ATT[ind]] = stat

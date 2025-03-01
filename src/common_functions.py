@@ -1,6 +1,9 @@
+import common_functions
+
 import requests
 import scrapy
 
+from errors import EmptyReturnXpathValueError
 from decorators import repeat_request_until_success
 from logger.logger import logger
 
@@ -25,16 +28,12 @@ def convert_season_format(season):
             start_year = int(start_year)
             end_year = int(f"{start_year // 100}{end_suffix}")
             return f"{start_year}-{end_year}"
-        raise ValueError
     except ValueError:
-        raise ValueError("Invalid season format. Expected 'yyyy-yy'"
-                         " or 'yyyy-yyyy'.")
-
-def convert_to_seconds(time_str):
-    """converts TOI from format mintues::seconds to just seconds"""
-    
-    minutes, seconds = map(int, time_str.split(":"))
-    return minutes * 60 + seconds
+        error_message = (
+           "Invalid season format. Expected 'yyyy-yy'"
+            " or 'yyyy-yyyy'." 
+        )
+        common_functions.log_and_raise(error_message)
 
 
 @repeat_request_until_success
@@ -58,10 +57,13 @@ def get_single_xpath_value(
         if optional:
             logger.debug(f"Value for xpath: {xpath} is {None}")
         else:
-            logger.error("Error: play_type is None – XPath extraction"
-                            " failed.")
-            raise ValueError("play_type is None – unable to extract play"
-                                " type from XPath.")
+            error_message = (
+                f"Error: play_type is None – XPath ({xpath}) extraction"
+                f" failed."
+            )
+            log_and_raise(
+                error_message, EmptyReturnXpathValueError,
+                    xpath=xpath, value=None)
     
     return return_val
 
@@ -73,10 +75,34 @@ def get_list_xpath_values(
         if optional:
             logger.debug(f"Value for Xpath: {xpath} is []")
         else:
-            logger.error(f"Extracted value from XPath ({xpath}) is []"
-                        f".Extraction failed")
-            raise ValueError(f"Extracted value from XPath ({xpath}) is []."
-                             f".Extraction failed")
+            error_message =  (
+                f"Extracted value from XPath ({xpath}) is []"
+                f".Extraction failed"
+                )
+            log_and_raise(
+                error_message, EmptyReturnXpathValueError,
+                    xpath=xpath, value="[]")
     
     return return_vals
 
+
+def convert_to_seconds(time_string: str) -> int:
+    try:
+        minutes, seconds = map(int, time_string.split(":"))
+        
+        return  minutes * 60 + seconds
+    except ValueError as e: 
+        error_message = (
+            f"Invalid time format: '{time_string}'. Expected"      
+            f" format: MM:SS"    
+        )
+        log_and_raise(error_message, ValueError)
+    
+
+def log_and_raise(
+        error_message: str, exception_class: type[Exception], **kwargs) -> None:
+    logger.error(error_message)
+    try:
+        raise exception_class(error_message, **kwargs)
+    except TypeError:
+        raise exception_class(**kwargs)
