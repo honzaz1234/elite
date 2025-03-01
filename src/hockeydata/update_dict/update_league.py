@@ -1,7 +1,7 @@
 import re
 
 from hockeydata.constants import *
-from logger.logger import logger
+from logger.logging_config import logger
 
 
 class UpdateLeagueDict():

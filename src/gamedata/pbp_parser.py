@@ -3,7 +3,7 @@ import scrapy
 
 import common_functions
 
-from logger.logger import logger
+from logger.logging_config import logger
 
 
 

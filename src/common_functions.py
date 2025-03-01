@@ -5,7 +5,7 @@ import scrapy
 
 from errors import EmptyReturnXpathValueError
 from decorators import repeat_request_until_success
-from logger.logger import logger
+from logger.logging_config import logger
 
 
 def convert_season_format(season):

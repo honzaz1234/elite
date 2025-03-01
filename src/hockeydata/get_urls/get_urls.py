@@ -6,7 +6,7 @@ import common_functions
 
 from decorators import time_execution
 from hockeydata.constants import *
-from logger.logger import logger
+from logger.logging_config import logger
 
 
 class LeagueUrlDownload():

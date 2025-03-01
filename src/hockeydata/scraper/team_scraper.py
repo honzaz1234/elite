@@ -6,7 +6,7 @@ import scrapy
 from hockeydata.constants import *
 from decorators import time_execution
 from errors import EmptyReturnXpathValueError
-from logger.logger import logger
+from logger.logging_config import logger
 
 import common_functions
 

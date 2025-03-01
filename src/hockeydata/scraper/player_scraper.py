@@ -8,7 +8,7 @@ import common_functions
 
 from hockeydata.constants import *
 from decorators import time_execution
-from logger.logger import logger
+from logger.logging_config import logger
 
 
 class PlayerScraper:

@@ -2,7 +2,7 @@ import hockeydata.insert_db.insert_db as insert_db
 
 from hockeydata.constants import *
 from decorators import time_execution
-from logger.logger import logger
+from logger.logging_config import logger
 
 from sqlalchemy.orm import Session
 

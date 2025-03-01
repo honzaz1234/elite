@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 from common_functions import get_valid_request
 from decorators import repeat_request_until_success
-from logger.logger import logger
+from logger.logging_config import logger
 
 
 def generate_dates_between(start_date: str, end_date: str):
