@@ -3,7 +3,7 @@ import requests
 import ssl
 import time
 
-from logger.logger import logger
+from logger.logging_config import logger
 
 
 MAX_ATTEMPT = 15
