@@ -67,7 +67,7 @@ def team_pipeline_test(team_url, session):
     pst_o.p.stop()
     tu_o = team_updater.UpdateTeamDict()
     team_dict_updated = tu_o.update_team_dict(team_dict)
-    insert_team_data = input_dict_team.InputTeamDict(session_db=session)
+    insert_team_data = input_dict_team.InputTeamDict(db_session=session)
     insert_team_data.input_team_dict(team_dict=team_dict_updated)
 
 def league_pipeline_test(league_url, session):
@@ -81,7 +81,7 @@ def league_pipeline_test(league_url, session):
     pst_o.p.stop()
     lu_o = league_updater.UpdateLeagueDict()
     league_dict_updated = lu_o.update_league_dict(league_dict)
-    insert_league_data = input_dict_league.InputLeagueDict(session_db=session)
+    insert_league_data = input_dict_league.InputLeagueDict(db_session=session)
     insert_league_data.input_league_dict(league_dict=league_dict_updated)
 
 def player_urls_pipeline_test():
@@ -96,7 +96,7 @@ def team_urls_pipeline_test():
   
 
 def main():
-    session1 = ds.DatabaseSession(done_folder_path="",
+    session1 = ds.InsertDataSession(done_folder_path="",
                                  links_folder_path="",
                                  db_path=DB_PATH)
     session1.set_up_connection()

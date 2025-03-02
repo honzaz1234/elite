@@ -166,7 +166,7 @@ class ManageTeam():
         self.session = session
         self.update_dict = update_team.UpdateTeamDict()
         self.input_dict = input_team_dict.InputTeamDict(
-            session_db=self.session)
+            db_session=self.session)
         self.get_urls = get_url.LeagueUrlDownload()
 
     def set_up_manage_team(self) -> None:
