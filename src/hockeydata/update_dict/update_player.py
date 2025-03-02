@@ -2,6 +2,7 @@ import datetime
 import re
 
 import common_functions
+import mappers.team_mappers as team_map
 
 from hockeydata.constants import *
 from decorators import time_execution
@@ -67,71 +68,6 @@ class UpdatePlayerInfo():
     #names of keys from dictionary to be deleted before insertion of the dict #into DB
     DELETE_KEYS = [BIRTH_PLACE_STRING, NHL_RIGHTS, DRAFT_LIST]
     
-    #unique identificators of NHL teams
-    NHL_UID = {
-        'Boston Bruins': 52,
-        'Toronto Maple Leafs': 76,
-        'Tampa Bay Lightning': 75,
-        'Florida Panthers': 62,
-        'Buffalo Sabres': 53,
-        'Ottawa Senators': 69,
-        'Detroit Red Wings': 60,
-        'Montréal Canadiens': 64,
-        'Carolina Hurricanes': 55,
-        'New Jersey Devils': 66,
-        'New York Rangers': 68,
-        'New York Islanders': 67,
-        'Pittsburgh Penguins': 71,
-        'Washington Capitals': 78,
-        'Philadelphia Flyers': 70,
-        'Columbus Blue Jackets': 58,
-        'Colorado Avalanche': 57,
-        'Dallas Stars': 59,
-        'Minnesota Wild': 63,
-        'Winnipeg Jets': 9966,
-        'Nashville Predators': 65,
-        'St. Louis Blues': 74,
-        'Arizona Coyotes': 72,
-        'Chicago Blackhawks': 56,
-        'Vegas Golden Knights': 22211,
-        'Edmonton Oilers': 61,
-        'Los Angeles Kings': 79,
-        'Seattle Kraken': 27336,
-        'Calgary Flames': 54,
-        'Vancouver Canucks': 77,
-        'San Jose Sharks': 73,
-        'Anaheim Ducks': 1580,
-        'Phoenix Coyotes': 72,
-        'Atlanta Thrashers': 51,
-        'Mighty Ducks of Anaheim': 1580,
-        'Hartford Whalers': 546,
-        'Québec Nordiques': 544,
-        'Minnesota North Stars': 543,
-        'Chicago Black Hawks': 56,
-        'Colorado Rockies': 769,
-        'Atlanta Flames': 767,
-        'Cleveland Barons': 96,
-        'California Golden Seals': 1815,
-        'Kansas City Scouts': 3314,
-        'Oakland Seals': 1815,
-        'California/Oakland Seals': 1815,
-        'Brooklyn Americans': 3029,
-        'New York Americans': 3029,
-        'Montréal Maroons': 3284,
-        'St. Louis Eagles': 11424,
-        'Ottawa HC (Senators)': 69,
-        'Detroit Falcons': 60,
-        'Philadelphia Quakers': 5942,
-        'Detroit Cougars': 60,
-        'Pittsburgh Pirates': 7287,
-        'Toronto St. Patricks/Maple Leafs': 76,
-        'Toronto St. Patricks': 76,
-        'Hamilton Tigers': 3196,
-        'Québec Athletic Club': 3194,
-        'Toronto Hockey Club': 76,
-        'Montréal Wanderers': 3264
-    }
-
     MONTHS = {
         "Jan": 1, 
         "Feb": 2, 
@@ -226,8 +162,9 @@ class UpdatePlayerInfo():
             draft_dict[DRAFT_POSITION]  = int(draft_position[0])
             draft_dict[DRAFT_TEAM] = re.findall(
                 UpdatePlayerInfo.DRAFT_TEAM_REGEX, draft_string)[0]
-            draft_dict[TEAM_UID] = (UpdatePlayerInfo
-                                    .NHL_UID[draft_dict[DRAFT_TEAM]])
+            draft_dict[TEAM_UID] = team_map.get_team_uid_from_full_name(
+                draft_dict[DRAFT_TEAM])
+
             return draft_dict
     
     def _create_place_dict(self, place_string: str|None) -> dict:
@@ -282,7 +219,8 @@ class UpdatePlayerInfo():
             return None
         team_rights = self._get_nhl_rights_info(
                 nhl_rights=nhl_rights, ind=0)
-        team_uid = UpdatePlayerInfo.NHL_UID[team_rights]
+        team_uid = team_map.get_team_uid_from_full_name(team_rights)
+        
         return team_uid
     
     def _get_nhl_signed_status(self, nhl_rights: str|None) -> bool:
