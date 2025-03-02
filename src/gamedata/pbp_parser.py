@@ -546,10 +546,10 @@ class PBPRowParser():
     def get_players_on_ice(self) -> dict:
         poi_dict = {}
         poi_parser = PlayerOnIceParser(poit_sel=self.sel.xpath(
-            PBPRowParser.XPATHS["team_l"]))
+            PBPRowParser.XPATHS["TV"]))
         poi_dict["players_l"] = poi_parser.get_team_players_on_ice()
         poi_parser = PlayerOnIceParser(poit_sel=self.sel.xpath(
-            PBPRowParser.XPATHS["team_r"]))
+            PBPRowParser.XPATHS["TH"]))
         poi_dict["players_r"] = poi_parser.get_team_players_on_ice()
 
         return poi_dict
@@ -590,6 +590,9 @@ class PBPRowParser():
         
         return PBPRowParser.PARSER_OBJECTS[play_type](
             play_desc=play_desc, play_type=play_type)
+    
+
+
 
 
 
