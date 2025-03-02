@@ -1,4 +1,4 @@
-from sqlalchemy import Table
+from sqlalchemy import Column, Table
 from sqlalchemy.dialects import sqlite
 from sqlalchemy.orm import Session, Query
 
@@ -47,6 +47,10 @@ class DbDataGetter():
                     query = query.filter(f)
 
             return query
+    
+    def get_list_filter(table_column: Column, values: list):
+
+        return filter(table_column.in_(values))
     
 
     def log_query(self, query):
