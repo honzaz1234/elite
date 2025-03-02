@@ -1,4 +1,5 @@
 from sqlalchemy import Table
+from sqlalchemy.dialects import sqlite
 from sqlalchemy.orm import Session, Query
 
 from logger.logging_config import logger
@@ -12,22 +13,23 @@ class DbDataGetter():
         self.session = session
 
 
-    def get_db_query_wraper(
+    def get_db_query_result(
             self, query_name: str, filters: list=None) -> list:
 
         query_info = QUERIES_INFO[query_name]
-        query = self.get_db_query(base_table=query_info["base_table"],
+        query = self._get_db_query(base_table=query_info["base_table"],
                                  selected_cols=query_info["selected_cols"],
                                  joins=query_info["joins"],
                                  filters=query_info["filters"])
         if filters:
             for f in filters:
                 query = query.filter(f)
+        self.log_query(query)
 
         return query.all()
 
 
-    def get_db_query(
+    def _get_db_query(
             self,
             base_table: Table,
             selected_cols: list,
@@ -45,3 +47,8 @@ class DbDataGetter():
                     query = query.filter(f)
 
             return query
+    
+
+    def log_query(self, query):
+        compiled_query = query.statement.compile(dialect=sqlite.dialect(), compile_kwargs={"literal_binds": True})
+        logger.debug("Executed SQL: %s", str(compiled_query))

@@ -150,11 +150,12 @@ class GetDataSession(DatabaseSession):
 
 
     def get_db_query(
-            self, query_name: str, filters: str=None) -> dict:
+            self, query_name: str, filters: str=None) -> list:
         query_o = db_query.DbDataGetter(session=self.session)
-        data = query_o.get_db_query_wraper(
+        data = query_o.get_db_query_result(
             query_name=query_name,
             filters=filters)
+        logger.debug(f"Executed query returned {len(data)} rows of data")
 
         return data
 

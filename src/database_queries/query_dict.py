@@ -45,9 +45,11 @@ QUERIES_INFO = {
         "selected_cols": [
             db.PlayerStats.player_id,
             db.Player.name.label("player_name"),
+            db.PlayerStats.regular_season,
             db.PlayerStats.team_id,
             db.Team.team,
             db.Season.season,
+            db.PlayerStats.games_played,
             db.PlayerStats.goals,
             db.PlayerStats.assists,
             db.PlayerStats.total_points,

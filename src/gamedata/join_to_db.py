@@ -1,23 +1,29 @@
 import pandas as pd
 
-from sqlalchemy import Table, TextClause
+from sqlalchemy import Table
+from sqlalchemy.orm import Session
 
 import database_creator.database_creator as db
+import database_queries.database_query as dq
+
+from logger.logging_config import logger
 
 
-class DBJoiner():
+class DbDataGetter():
 
 
-    def __init__(self, session):
-
+    def __init__(self, session: Session):
         self.session = session
+
 
     def get_all_player_season_data(
             self, selected_seasons: list) -> dict:
-        player_results = self.get_player_season_data(
-            table=db.PlayerStats, selected_seasons=selected_seasons)
-        goalkeeper_results = self.get_player_season_data(
-            table=db.GoalieStats, selected_seasons=selected_seasons)
+        query_object = dq.DbDataGetter(session=self.session)
+        seasons_filter = [filter(db.Season.season.in_(selected_seasons))]
+        player_results = query_object.get_db_query_result(
+            query_name="nhl_season_players", filters=seasons_filter)
+        goalkeeper_results = query_object.get_db_query_result(
+            query_name="nhl_season_goalies", filters=seasons_filter)
         results = player_results + goalkeeper_results
         season_team_players: dict[str, dict[str, list[str]]] = {}
         for row in results:
@@ -34,40 +40,11 @@ class DBJoiner():
             
         return season_team_players
     
-    def get_player_season_data(
-            self, table: Table, selected_seasons: list) -> list:
 
-        results = self.get_stats_query(
-            table=table, selected_seasons=selected_seasons)
-        # results = self.session.query.all()
-        return results
-    
-    def get_stats_query(
-            self, table: Table, selected_seasons: list) -> list:
-
-        query = (self.session.query(
-            table.player_id,
-            db.Player.name.label("player_name"),
-            table.team_id,
-            db.Team.team,
-            db.Season.season,
-        ).join(db.Player, table.player_id == db.Player.id)
-        .join(db.Team, table.team_id == db.Team.id)
-        .join(db.Season, table.season_id == db.Season.id)
-        .join(db.League, table.league_id == db.League.id)
-        .filter(db.Season.season.in_(selected_seasons))
-        .filter(db.League.uid == 'nhl')
-        .all())
-
-        return query
-    
-class PlayerShiftUpdater():
-
-
-    def __init__(self):
-        pass
-
-
-    def 
-
-
+    def check_match_player_to_id(
+            self, db_data: dict, scraped_data: dict) -> dict:
+        db_names = [player_dict["player_name"] for player_dict in db_data]
+        
+        for player_info in scraped_data:
+            if player_info[0] not in db_names:
+                logger.error("")
