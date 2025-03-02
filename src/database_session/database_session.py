@@ -1,5 +1,4 @@
 import common_functions
-import gamedata.join_to_db as jdb
 import database_queries.database_query as db_query
 import management.input_data as input_data
 
@@ -150,11 +149,12 @@ class GetDataSession(DatabaseSession):
 
 
     def get_db_query(
-            self, query_name: str, filters: str=None) -> list:
+            self, query_name: str, filters: str=None, distinct=False) -> list:
         query_o = db_query.DbDataGetter(session=self.session)
         data = query_o.get_db_query_result(
             query_name=query_name,
-            filters=filters)
+            filters=filters,
+            distinct=distinct)
         logger.debug(f"Executed query returned {len(data)} rows of data")
 
         return data
