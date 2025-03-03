@@ -69,5 +69,21 @@ QUERIES_INFO = {
             (db.League.uid == 'nhl')
             ]
     },
+    "nhl_teams": {
+        "base_table": db.Team,
+        "selected_cols": [
+            db.Team.id,
+            db.Team.team,
+            db.League.uid
+            ],
+        "joins": [
+            (db.TeamSeason, db.TeamSeason.team_id == db.Team.id),
+            (db.Season, db.TeamSeason.season_id == db.Season.id),
+            (db.League, db.TeamSeason.league_id == db.League.id)
+        ],
+        "filters": [
+            (db.League.uid == "nhl")
+        ]
+    }
 
 }
