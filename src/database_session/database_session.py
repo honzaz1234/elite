@@ -83,7 +83,7 @@ class InsertDataSession(DatabaseSession):
 
     def __init__(
             self, db_path: str, done_folder_path: str, links_folder_path: str):
-        super.__init__(db_path=db_path)
+        super().__init__(db_path=db_path)
         self.done_folder_path = done_folder_path
         self.links_folder_path = links_folder_path
 
