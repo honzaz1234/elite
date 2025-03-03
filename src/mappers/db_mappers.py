@@ -2,16 +2,18 @@ from collections import Counter
 
 import database_creator.database_creator as db
 import database_queries.database_query as dq
+import mappers.team_mappers as team_map
 
 
-class PlayerNameChecker():
+class GetDBID():
 
 
     def __init__(self, session):
         self.session = session
 
 
-    def get_player_team_season_dict(self, selected_seasons: list) -> dict:
+    def get_player_id_team_season_mapper_dict(
+            self, selected_seasons: list) -> dict:
         player_dict = self.get_all_player_season_data(selected_seasons)
         player_dict = self.solve_identical_names(player_dict)
 
@@ -51,16 +53,31 @@ class PlayerNameChecker():
         return season_team_players
     
 
-    def get_all_nhl_teams_uids(self) -> dict:
-
+    def get_nhl_team_db_id_mapper(self) -> dict:
         query_object = dq.DbDataGetter(session=self.session)
         nhl_teams = query_object.get_db_query_result(
-            query_name="nhl_season_players")
+            query_name="nhl_season_players", distinct=True)
+        team_team_id_mapper = self.create_team_team_id_dict(nhl_teams)
+        abb_team_id_mapper = self.create_abb_team_id_mapper_dict(
+            team_team_id_mapper)
+
         
-
-
-
+    def create_team_team_id_dict(team_rows: list) -> dict:
+        team_team_id_mapper = {}
+        for tuple_ in team_rows:
+            team_team_id_mapper[tuple_[1]] = tuple_[0]
+        
+        return team_team_id_mapper
     
+
+    def create_abb_team_id_mapper_dict(team_team_id_mapper: dict) -> dict:
+        abb_team_id_mapper = {}
+        for team_name in team_team_id_mapper:
+            abb = team_map.get_nhl_full_name_from_abbrevation(team_name)
+            abb_team_id_mapper[abb] = team_team_id_mapper[team_name]
+
+        return abb_team_id_mapper
+
 
     def solve_identical_names(self, season_team_players: dict) -> dict:
         for season in season_team_players:
