@@ -26,12 +26,9 @@ def repeat_request_until_success(func):
                 time.sleep(120)
             except(sp.TimeoutError):
                 time.sleep(60)
-            except:
-                logger.info(f"Attempt {attempt} executing function "
-                            f"{func.__name__} failed: {e}")
-                attempt += 1
         logger.info(f'Max attempt ({attempt}) was reached')
         raise
+
     return wrapper 
                 
 def time_execution(func):
@@ -42,7 +39,8 @@ def time_execution(func):
         execution_time = end_time - start_time  
         logger.info(f"Execution time of {func.__name__}: " 
                     f"{execution_time:.6f} seconds")
-        return result  
+        return result
+      
     return wrapper
                  
 
