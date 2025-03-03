@@ -14,7 +14,7 @@ class DbDataGetter():
 
 
     def get_db_query_result(
-            self, query_name: str, filters: list=None) -> list:
+            self, query_name: str, filters: list=None, distinct=False) -> list:
 
         query_info = QUERIES_INFO[query_name]
         query = self._get_db_query(base_table=query_info["base_table"],
@@ -24,6 +24,8 @@ class DbDataGetter():
         if filters:
             for f in filters:
                 query = query.filter(f)
+        if distinct:
+            query = query.distinct()
         self.log_query(query)
 
         return query.all()
