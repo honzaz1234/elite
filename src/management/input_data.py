@@ -32,7 +32,6 @@ class ManagePlayer():
         self.players_done = None
         self.players_urls = None
         self.session = session
-        self.plawright_setup = ps.PlaywrightSetUp()
         self.playwright_session = ps.PlaywrightSetUp()
         self.update_dict = update_player.UpdatePlayer()
         self.input_dict = input_player_dict.InputPlayerDict(
@@ -164,6 +163,7 @@ class ManageTeam():
         self.teams_done = None
         self.teams_urls = None
         self.session = session
+        self.playwright_session = ps.PlaywrightSetUp()
         self.update_dict = update_team.UpdateTeamDict()
         self.input_dict = input_team_dict.InputTeamDict(
             db_session=self.session)
@@ -216,7 +216,8 @@ class ManageTeam():
     
     @repeat_request_until_success
     def scrape_team(self, url: str) -> dict:
-        team_o = team_scraper.TeamScraper(url=url)
+        team_o = team_scraper.TeamScraper(
+            url=url, page=self.playwright_session.page)
         dict_team = team_o.get_info()
         return dict_team
 
@@ -270,6 +271,7 @@ class ManageLeague():
         self.leagues_done_path = done_folder_path + "/done_leagues.json"
         self.leagues_done = None
         self.session = session
+        self.playwright_session = ps.PlaywrightSetUp()
         self.update_dict = update_league.UpdateLeagueDict()
         self.input_dict = input_league_dict.InputLeagueDict(
             db_session=self.session)
@@ -304,14 +306,15 @@ class ManageLeague():
 
     @repeat_request_until_success
     def scrape_league(self, url: str) -> None:
-            league_o = league_scraper.LeagueScrapper(url=url)
+            league_o = league_scraper.LeagueScrapper(
+                url=url, page=self.playwright_session.page)
             dict_league = league_o.get_info()
             return dict_league
 
 
     def scrape_input_league_into_db_wrapper(self, league_uid: str) -> None:
         if league_uid in self.leagues_done["leagues_done"]:
-            logger.debug(f'League ({league_uid}) is already in the db')
+            logger.info(f'League ({league_uid}) is already in the db')
             return
         url = ELITE_URL + LEAGUE_URLS[league_uid]
         self.scrape_and_input_league_into_db(url=url)
