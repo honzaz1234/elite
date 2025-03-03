@@ -96,9 +96,7 @@ def team_urls_pipeline_test():
   
 
 def main():
-    session1 = ds.InsertDataSession(done_folder_path="",
-                                 links_folder_path="",
-                                 db_path=DB_PATH)
+    session1 = ds.GetDatabaseSession(db_path=DB_PATH)
     session1.set_up_connection()
     session1.clear_all_tables()
     to_test = input('Select pipelines to be tested: ')
