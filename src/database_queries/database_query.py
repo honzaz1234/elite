@@ -50,9 +50,9 @@ class DbDataGetter():
 
             return query
     
-    def get_list_filter(table_column: Column, values: list):
+    def get_list_filter(self, table_column: Column, values: list):
 
-        return filter(table_column.in_(values))
+        return table_column.in_(values)
     
 
     def log_query(self, query):
