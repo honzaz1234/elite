@@ -1200,7 +1200,7 @@ class PlayerOnIce(Base):
 
 class GameStopageType(Base):
 
-    __tablename_ = "game_stopage_types"
+    __tablename__ = "game_stopage_types"
 
     id = Column(Integer, primary_key=True)
     stopage_type = Column(String, nullable=False)
