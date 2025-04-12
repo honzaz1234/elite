@@ -23,10 +23,10 @@ class GetDBID():
     def get_all_player_season_data(
             self, selected_seasons: list) -> list:
         query_object = dq.DbDataGetter(session=self.session)
-        seasons_filter = query_object.get_list_filter(
+        seasons_filter = [query_object.get_list_filter(
             table_column=db.Season.season,
             values=selected_seasons
-            )                                          
+            )]                                      
         player_results = query_object.get_db_query_result(
             query_name="nhl_season_players", filters=seasons_filter)
         goalkeeper_results = query_object.get_db_query_result(
@@ -60,9 +60,11 @@ class GetDBID():
         team_team_id_mapper = self.create_team_team_id_dict(nhl_teams)
         abb_team_id_mapper = self.create_abb_team_id_mapper_dict(
             team_team_id_mapper)
+        
+        return abb_team_id_mapper
 
         
-    def create_team_team_id_dict(team_rows: list) -> dict:
+    def create_team_team_id_dict(self, team_rows: list) -> dict:
         team_team_id_mapper = {}
         for tuple_ in team_rows:
             team_team_id_mapper[tuple_[1]] = tuple_[0]
@@ -70,7 +72,8 @@ class GetDBID():
         return team_team_id_mapper
     
 
-    def create_abb_team_id_mapper_dict(team_team_id_mapper: dict) -> dict:
+    def create_abb_team_id_mapper_dict(
+            self, team_team_id_mapper: dict) -> dict:
         abb_team_id_mapper = {}
         for team_name in team_team_id_mapper:
             abb = team_map.get_nhl_full_name_from_abbrevation(team_name)
@@ -88,7 +91,7 @@ class GetDBID():
         return season_team_players
 
 
-    def solve_same_names_team(dict_team: dict) -> dict:
+    def solve_same_names_team(self, dict_team: dict) -> dict:
         new_team_dict = {}
         player_names = Counter([dict_['player_name'] for dict_ in dict_team])
         duplicates = [
@@ -99,7 +102,7 @@ class GetDBID():
             ]
         
         new_team_dict["single"] = [
-            dict_ for dict_ in dict_team if dict_["player_name"] in duplicates
+            dict_ for dict_ in dict_team if dict_["player_name"] not in duplicates
             ]
         
         return new_team_dict      
