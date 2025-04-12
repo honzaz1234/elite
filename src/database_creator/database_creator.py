@@ -1189,9 +1189,43 @@ class PlayerOnIce(Base):
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
 
-    def __init__(self, player_id, play_id):
+    def __init__(self, player_id, team_id, play_id):
         self.player_id = player_id
+        self.team_id = team_id
         self.play_id = play_id
 
     def __repr__(self):
-        return f"({self.id}, {self.player_id}, {self.play_id})"
+        return f"({self.id}, {self.player_id}, {self.team_id}, {self.play_id})"
+    
+
+class GameStopageType(Base):
+
+    __tablename_ = "game_stopage_types"
+
+    id = Column(Integer, primary_key=True)
+    stopage_type = Column(String, nullable=False)
+
+    def __init__(self, stopage_type):
+        self.stopage_type = stopage_type
+
+    def __repr__(self):
+        return (f"({self.id}, {self.stopage_type}")
+    
+
+class GameStopage(Base):
+
+    __tablename__ = "game_stopages"
+
+    id = Column(Integer, primary_key=True)
+    stopage_id = Column(
+        Integer, ForeignKey('game_stopage_types.id'), nullable=False)
+    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
+
+    def __init__(self, stopage_id, play_id):
+        self.stopage_id = stopage_id
+        self.play_id = play_id
+
+    def __repr__(self):
+        return (f"({self.id}, {self.stopage_id}, {self.play_id})")
+    
+
