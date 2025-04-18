@@ -3,6 +3,7 @@ import scrapy
 
 import common_functions
 
+from errors import WrongPlayDesc
 from logger.logging_config import logger
 
 
@@ -82,6 +83,7 @@ class PBPTableParser():
         logger.debug("Scraping of game PBP data from table: " 
                     f"{table_idx} finished")
         return parsed_data
+    
 
     def parse_row(
             self, row_sel: scrapy.Selector, row_idx: int, table_idx: int) -> dict:
@@ -141,12 +143,9 @@ class PBPDescriptionParser():
         try:
             play_dict = match.groupdict()
         except ValueError:
-            error_message = (
-                f"Extracting data with pattern: {self.PATTERN}"
-                f"from string {self.play_desc} ({self.play_type})"
-                f" was not succesfull"
-                )
-            common_functions.log_and_raise(error_message, ValueError)
+            common_functions.log_and_raise(
+                None, WrongPlayDesc, play_desc=self.play_desc,
+                play_type=self.play_type)
 
         return play_dict
     
@@ -163,12 +162,9 @@ class PBPDescriptionParserMultipleOptions(PBPDescriptionParser):
         try:
             play_dict =  match.groupdict()
         except ValueError:
-            error_message = (
-                f"Extracting data with pattern: {self.PATTERN}"
-                f"from string {self.play_desc} ({self.play_type})"
-                f" was not succesfull"
-                )
-            common_functions.log_and_raise(error_message, ValueError)
+            common_functions.log_and_raise(
+                None, WrongPlayDesc, play_desc=self.play_desc,
+                play_type=self.play_type)
 
         return play_dict
 
@@ -216,12 +212,9 @@ class PBPGoalParser(PBPDescriptionParser):
                     break
             play_dict["goal"] = goal_match.groupdict()
         except ValueError:
-            error_message = (
-                f"Extracting data with pattern: {self.PATTERN}"
-                f"from string {self.play_desc} ({self.play_type})"
-                f" was not succesfull"
-                )
-            common_functions.log_and_raise(error_message, ValueError)
+            common_functions.log_and_raise(
+                None, WrongPlayDesc, play_desc=self.play_desc,
+                play_type=self.play_type)
         assist_pattern = re.compile(self.PATTERN_A)
         assist_details_pattern = re.compile(self.PATTERN_AD)
         assist_match = assist_pattern.search(self.play_desc)
@@ -309,6 +302,8 @@ class PBPMissedShotParser(PBPDescriptionParserMultipleOptions):
         rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+" 
         rf"#(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
         rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s*,\s*"
+        rf"(?:(?P<penalty_shot>{PBPDescriptionParser.PENALTY_SHOT_PATTERN})"
+        rf"\s*,)?"
         rf"(?P<shot_type>{PBPDescriptionParser.SHOT_PATTERN})\s*,\s*"
         rf"(?P<shot_result>[A-Za-z\s]+)\s*,\s*"
         rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone\s*,\s*"
@@ -321,6 +316,8 @@ class PBPMissedShotParser(PBPDescriptionParserMultipleOptions):
         rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+" 
         rf"#(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
         rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s*,\s*"
+        rf"(?:(?P<penalty_shot>{PBPDescriptionParser.PENALTY_SHOT_PATTERN})"
+        rf"\s*,)?"
         rf"(?P<shot_type>Failed Attempt)"
         rf"(?:\s*(?P<broken_stick>Broken Stick)\s*)?\s*"
         rf"(?:\s*(?P<over_board>Flub)\s*)?"
@@ -535,11 +532,16 @@ class PBPRowParser():
             sel=self.sel, xpath=self.XPATHS["play_type"], optional=False)
         row_dict['time'] = common_functions.get_single_xpath_value(
             sel=self.sel, xpath=self.XPATHS["time"], optional=False)
-        if row_dict['play_type'] not in self.SKIP_PLAY:
-            row_dict['play_info'] = self.get_play_description(
-                play_type=row_dict['play_type'])
         row_dict["poi"] = self.get_players_on_ice()
-        logger.debug(f"Parsed row: {row_dict}")
+        if row_dict['play_type'] not in self.SKIP_PLAY:
+            try:
+                row_dict['play_info'] = self.get_play_description(
+                    play_type=row_dict['play_type'])
+                logger.debug(f"Parsed row: {row_dict}")
+            except WrongPlayDesc as e:
+                row_dict["play_type"] = e.play_type
+                row_dict["play_desc"] = e.play_desc
+                row_dict["error"] = True
 
         return row_dict
     
@@ -566,7 +568,10 @@ class PBPRowParser():
             play_desc_dict = row_desc_parser.parse_play_desc()
 
             return play_desc_dict
-            
+        except WrongPlayDesc as e:
+            common_functions.log_and_raise(
+                None, WrongPlayDesc, play_desc=e.play_desc,
+                play_type=e.play_type)    
         except AttributeError as e:
             error_message = (
                 f"AttributeError in parsing play description: "
@@ -591,7 +596,8 @@ class PBPRowParser():
             self, play_type: str, play_desc: str) -> 'PBPDescriptionParser':
         
         return PBPRowParser.PARSER_OBJECTS[play_type](
-            play_desc=play_desc, play_type=play_type)
+            play_desc=play_desc, 
+            play_type=play_type)
     
 
 
