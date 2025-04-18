@@ -347,7 +347,7 @@ class PBPBlockedShotParser(PBPDescriptionParserMultipleOptions):
         rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+#"
         rf"(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
         rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s+"
-        rf"(?P<blocked_by>OPPONENT-BLOCKED BY)\s+"
+        rf"(?P<blocked_by>(OPPONENT-BLOCKED BY|BLOCKED BY))\s+"
         rf"(?P<blocked_team>{PBPDescriptionParser.TEAM_PATTERN})\s+#(?"
         rf"P<blocked_player_number>{PBPDescriptionParser.NUMBER_PATTERN})"
         rf"\s+(?P<blocked_player_name>{PBPDescriptionParser.PLAYER_PATTERN})"
@@ -508,7 +508,7 @@ class PBPRowParser():
         "SOC": PBPPeriod,
         "SHOT": PBPShotParser,
         "STOP": PBPGameStopageParser,
-1        "TAKE": PBPTakeAwayParser
+        "TAKE": PBPTakeAwayParser
     }
 
     XPATHS = {
