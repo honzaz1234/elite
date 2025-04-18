@@ -28,21 +28,25 @@ class GetDBID():
             values=selected_seasons
             )]                                      
         player_results = query_object.get_db_query_result(
-            query_name="nhl_season_players", filters=seasons_filter)
+            query_name="nhl_season_players", 
+            filters=seasons_filter,
+            distinct=True)
         goalkeeper_results = query_object.get_db_query_result(
-            query_name="nhl_season_goalies", filters=seasons_filter)
+            query_name="nhl_season_goalies", 
+            filters=seasons_filter,
+            distinct=True)
         results = player_results + goalkeeper_results
         season_team_players: dict[str, dict[str, list[str]]] = {}
         for row in results:
-            player_id, player_name, team_id, team_name, season = row
+            player_id, player_name, team_id, team_name, team_uid, season = row
 
             if season not in season_team_players:
                 season_team_players[season] = {}
 
-            if team_name not in season_team_players[season]:
-                season_team_players[season][team_name] = []
+            if team_uid not in season_team_players[season]:
+                season_team_players[season][team_uid] = []
 
-            season_team_players[season][team_name].append(
+            season_team_players[season][team_uid].append(
                 {
                     "player_name": player_name, 
                     "player_id": player_id, 
