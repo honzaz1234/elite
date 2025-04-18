@@ -103,6 +103,11 @@ def log_and_raise(
         error_message: str, exception_class: type[Exception], **kwargs) -> None:
     logger.error(error_message)
     try:
-        raise exception_class(error_message, **kwargs)
-    except TypeError:
         raise exception_class(**kwargs)
+    except TypeError:
+        # Fallback: maybe it expected a message positional arg
+        try:
+            raise exception_class(error_message)
+        except Exception as e:
+            logger.error(f"Couldn't raise exception: {e}")
+            raise
