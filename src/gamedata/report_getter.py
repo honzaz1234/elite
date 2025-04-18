@@ -39,12 +39,11 @@ class ReportIDGetter():
     def get_selected_season_ids(self, selected_seasons: list=None) -> dict:
         if selected_seasons is None:
             selected_seasons = self.season_ranges.keys()
-        report_ids = {
-            season: self.get_season_ids(
+        report_ids = {}
+        for season in selected_seasons:
+            report_ids[season] = self.get_season_ids(
                 season_ranges_dict=self.season_ranges[season],
                 season=season)
-            for season in self.season_ranges if season in selected_seasons
-        }
 
         return report_ids
 
@@ -54,7 +53,8 @@ class ReportIDGetter():
             scraped_data: dict=None) -> dict:
         if scraped_data == None:
             scraped_data = {}
-            scraped_data["season_long"] = convert_season_format(season) 
+            scraped_data["season_long"] = convert_season_format(season)
+            scraped_data["report_data"] = []
         logger.info(f"Scraping of Report IDs for season: "
                     f"{season} started")
         season_dates = generate_dates_between(
@@ -62,7 +62,7 @@ class ReportIDGetter():
             end_date=season_ranges_dict["end_date"])
         scraped_data["report_data"] = self.get_report_ids(
             season_dates=season_dates,
-            scraped_data=scraped_data["report_data"])
+            report_data_all=scraped_data["report_data"])
         logger.info(f"Scraping of Report IDs for season: "
                     f"{season} finished")
 
