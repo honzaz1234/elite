@@ -9,6 +9,7 @@ QUERIES_INFO = {
             db.Player.name.label("player_name"),
             db.PlayerStats.team_id,
             db.Team.team,
+            db.Team.uid,
             db.Season.season
             ],
         "joins": [
@@ -28,6 +29,7 @@ QUERIES_INFO = {
             db.Player.name.label("player_name"),
             db.GoalieStats.team_id,
             db.Team.team,
+            db.Team.uid,
             db.Season.season
             ],
         "joins": [
