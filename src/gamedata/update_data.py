@@ -1,4 +1,5 @@
 import re
+import unicodedata
 
 import common_functions
 import  mappers.team_mappers as team_map
@@ -94,7 +95,7 @@ class UpdateShifts():
                     shifts=item[player_name_number])
                 updated_dict[(updated_name, number)] = updated_shifts
 
-        return updated_shifts
+        return updated_dict
     
     
     def update_player_shifts(
@@ -148,7 +149,6 @@ class UpdateShifts():
                     f", but got {type(shift_string).__name__}"
                     )
                 raise TypeError(error_message)
-            print(shift_string)
             match = re.search(self.SHIFT_PATTERN, shift_string)
             shift = match.group("shift")
             shift_seconds = common_functions.convert_to_seconds(shift)
@@ -201,9 +201,12 @@ class UpdatePBP():
     )
 
 
-    def __init__(self, player_mapper: dict, TH_uid: str, TV_uid: str):
+    def __init__(
+            self, player_mapper: dict, TH_id: int, TV_id: int,
+            TH_abb: str, TV_abb):
         self.player_mapper = player_mapper
-        self.team_uids = {"TH": TH_uid, "TV": TV_uid}
+        self.team_type_to_abb = {"TH": TH_abb, "TV": TV_abb}
+        self.team_abb_to_db_id = {TH_abb: TH_id, "TV": TV_id}
 
 
     def update_play(self, play: dict) -> dict:
@@ -232,17 +235,20 @@ class UpdatePBP():
     def get_updated_poi(self, poi: dict) -> dict:
         updated_poi = {}
         for team_type in poi:
-                team_uid = self.team_uids[team_type]
-                updated_poi[team_uid] = self.get_updated_team_poi(
-                    poi[team_type], team_uid)
+                team_abb = self.team_type_to_abb[team_type]
+                team_id = self.team_abb_to_db_id[team_abb]
+                updated_poi[team_id] = self.get_updated_team_poi(
+                    poi[team_type], team_id, team_abb)
 
         return updated_poi
     
 
-    def get_updated_team_poi(self, team_poi: list, team_uid: int) -> list:
+    def get_updated_team_poi(
+            self, team_poi: list, team_id: int, team_abb: str) -> list:
         updated_team_poi = []
-        for player in team_poi:
-            player_id = self.get_player_id_poi(self, player, team_uid)
+        for player_number in team_poi:
+            player_id = self.get_player_id(
+                self, team_id, player_number, team_abb)
             updated_team_poi.append(player_id)
 
         return updated_team_poi
@@ -267,39 +273,19 @@ class UpdatePBP():
         
         return shot_type
     
-    
-    def get_player_id_poi(self, player: str, team_uid: int) -> int:    
-        try:
-            if not isinstance(player, (str, bytes)):
-                error_message = (
-                    f"Expected a string or bytes-like object"
-                    f", but got {type(player).__name__}"
-                    )
-                raise TypeError(error_message)
-            match = re.match(self, player)
-            player_name = match.group("player_name")
-            logger.debug(f"Pattern '{player_name}' found")
-            player_id = self.player_mapper[team_uid][player_name]
-
-            return player_id
-        except re.error as e:
-            common_functions.log_and_raise(e, re.error)
-        except TypeError as e:
-            common_functions.log_and_raise(e, TypeError)
-
 
     def update_play_info(self):
         pass
 
 
-    def get_player_uid(
-            self, team_uid: int, player_number: int, team_abb: str) -> int:
-        for player_info in self.player_mapper[team_uid]:
+    def get_player_id(
+            self, team_id: int, player_number: int, team_abb: str) -> int:
+        for player_info in self.player_mapper[team_id]:
             if player_info[1] == player_number:
-                return self.player_mapper[team_uid][player_info]
+                return self.player_mapper[team_id][player_info]
         error_message = (
             f"No player data found for player with number {player_number} "
-            f"for team {team_abb} ({team_uid})"
+            f"for team {team_abb} ({team_id})"
         )
         common_functions.log_and_raise(error_message, KeyError)
         
@@ -310,30 +296,30 @@ class FaceoffUpdater(UpdatePBP):
     def update_play_info(self, play: dict) -> dict:
 
         updated_dict = {}
-        updated_dict["winner_team_uid"] = team_map.get_team_uid_from_abbrevation(play["winning_team"])
         if play['winning_team'] == play['l_team']:
+            winner_team_id = self.team_abb_to_db_id[play['l_team']]
             winning_player_number = play["l_player_number"]
-            losing_team_id = team_map.get_team_uid_from_abbrevation(
-                play["r_team"])
+            losing_team_id = self.team_abb_to_db_id[play["r_team"]]
             losing_player_number = play['r_player_number']
             losing_team = play['r_team']
         else:
+            winner_team_id = self.team_abb_to_db_id[play['r_team']]
             winning_player_number = play["r_player_number"]
-            losing_team_id = team_map.get_team_uid_from_abbrevation(
-                play["l_team"])
+            losing_team_id = self.team_abb_to_db_id[play['l_team']]
             losing_player_number = play['l_player_number']
             losing_team = play['l_team']
-        updated_dict['faceoff_winner_uid'] = self.get_player_uid(
-                updated_dict["winner_team_uid"],
+        updated_dict['faceoff_winner_id'] = self.get_player_id(
+                winner_team_id,
                 winning_player_number,
                 play['winning_team']
                 )
-        updated_dict['faceoff_loser_uid'] = self.get_player_uid(
+        updated_dict['faceoff_loser_id'] = self.get_player_id(
                 losing_team_id,
                 losing_player_number,
                 losing_team
                 )
-        updated_dict["losing_team_uid"] = losing_team_id
+        updated_dict["winner_team_id"] = winner_team_id
+        updated_dict["losing_team_id"] = losing_team_id
 
         return updated_dict
     
@@ -343,20 +329,20 @@ class BlockedShotUpdater(UpdatePBP):
 
     def update_player_info(self, play: dict) -> dict:
         updated_dict = {}
-        updated_dict["blocker_team_uid"] = team_map.get_team_uid_from_abbrevation(
-                play["team"])
-        updated_dict["blocked_team_uid"] = team_map.get_team_uid_from_abbrevation(
-                play["blocked_team"])
-        updated_dict['blocker_player_uid'] = self.get_player_uid(
-            updated_dict["blocker_team_uid"],
+        blocker_team_id = self.team_abb_to_db_id[play['team']]
+        blocked_team_id = self.team_abb_to_db_id[play['blocked_team']]
+        updated_dict['blocker_player_id'] = self.get_player_id(
+            blocker_team_id,
             play["player_number"],
             play["team"]
         )
-        updated_dict['blocked_player_uid'] = self.get_player_uid(
-            updated_dict["blocked_team_uid"],
+        updated_dict['blocked_player_id'] = self.get_player_id(
+            updated_dict["blocked_team_id"],
             play["blocked_player_number"],
             play["blocked_team"]
         )
+        updated_dict["blocker_team_id"] = blocker_team_id
+        updated_dict["blocked_team_id"] = blocked_team_id
         updated_dict["zone"] = ZONE_MAPPER[play["zone"].lower()]
         updated_dict["shot_type"] = SHOT_TYPE_MAPPER[play["shot_type"].lower()]
         updated_dict["blocked_by"] = BLOCKED_BY_MAPPER[play['blocked_by'].lower()]
@@ -369,10 +355,9 @@ class GoalUpdater(UpdatePBP):
 
     def update_player_info(self, play: dict) -> dict:
         updated_dict = {}
-        updated_dict["team_uid"] = team_map.get_team_uid_from_abbrevation(
-                play["team"])
-        updated_dict["player_uid"] = self.get_player_uid(
-            updated_dict["team_uid"],
+        updated_dict["team_id"] = self.team_abb_to_db_id[play['team']]
+        updated_dict["player_id"] = self.get_player_id(
+            updated_dict["team_id"],
             play["player_number"],
             play["team"]
         )
@@ -386,32 +371,33 @@ class GoalUpdater(UpdatePBP):
         updated_dict["penalty_shot"] = "penalty_shot" in play
         updated_dict["own_goal"] = "own_goal" in play
         if "assists" in play:
-            updated_dict["assits"] = self.get_updated_assits(play["assits"])
+            updated_dict["assits"] = self.get_updated_assits(
+                play["assits"], updated_dict["team_id"], play['team'])
     
         return updated_dict
 
 
-    def get_updated_assits(self, assits: dict, team_uid: int, 
+    def get_updated_assits(self, assits: dict, team_id: int, 
                            team_abb: str) -> dict:
         updated_assits = {}
         updated_assits["primary"] = self.get_updated_assist(
-            assits[0], team_uid, team_abb)
+            assits[0], team_id, team_abb)
         if len(assits) == 2:
             updated_assits["secondary"] = self.get_updated_assist(
-                assits[1], team_uid, team_abb)
+                assits[1], team_id, team_abb)
         
         return assits
     
 
     def get_updated_assist(
             self, assist: dict, team_uid: int, team_abb: str) -> dict:
-        player_uid = self.get_player_uid(
+        player_id = self.get_player_id(
             team_uid,
             assist["player_number"],
             team_abb
         )
 
-        return player_uid
+        return player_id
     
 
 class ShotUpdater(UpdatePBP):
@@ -419,13 +405,13 @@ class ShotUpdater(UpdatePBP):
 
     def update_player_info(self, play: dict) -> dict:
         updated_dict = {}
-        updated_dict["team_uid"] = team_map.get_team_uid_from_abbrevation(
-                play["team"])
-        updated_dict["player_uid"] = self.get_player_uid(
-            updated_dict["team_uid"],
+        team_id = self.team_abb_to_db_id[play['team']]
+        updated_dict["player_id"] = self.get_player_id(
+            team_id,
             play["player_number"],
             play["team"]
         )
+        updated_dict["team_id"] = team_id
         updated_dict["shot_type"] = SHOT_TYPE_MAPPER[play["shot_type"].lower()]
         updated_dict["zone"] = ZONE_MAPPER[play["zone"].lower()]
         updated_dict["distance"] = (int(play["distance"])
@@ -445,20 +431,20 @@ class HitUpdater(UpdatePBP):
 
     def update_player_info(self, play: dict) -> dict:
         updated_dict = {}
-        updated_dict["hitter_team_uid"] = team_map.get_team_uid_from_abbrevation(
-                play["team"])
-        updated_dict["hitted_team_uid"] = team_map.get_team_uid_from_abbrevation(
-                play["opponent_team"])
-        updated_dict['hitter_player_uid'] = self.get_player_uid(
-            updated_dict["hitter_team_uid"],
+        hitter_team_id = self.team_abb_to_db_id[play['team']]
+        hitted_team_uid = self.team_abb_to_db_id[play["opponent_team"]]
+        updated_dict['hitter_player_id'] = self.get_player_id(
+            hitter_team_id,
             play["player_number"],
             play["team"]
         )
-        updated_dict['hitted_player_uid'] = self.get_player_uid(
-            updated_dict["hitted_team_uid"],
+        updated_dict['hitted_player_id'] = self.get_player_id(
+            hitted_team_uid,
             play["opponent_player_number"],
             play["opponent_team"]
         )
+        updated_dict["hitter_team_id"] = hitter_team_id
+        updated_dict["hitted_team_id"] = hitted_team_uid
         updated_dict["zone"] = ZONE_MAPPER[play["zone"].lower]
 
         return updated_dict
@@ -469,13 +455,13 @@ class GiveAwayUpdater(UpdatePBP):
 
     def update_player_info(self, play: dict) -> dict:
         updated_dict = {}
-        updated_dict["team_uid"] = team_map.get_team_uid_from_abbrevation(
-                play["team"])
-        updated_dict["player_uid"] = self.get_player_uid(
-            updated_dict["team_uid"],
+        team_id = self.team_abb_to_db_id[play['team']]
+        updated_dict["player_id"] = self.get_player_id(
+            team_id,
             play["player_number"],
             play["team"]
         )
+        updated_dict["team_id"] = team_id
         updated_dict["zone"] = ZONE_MAPPER[play["zone"].lower()]
 
         return updated_dict
@@ -486,13 +472,13 @@ class TakeAwayUpdater(UpdatePBP):
 
     def update_player_info(self, play: dict) -> dict:
         updated_dict = {}
-        updated_dict["team_uid"] = team_map.get_team_uid_from_abbrevation(
-                play["team"])
-        updated_dict["player_uid"] = self.get_player_uid(
-            updated_dict["team_uid"],
+        team_id = self.team_abb_to_db_id[play['team']]
+        updated_dict["player_id"] = self.get_player_id(
+            team_id,
             play["player_number"],
             play["team"]
         )
+        updated_dict["team_id"] = team_id
         updated_dict["zone"] = ZONE_MAPPER[play["zone"].lower()]
 
         return updated_dict
@@ -503,13 +489,13 @@ class MissedShotUpdater(UpdatePBP):
 
     def update_player_info(self, play: dict) -> dict:
         updated_dict = {}
-        updated_dict["team_uid"] = team_map.get_team_uid_from_abbrevation(
-                play["team"])
-        updated_dict["player_uid"] = self.get_player_uid(
-            updated_dict["team_uid"],
+        team_id = self.team_abb_to_db_id[play['team']]
+        updated_dict["player_id"] = self.get_player_id(
+            team_id,
             play["player_number"],
             play["team"]
         )
+        updated_dict["team_id"] = team_id
         updated_dict["shot_type"] = SHOT_TYPE_MAPPER[play["shot_type"].lower()]
         updated_dict["shot_result"] = play["shot_result"].lower()
         updated_dict["zone"] = ZONE_MAPPER[play["zone"].lower()]
@@ -522,33 +508,33 @@ class MissedShotUpdater(UpdatePBP):
         return updated_dict
     
 
-class PenaltyUpdater():
+class PenaltyUpdater(UpdatePBP):
     
     
     def update_player_info(self, play: dict) -> dict:
         updated_dict = {}
-        updated_dict["team_uid"] = team_map.get_team_uid_from_abbrevation(
-                play["team"])
-        updated_dict["player_uid"] = self.get_player_uid(
-            updated_dict["team_uid"],
+        team_id = self.team_abb_to_db_id[play['team']]
+        updated_dict["player_uid"] = self.get_player_id(
+            team_id,
             play["player_number"],
             play["team"]
         )
+        updated_dict["team_id"] = team_id
         updated_dict["penalty_type"] = PENALTY_MAPPER[play["penalty_type"].lower()]
         updated_dict["penalty_minutes"] = int(play["penalty_minutes"])
         updated_dict["zone"] = ZONE_MAPPER[play["zone"].lower()]
         updated_dict["major"] = "penalty_modifier" in play
         if "drawn_team" in play:
-            updated_dict["drawn_team_uid"] = team_map.get_team_uid_from_abbrevation(
-                play["drawn_team"])
-            updated_dict["drawn_player_uid"] = self.get_player_uid(
-                updated_dict["drawn_team_uid"],
+            drawn_team_id = self.team_abb_to_db_id[play['drawn_team']]
+            updated_dict["drawn_player_id"] = self.get_player_id(
+                drawn_team_id,
                 play["drawn_player_number"],
                 play["drawn_team"]
             )
+            updated_dict["drawn_team_id"] = drawn_team_id
         if "served_player_name" in play:
-            updated_dict["served_player_uid"] = self.get_player_uid(
-                updated_dict["team_uid"],
+            updated_dict["served_player_id"] = self.get_player_id(
+                team_id,
                 play["served_player_number"],
                 play["team"]
             )
@@ -592,7 +578,7 @@ class ChallengeUpdater():
         return updated_dict
     
 
-class UpdateGameDate():
+class UpdateGameData():
 
 
     UPDATE_CLASSES = {
@@ -617,16 +603,32 @@ class UpdateGameDate():
     def __init__(self, player_db_data: list):
         self.player_db_data = player_db_data
         self.player_mapper = {}
-        self.HT_uid = None
-        self.VT_uid = None
+        self.HT_id = None
+        self.VT_id = None
+        self.HT_abb = None
+        self.VT_abb = None
 
+
+    def set_abbrevations(self, game_data: dict) -> None:
+        self.set_HT_abbrevation(game_data["HT"])
+        self.set_VT_abbrevation(game_data["VT"])
+
+
+    def set_HT_abbrevation(self, abb: str) -> None:
+        self.HT_abb = abb
+
+    
+    def set_VT_abbrevation(self, abb: str) -> None:
+        self.VT_abb = abb
+  
 
     def update_game_data(self, game_data: dict) -> dict:
         updated_data = {}
+        self.set_abbrevations(game_data)
         updated_data = self.get_general_info(updated_data, game_data)
         updated_data["shifts"] = self.update_shifts(game_data)
-        self.match_players_to_uid(updated_data)
-        updated_data["PBP"] = self.update_PBP(game_data)
+        self.match_players_to_db_id(updated_data)
+        updated_data["PBP"] = self.update_PBP(game_data["PBP"])
 
         return updated_data
     
@@ -634,6 +636,8 @@ class UpdateGameDate():
     def get_general_info(self, updated_data: dict, game_data: dict) -> dict:
         updated_data["HT"] = self.get_set_team_uid(game_data["HT"], "HT")
         updated_data["VT"] = self.get_set_team_uid(game_data["VT"], "VT")
+        updated_data["TH"] = game_data["HT"]
+        updated_data["TV"] = game_data["VT"]  
         updated_data["date"] = game_data["date"]
         updated_data["stadium"] = game_data["stadium"]
         updated_data["start_time_UTC"] = game_data["start_time_UTC"]
@@ -641,26 +645,27 @@ class UpdateGameDate():
         return updated_data
     
     
-    def get_set_team_uid(self, team_abb: str, HV_type: str) -> int:
+    def get_set_team_id(self, team_abb: str, HV_type: str) -> int:
         team_uid = team_map.get_team_uid_from_abbrevation(team_abb)
-        self.set_team_uid(team_uid, HV_type)
+        team_id = self.player_db_data[team_uid][0]["team_id"]
+        self.set_team_id(team_id, HV_type)
 
         return team_uid
 
     
-    def set_team_uid(self, team_uid: int,  HV_type: str) -> None:
+    def set_team_id(self, team_uid: int,  HV_type: str) -> None:
         if HV_type == "HT":
-            self.set_home_team_uid(team_uid)
+            self.set_home_team_id(team_uid)
         elif HV_type == "VT":
-            self.set_visitor_team_uid(team_uid)
+            self.set_visitor_team_id(team_uid)
 
 
-    def set_home_team_uid(self, team_uid: int) -> None:
-        self.HT_uid = team_uid
+    def set_home_team_id(self, team_id: int) -> None:
+        self.HT_id = team_id
 
 
-    def set_visitor_team_uid(self, team_uid: int) -> None:
-        self.VT_uid = team_uid
+    def set_visitor_team_id(self, team_id: int) -> None:
+        self.VT_id = team_id
 
 
     def update_shifts(self, game_data: dict) -> dict:
@@ -672,41 +677,43 @@ class UpdateGameDate():
         return shift_dict
     
 
-    def match_players_to_uid(
-            self, scraped_data: dict, team_abb: str) -> None:
-        for team_type in scraped_data['shift_data'].keys():
-            team_uid = scraped_data[team_type]
-            self.match_team_players_to_uid(
-                scraped_data['shift_data'][team_type], team_uid, team_abb)
+    def match_players_to_db_id(
+            self, scraped_data: dict) -> None:
+        for team_type in scraped_data['shifts'].keys():
+            team_uid = scraped_data[team_type[::-1]]
+            team_id = self.player_db_data[team_uid][0]["team_id"]
+            team_abb = scraped_data[team_type]
+            self.match_team_players_to_db_id(
+                scraped_data['shifts'][team_type], team_uid, team_id, team_abb)
 
 
-    def match_team_players_to_uid(
+    def match_team_players_to_db_id(
             self, team_shifts: dict, team_uid: int, 
-            team_abb: str) -> None:
+            team_id: int, team_abb: str) -> None:
         for player_info in team_shifts:
-            self.match_player_to_uid(player_info, team_uid, team_abb)
+            self.match_player_to_db_id(
+                player_info, team_uid, team_id, team_abb)
 
     
-    def match_player_to_uid(
-            self, player_info: tuple, team_uid: int, team_abb: str) -> tuple:
-        self.player_mapper[team_uid] = {}
-        for player_dict in self.player_db_data["single"]:
-            if player_info[0] == player_dict["player_name"]:
-                self.player_mapper[team_uid][player_info] = player_dict["player_id"]
-                player_match = True
-                break
-        if not player_match:
-            for player_dict in self.player_db_data["duplicate"]:
-                if player_info[0] == player_dict["player_name"]:
-                    player_id = input("Name of the player is duplicated for"
-                                      " given team season combination. Set"
-                                      " it manually: ")
-                    self.player_mapper[team_uid][player_info[0]] = player_id
-
-        if not player_match:
+    def match_player_to_db_id(
+            self, player_info: tuple, team_uid: int, team_id: int, 
+            team_abb: str) -> None:
+            matcher_o = SingleMatchFinder(
+                player_info, self.player_db_data[team_uid])
+            player_matched = matcher_o.iterrate_to_find_match_wrapper()
+            if player_matched:
+                self.player_mapper[team_id][player_info] = matcher_o.player_id
+                return
+            matcher_o = DuplicatesMatchFinder(
+                player_info, self.player_db_data[team_uid])
+            player_matched = matcher_o.iterrate_to_find_match_wrapper()
+            if player_matched:
+                self.player_mapper[team_id][player_info] = matcher_o.player_id
+                return
             error_message = (
-                f"Player {player_info[0]} in team {team_abb} ({team_uid}) is not"
-                f"present in the database."             
+                f"Player {player_info[0]} in team {team_abb} """
+                f"(UID: {team_uid}) is not present in the "
+                f"database"             
                 )
             common_functions.log_and_raise(error_message, ValueError)
 
@@ -724,7 +731,115 @@ class UpdateGameDate():
     def get_PBP_class(self, play_type: str):
 
         return self.UPDATE_CLASSES[play_type](
-            self.player_mapper, self.HT_uid, self.VT_uid)
+            self.player_mapper, self.HT_id, self.VT_id, self.HT_abb,
+            self.VT_abb)
+    
+
+class MatchFinder():
+
+
+    def __init__(self, player_info: tuple, db_mapper: dict):
+        self.player_info = player_info
+        self.db_mapper = db_mapper
+        self.player_id = None
+
+
+    def iterrate_to_find_match_wrapper(self) -> bool:
+        name_matched = self.iterrate_to_find_match()
+        if not name_matched:
+            name_matched = self.iterrate_to_find_normalized_match()
+
+            return name_matched
+        
+        return name_matched
+
+
+    def iterrate_to_find_match(self) -> bool:
+        for player_dict in self.db_mapper:
+            name_matched = self.try_to_find_match(player_dict)
+            if name_matched:
+
+                return True
+            
+        return False
+    
+
+    def try_to_find_match(self) -> bool:
+        pass
+
+
+    def iterrate_to_find_normalized_match(self) -> bool:
+        pass
+
+
+    def normalize_scraped_name(self, name: str) -> str:
+        normalized = unicodedata.normalize('NFD', name)
+        ascii_name = ''.join(c for c in normalized if not unicodedata.combining(c))
+
+        return ascii_name
+
+
+class SingleMatchFinder(MatchFinder):
+
+
+    def try_to_find_match(self, player_dict) -> bool:
+        if self.player_info[0].lower() == player_dict["player_name"].lower():
+            self.player_id = player_dict["player_id"]
+            return True
+        return False
+    
+
+    def iterrate_to_find_normalized_match(self) -> bool:
+        for player_dict in self.db_mapper:
+            updated_player_dict = player_dict
+            updated_player_dict["player_name"] = self.normalize_scraped_name(
+                updated_player_dict["player_name"])
+            name_matched = self.try_to_find_match(player_dict)
+            if name_matched:
+                match_confirmed = input(f"Match for player {self.player_info}"
+                                        f" was find after normalisation of"
+                                        f" name of db entry {player_dict}."
+                                        f"Write {True} if match is correct"
+                                        f" and {False} otherwise.")
+                if match_confirmed:
+                    self.player_id = player_dict["player_id"]   
+
+                    return True
+                
+        return False
+    
+
+class DuplicatesMatchFinder(MatchFinder):
+
+
+    def try_to_find_match(self, player_dict) -> bool:
+        if self.player_info[0].lower() == player_dict["player_name"].lower():
+            self.player_id = input("Name of the player is duplicated for"
+                            " given team season combination. Set"
+                            " it manually: ")
+            
+            return True
+        
+        return False
+    
+
+    def iterrate_to_find_normalized_match(self) -> bool:
+        for player_dict in self.db_mapper:
+            updated_player_dict = player_dict
+            updated_player_dict["player_name"] = self.normalize_scraped_name(
+                updated_player_dict["player_name"])
+            name_matched = self.try_to_find_match(player_dict)
+            if name_matched:
+                match_confirmed = logger.info(
+                    f"Match for player {self.player_info}"
+                    f" was find after normalisation of"
+                    f" name of db entry {player_dict}.")
+                if match_confirmed:
+
+                    return True
+                
+        return False
+
 
 
 
