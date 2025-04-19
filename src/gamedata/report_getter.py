@@ -6,7 +6,7 @@ import gamedata.pbp_parser as pbp_parser
 from datetime import datetime, timedelta
 
 from common_functions import get_valid_request
-from decorators import repeat_request_until_success
+from decorators import repeat_request_until_success, time_execution
 from logger.logging_config import logger
 
 
@@ -131,7 +131,7 @@ class GetReportData():
         self.HTS_id = "TH" + self.report_id
         self.season = season_long
 
-
+    @time_execution
     def get_all_report_data(self) -> dict:
         logger.info(f"Scraping of data for a game {self.report_id} from date"
                     f" {self.report_dict['date']} and season {self.season}"    f" started...")
