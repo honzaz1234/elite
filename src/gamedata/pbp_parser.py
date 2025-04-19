@@ -101,7 +101,7 @@ class PlayerOnIceParser():
 
 
     XPATHS = {
-        "player_name": ".//font//@title"
+        "player_number": ".//font//text()"
     }
 
 
@@ -111,7 +111,7 @@ class PlayerOnIceParser():
 
     def get_team_players_on_ice(self) -> list:
         player_nums = common_functions.get_list_xpath_values(
-            sel=self.sel, xpath=self.XPATHS["player_name"], optional=True)
+            sel=self.sel, xpath=self.XPATHS["player_number"], optional=True)
         
         return player_nums
 
@@ -121,7 +121,7 @@ class PBPDescriptionParser():
 
     PATTERN = None
 
-    PLAYER_PATTERN = rf"[\wÀ-ÖØ-öø-ÿ']+(?:[-' ][\wÀ-ÖØ-öø-ÿ]+)*"
+    PLAYER_PATTERN = rf"[A-ZÀ-ÖØ-Þ']+(?:[-' ][A-ZÀ-ÖØ-Þ']+)*"
     ZONE_PATTERN = rf"(?:Off|Def|Neu|Neutral|Offensive|Defensive)\.?"
     TEAM_PATTERN = rf"[A-Z]{{3}}" 
     NUMBER_PATTERN = rf"[0-9]{{1,2}}" 
@@ -142,7 +142,9 @@ class PBPDescriptionParser():
         match = pattern.match(self.play_desc)
         try:
             play_dict = match.groupdict()
-        except ValueError:
+        except AttributeError:
+            logger.info(f"Broken Play Desc String {self.play_desc}"
+                        f" of type {self.play_type}")
             common_functions.log_and_raise(
                 None, WrongPlayDesc, play_desc=self.play_desc,
                 play_type=self.play_type)
@@ -161,7 +163,7 @@ class PBPDescriptionParserMultipleOptions(PBPDescriptionParser):
                 break
         try:
             play_dict =  match.groupdict()
-        except ValueError:
+        except AttributeError:
             common_functions.log_and_raise(
                 None, WrongPlayDesc, play_desc=self.play_desc,
                 play_type=self.play_type)
@@ -211,7 +213,7 @@ class PBPGoalParser(PBPDescriptionParser):
                 if goal_match is not None:
                     break
             play_dict["goal"] = goal_match.groupdict()
-        except ValueError:
+        except AttributeError:
             common_functions.log_and_raise(
                 None, WrongPlayDesc, play_desc=self.play_desc,
                 play_type=self.play_type)
@@ -550,10 +552,10 @@ class PBPRowParser():
         poi_dict = {}
         poi_parser = PlayerOnIceParser(poit_sel=self.sel.xpath(
             PBPRowParser.XPATHS["team_l"]))
-        poi_dict["players_l"] = poi_parser.get_team_players_on_ice()
+        poi_dict["TV"] = poi_parser.get_team_players_on_ice()
         poi_parser = PlayerOnIceParser(poit_sel=self.sel.xpath(
             PBPRowParser.XPATHS["team_r"]))
-        poi_dict["players_r"] = poi_parser.get_team_players_on_ice()
+        poi_dict["TH"] = poi_parser.get_team_players_on_ice()
 
         return poi_dict
 
