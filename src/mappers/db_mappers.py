@@ -21,7 +21,7 @@ class GetDBID():
 
 
     def get_all_player_season_data(
-            self, selected_seasons: list) -> list:
+            self, selected_seasons: list) -> dict:
         query_object = dq.DbDataGetter(session=self.session)
         seasons_filter = [query_object.get_list_filter(
             table_column=db.Season.season,
@@ -109,4 +109,32 @@ class GetDBID():
             dict_ for dict_ in dict_team if dict_["player_name"] not in duplicates
             ]
         
-        return new_team_dict      
+        return new_team_dict     
+
+
+    def get_elite_nhl_mapper(
+            self, selected_seasons: list) -> dict:
+        query_object = dq.DbDataGetter(session=self.session)
+        seasons_filter = [query_object.get_list_filter(
+            table_column=db.Season.season,
+            values=selected_seasons
+            )]                                      
+        results = query_object.get_db_query_result(
+            query_name="name_mapper", 
+            filters=seasons_filter,
+            distinct=True)
+        season_team_players: dict[str, dict[str, dict[tuple[str, str], str]]] = {}
+        for row in results:
+            player_id, player_name, player_number, team_id, season = row
+
+            if season not in season_team_players:
+                season_team_players[season] = {}
+
+            if team_id not in season_team_players[season]:
+                season_team_players[season][team_id] = []
+
+            season_team_players[season][team_id][(player_name, player_number)] = player_id
+        for season in selected_seasons:
+            if season not in season_team_players:
+                season_team_players[season] = {}
+        return season_team_players
