@@ -1229,3 +1229,53 @@ class GameStopage(Base):
         return (f"({self.id}, {self.stopage_id}, {self.play_id})")
     
 
+class EliteNHLNameMapper(Base):
+
+    __tablename__ = "elite_nhl_name_mapper"
+
+    id = Column("id", Integer, primary_key=True)
+    player_id = Column("player_id", 
+                       ForeignKey("players.id"), 
+                       nullable=False, 
+                       unique=True)
+    elite_name = Column("elite_name", String, nullable=False)
+    nhl_name = Column("nhl_name", String, nullable=False)
+    team_id = Column("team_id", ForeignKey("teams.id"), nullable=False)
+    season_id = Column("season_id", ForeignKey("seasons.id"), nullable=False)
+    player_number = Column("player_number", Integer,  nullable=False)
+
+    def __init__(self, player_id,  elite_name, nhl_name, team_id, 
+                 season_id, player_number):
+        self.player_id = player_id
+        self.elite_name = elite_name
+        self.nhl_name = nhl_name
+        self.team_id = team_id
+        self.season_id = season_id
+        self.player_number = player_number
+
+    def __repr__(self):
+        return (f"({self.id}, {self.player_id}, {self.elite_name}, "
+                f"{self.nhl_name}, {self.team_id}, {self.season_id}"
+                f" {self.player_number})")
+    
+
+class BrokenPBP(Base):
+
+    __tablename__ = "broken_PBP"
+
+    id = Column("id", Integer, primary_key=True)
+    play_id = Column("play_id", 
+                    ForeignKey("plays.id"), 
+                    nullable=False)
+    play_desc = Column("play_desc", String, nullable=False)
+
+
+    def __init__(self, play_id,  play_desc):
+        self.player_id = play_id
+        self.play_desc = play_desc
+
+
+    def __repr__(self):
+        return (f"({self.id}, {self.play_id}, {self.play_desc})")
+    
+
