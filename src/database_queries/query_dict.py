@@ -86,6 +86,37 @@ QUERIES_INFO = {
         "filters": [
             (db.League.uid == "nhl")
         ]
+    },
+    "name_mapper": {
+        "base_table": db.EliteNHLNameMapper,
+        "selected_cols": [
+            db.EliteNHLNameMapper.player_id,
+            db.EliteNHLNameMapper.nhl_name.label("player_name"),
+            db.EliteNHLNameMapper.player_number,
+            db.EliteNHLNameMapper.team_id,
+            db.Season.season,
+            ],
+        "joins": [
+            (db.Season, db.EliteNHLNameMapper.season_id == db.Season.id),
+            ],
+        "filters": [
+            ]
+    },
+    "nhl_teams": {
+        "base_table": db.Team,
+        "selected_cols": [
+            db.Team.id,
+            db.Team.team,
+            db.League.uid
+            ],
+        "joins": [
+            (db.TeamSeason, db.TeamSeason.team_id == db.Team.id),
+            (db.Season, db.TeamSeason.season_id == db.Season.id),
+            (db.League, db.TeamSeason.league_id == db.League.id)
+        ],
+        "filters": [
+            (db.League.uid == "nhl")
+        ]
     }
 
 }
