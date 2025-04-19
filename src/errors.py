@@ -7,7 +7,7 @@ class EmptyReturnXpathValueError(ValueError):
                   )
         super().__init__(message)
 
-class WrongPlayDesc(ValueError):
+class WrongPlayDesc(AttributeError):
 
     def __init__(self, play_desc, play_type):
         message = (
