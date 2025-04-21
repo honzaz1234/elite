@@ -546,6 +546,7 @@ class EliteDatabasePipeline():
             table=db.NHLEliteNameMapper,
             nhl_name=dict_["nhl_name"],
             elite_name=dict_["db_name"],
+            player_id = dict_["player_id"],
             player_number = dict_["number"],
             team_id = dict_["team_id"],
             season_id = season_id,

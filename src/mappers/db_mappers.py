@@ -125,15 +125,19 @@ class GetDBID():
             distinct=True)
         season_team_players: dict[str, dict[str, dict[tuple[str, str], str]]] = {}
         for row in results:
-            player_id, player_name, player_number, team_id, season = row
+            player_id, elite_name, nhl_name, player_number, team_id, season = row
 
             if season not in season_team_players:
                 season_team_players[season] = {}
 
             if team_id not in season_team_players[season]:
-                season_team_players[season][team_id] = []
+                season_team_players[season][team_id] = {}
 
-            season_team_players[season][team_id][(player_name, player_number)] = player_id
+            season_team_players[season][team_id][nhl_name] = {
+            "db_name": elite_name, 
+            "number": player_number, 
+            "player_id": player_id
+            }
         for season in selected_seasons:
             if season not in season_team_players:
                 season_team_players[season] = {}
