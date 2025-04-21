@@ -10,7 +10,7 @@ from logger.logging_config import logger
 def get_updated_period(period: str) -> int:
 
     try:
-        result = int(period)
+        result = re.findall("(1|2|3|OT)", period)[0]
 
         return result
     
@@ -148,6 +148,7 @@ class UpdateShifts():
             self, player_name_number: str, shifts: dict) -> tuple:
         updated_name, number = self.get_name_number(
             player_name_number=player_name_number)
+        print(updated_name)
         shifts = self.update_shifts(shifts)
 
         return updated_name, number, shifts
@@ -660,12 +661,12 @@ class UpdateGameData():
     SKIP_PLAY = ["PGSTR", "PGEND", "ANTHEM", "GEND", "GOFF"]
 
 
-    def __init__(self, player_db_data: dict, elite_nhl_mapper: dict):
+    def __init__(self, player_db_data: dict, nhl_db_mapper: dict):
         self.player_db_data = player_db_data
         self.player_mapper = {}
         self.team_type_to_abb = {}
         self.team_abb_to_db_id = {}
-        self.elite_nhl_mapper = elite_nhl_mapper
+        self.nhl_db_mapper = nhl_db_mapper
 
 
     def update_game_data(self, game_data: dict) -> dict:
@@ -680,7 +681,7 @@ class UpdateGameData():
 
     def get_general_info(self, updated_data: dict, game_data: dict) -> dict:
         self.set_dictionaries(game_data)
-        self.update_elite_nhl_mapper()
+        self.update_nhl_db_mapper()
         updated_data["HT"] = self.get_team_id(game_data["HT"])
         updated_data["VT"] = self.get_team_id(game_data["VT"])
         updated_data["TH"] = game_data["HT"]
@@ -709,10 +710,10 @@ class UpdateGameData():
             }
         
 
-    def update_elite_nhl_mapper(self):
+    def update_nhl_db_mapper(self):
         for team_id in self.team_abb_to_db_id.values():
-            if team_id not in self.elite_nhl_mapper:
-                self.elite_nhl_mapper[team_id] = {}
+            if team_id not in self.nhl_db_mapper:
+                self.nhl_db_mapper[team_id] = {}
 
 
     def update_shifts(self, game_data: dict) -> dict:
@@ -746,38 +747,48 @@ class UpdateGameData():
     def match_player_to_db_id(
             self, player_info: tuple, team_uid: int, team_id: int, 
             team_abb: str) -> None:
-            player_matched = self.try_find_match_with_elite_nhl_mapper(
+            player_matched = self.try_find_match_with_nhl_db_mapper(
                 player_info, team_id)
             if player_matched:
                 return
             matcher_o = SingleMatchFinder(
                 player_info, self.player_db_data[team_uid]["single"],
-                self.elite_nhl_mapper[team_id])
+                self.nhl_db_mapper[team_id])
             player_matched = matcher_o.iterrate_to_find_match_wrapper()
             if player_matched:
                 self.player_mapper[team_id][player_info] = matcher_o.player_id
                 return
             matcher_o = DuplicatesMatchFinder(
                 player_info, self.player_db_data[team_uid]["duplicates"],
-                self.elite_nhl_mapper[team_id])
+                self.nhl_db_mapper[team_id])
             player_matched = matcher_o.iterrate_to_find_match_wrapper()
             if player_matched:
                 self.player_mapper[team_id][player_info] = matcher_o.player_id
                 return
-            error_message = (
-                f"Player {player_info[0]} in team {team_abb} """
-                f"(UID: {team_uid}) is not present in the "
-                f"database"             
-                )
-            common_functions.log_and_raise(error_message, ValueError)
+            self.player_mapper[team_id][player_info] = matcher_o.input_match_manually(player_info)
+          #  if player_matched:
+           #     return 
+           # error_message = (
+           #     f"Player {player_info[0]} in team {team_abb} """
+           #     f"(UID: {team_uid}) is not present in the "
+           #     f"database"             
+           #  )
+           # common_functions.log_and_raise(error_message, ValueError)
 
 
-    def try_find_match_with_elite_nhl_mapper(
+    def try_find_match_with_nhl_db_mapper(
             self, player_info, team_id) -> bool:
-        for player_info_mapper in self.elite_nhl_mapper[team_id]:
-            if player_info == player_info_mapper:
-                self.player_mapper[team_id][player_info] = self.elite_nhl_mapper[team_id][player_info_mapper]
+        for nhl_name in self.nhl_db_mapper[team_id]:
+            mapper_dict = self.nhl_db_mapper[team_id][nhl_name]
+            if ((player_info[0] == mapper_dict["db_name"]) 
+            & (player_info[1] == mapper_dict["number"])):
+                self.player_mapper[team_id][player_info] = (
+                    mapper_dict["db_name"],
+                    mapper_dict["number"]
+                )
+
                 return True
+            
         return False
 
 
@@ -803,11 +814,12 @@ class MatchFinder():
 
 
     def __init__(
-            self, player_info: tuple, db_mapper: dict, elite_nhl_mapper: dict):
+            self, player_info: tuple, db_mapper: dict, nhl_db_mapper: dict):
         self.player_info = player_info
         self.db_mapper = db_mapper
         self.player_id = None
-        self.elite_nhl_mapper = elite_nhl_mapper
+        self.nhl_db_mapper = nhl_db_mapper
+        self.original_name = None
 
 
     def iterrate_to_find_match_wrapper(self) -> bool:
@@ -841,6 +853,27 @@ class MatchFinder():
         ascii_name = "".join(c for c in normalized if not unicodedata.combining(c))
 
         return ascii_name
+    
+    
+    def create_match_dict(self, player_info, player_dict):
+        return {
+            "db_name": self.original_name, 
+            "number": player_info[1], 
+            "player_id": player_dict["player_id"]
+            }
+    
+
+    def input_match_manually(self, player_info):
+        logger.info(rf"No match was find for {player_info}"
+                    rf" in db or NHL elite mapper."
+                    rf" Input the db name and player id manually.")
+        name = input("Input db player name: ")
+        player_id = input("Input player id:" )
+        return {
+            "db_name": name, 
+            "number": player_info[1], 
+            "player_id": player_id
+            }
 
 
 class SingleMatchFinder(MatchFinder):
@@ -849,16 +882,19 @@ class SingleMatchFinder(MatchFinder):
     def try_to_find_match(self, player_dict) -> bool:
         if self.player_info[0].lower() == player_dict["player_name"].lower():
             self.player_id = player_dict["player_id"]
+
             return True
+        
         return False
     
 
     def iterrate_to_find_normalized_match(self) -> bool:
         for player_dict in self.db_mapper:
-            updated_player_dict = player_dict
+            self.original_name = player_dict["player_name"]
+            updated_player_dict = player_dict.copy()
             updated_player_dict["player_name"] = self.normalize_scraped_name(
                 updated_player_dict["player_name"])
-            name_matched = self.try_to_find_match(player_dict)
+            name_matched = self.try_to_find_match(updated_player_dict)
             if name_matched:
                #match_confirmed = input(f"Match for player {self.player_info}"
                #                         f" was find after normalisation of"
@@ -867,7 +903,8 @@ class SingleMatchFinder(MatchFinder):
                #                         f" and {False} otherwise.")
                match_confirmed = True
                if match_confirmed:
-                    self.elite_nhl_mapper[self.player_info] = player_dict["player_id"]
+                    self.nhl_db_mapper[self.player_info[0]] = self.create_match_dict(
+                        self.player_info, player_dict)
                     self.player_id = player_dict["player_id"]   
 
                     return True
@@ -883,7 +920,8 @@ class DuplicatesMatchFinder(MatchFinder):
             self.player_id = input("Name of the player is duplicated for"
                             " given team season combination. Set"
                             " it manually: ")
-            self.elite_nhl_mapper[self.player_info] = player_dict["player_id"]
+            self.nhl_db_mapper[self.player_info] = self.create_match_dict(
+                         self.player_info, player_dict)
             
             return True
         
@@ -892,10 +930,11 @@ class DuplicatesMatchFinder(MatchFinder):
 
     def iterrate_to_find_normalized_match(self) -> bool:
         for player_dict in self.db_mapper:
-            updated_player_dict = player_dict
+            self.original_name = player_dict["player_name"]
+            updated_player_dict = player_dict.copy()
             updated_player_dict["player_name"] = self.normalize_scraped_name(
                 updated_player_dict["player_name"])
-            name_matched = self.try_to_find_match(player_dict)
+            name_matched = self.try_to_find_match(updated_player_dict)
             if name_matched:
                 match_confirmed = logger.info(
                     f"Match for player {self.player_info}"
@@ -907,18 +946,6 @@ class DuplicatesMatchFinder(MatchFinder):
                 
         return False
     
-
-
-class POIUpdater():
-
-
-    def __init__(self, player_db_mapper: dict, team_type_to_abb: dict, 
-                 team_abb_to_db_id: dict):
-        
-        self.player_db_mapper = player_db_mapper
-        self.team_type_to_abb = team_type_to_abb
-        self.team_abb_to_db_id = team_abb_to_db_id
-
 
         
 
