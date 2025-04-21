@@ -113,12 +113,15 @@ class GetDBID():
 
 
     def get_elite_nhl_mapper(
-            self, selected_seasons: list) -> dict:
+            self, selected_seasons: list=None) -> dict:
         query_object = dq.DbDataGetter(session=self.session)
-        seasons_filter = [query_object.get_list_filter(
-            table_column=db.Season.season,
-            values=selected_seasons
-            )]                                      
+        if selected_seasons:
+            seasons_filter = [query_object.get_list_filter(
+                table_column=db.Season.season,
+                values=selected_seasons
+                )]
+        else:
+              seasons_filter = None                                    
         results = query_object.get_db_query_result(
             query_name="name_mapper", 
             filters=seasons_filter,
