@@ -1,4 +1,4 @@
-from hockeydata.constants import *
+from constants import *
 from logger.logging_config import logger
 
 from sqlalchemy import update
