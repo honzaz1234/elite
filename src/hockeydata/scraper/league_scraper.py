@@ -4,7 +4,7 @@ import re
 import scrapy
 
 import common_functions as cf
-from hockeydata.constants import *
+from constants import *
 from decorators import time_execution
 from logger.logging_config import logger
 

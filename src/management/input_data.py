@@ -14,7 +14,7 @@ import json
 import os
 import re
 
-from hockeydata.constants import *
+from constants import *
 from decorators import repeat_request_until_success, time_execution
 from logger.logging_config import logger
 from database_creator.database_creator import *

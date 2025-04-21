@@ -3,7 +3,7 @@ import os
 import unittest
 
 from hockeydata.scraper.player_scraper import *
-from hockeydata.constants import *
+from constants import *
 
 
 data_loader = test_class.TestDataLoader()

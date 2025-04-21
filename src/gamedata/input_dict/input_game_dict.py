@@ -4,6 +4,8 @@ from decorators import time_execution
 from logger.logging_config import logger
 from sqlalchemy.orm import Session
 
+from constants import * 
+
 
 class InputEliteNHLmapper():
 
@@ -17,7 +19,7 @@ class InputEliteNHLmapper():
     def input_elite_nhl_mapper_dict(self, elite_nhl_mapper: dict) -> None:
         """wrapper method for inputting  all scraped data from dict to DB"""
         for season in elite_nhl_mapper:
-            self._input_elite_nhl_season_dict(elite_nhl_mapper[season], season)
+            self._input_nhl_elite_season_dict(elite_nhl_mapper[season], season)
         logger.info(f"Elite NHL mapper succesfully inputted into db")
 
 
@@ -39,7 +41,7 @@ class InputEliteNHLmapper():
             self, player_mapper: dict, season: str, team_id: int,
               nhl_name: str) -> None:
         input_dict = player_mapper
-        input_dict["season"] = season
+        input_dict[SEASON_NAME] = season
         input_dict["team_id"] = team_id
         input_dict["nhl_name"] = nhl_name
         self.input_o._input_nhl_elite_player_mapper(input_dict)

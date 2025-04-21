@@ -6,7 +6,7 @@ import time
 
 import common_functions
 
-from hockeydata.constants import *
+from constants import *
 from decorators import time_execution
 from logger.logging_config import logger
 

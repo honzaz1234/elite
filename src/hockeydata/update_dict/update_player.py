@@ -4,7 +4,7 @@ import re
 import common_functions
 import mappers.team_mappers as team_map
 
-from hockeydata.constants import *
+from constants import *
 from decorators import time_execution
 from logger.logging_config import logger
 

@@ -3,7 +3,7 @@ import playwright.sync_api as sync_api
 import re
 import scrapy
 
-from hockeydata.constants import *
+from constants import *
 from decorators import time_execution
 from errors import EmptyReturnXpathValueError
 from logger.logging_config import logger

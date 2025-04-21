@@ -1,6 +1,6 @@
 import hockeydata.insert_db.elite_insert_db as elite_insert_db
 
-from hockeydata.constants import *
+from constants import *
 from decorators import time_execution
 from logger.logging_config import logger
 
