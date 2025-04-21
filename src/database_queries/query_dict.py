@@ -88,16 +88,16 @@ QUERIES_INFO = {
         ]
     },
     "name_mapper": {
-        "base_table": db.EliteNHLNameMapper,
+        "base_table": db.NHLEliteNameMapper,
         "selected_cols": [
-            db.EliteNHLNameMapper.player_id,
-            db.EliteNHLNameMapper.nhl_name.label("player_name"),
-            db.EliteNHLNameMapper.player_number,
-            db.EliteNHLNameMapper.team_id,
+            db.NHLEliteNameMapper.player_id,
+            db.NHLEliteNameMapper.nhl_name.label("player_name"),
+            db.NHLEliteNameMapper.player_number,
+            db.NHLEliteNameMapper.team_id,
             db.Season.season,
             ],
         "joins": [
-            (db.Season, db.EliteNHLNameMapper.season_id == db.Season.id),
+            (db.Season, db.NHLEliteNameMapper.season_id == db.Season.id),
             ],
         "filters": [
             ]

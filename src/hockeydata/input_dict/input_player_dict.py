@@ -1,4 +1,4 @@
-import hockeydata.insert_db.insert_db as insert_db
+import hockeydata.insert_db.elite_insert_db as elite_insert_db
 
 from hockeydata.constants import *
 from decorators import time_execution
@@ -91,7 +91,7 @@ class InputPlayerInfo():
     """
 
     def __init__(self, db_session: Session):
-        self.insert_db = insert_db.DatabasePipeline(db_session=db_session)
+        self.insert_db = elite_insert_db.EliteDatabasePipeline(db_session=db_session)
         pass
 
     def _input_player(self, info_dict: dict) -> int:
@@ -125,7 +125,7 @@ class InputRelationDict():
     """
 
     def __init__(self, db_session: Session):
-        self.insert_db = insert_db.DatabasePipeline(db_session=db_session)
+        self.insert_db = elite_insert_db.EliteDatabasePipeline(db_session=db_session)
         pass
 
     def _input_relation_dict(self, relation_dict: dict, player_id: int):
@@ -151,7 +151,7 @@ class InputStatsDict():
     """
 
     def __init__(self, db_session: Session):
-        self.insert_db = insert_db.DatabasePipeline(db_session=db_session)
+        self.insert_db = elite_insert_db.EliteDatabasePipeline(db_session=db_session)
         pass
 
     def _input_stats_dict(self, stat_dict: dict, player_id: int, is_goalie: bool):
@@ -221,7 +221,7 @@ class InputAchievementDict():
     """
 
     def __init__(self, db_session: Session):
-        self.insert_db = insert_db.DatabasePipeline(db_session=db_session)
+        self.insert_db = elite_insert_db.EliteDatabasePipeline(db_session=db_session)
         pass
 
     def _input_achievements(self, dict_achievements: dict, player_id: int):

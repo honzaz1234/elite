@@ -1,4 +1,4 @@
-import hockeydata.insert_db.insert_db as insert_db
+import hockeydata.insert_db.elite_insert_db as elite_insert_db
 
 from hockeydata.constants import *
 from decorators import time_execution
@@ -31,7 +31,7 @@ class InputLeagueDict():
     def _input_league_info_dict(self, info_dict: dict) -> int:
         """method for inputting  general info abour league in DB"""
 
-        db_pipe = insert_db.DatabasePipeline(db_session=self.db_session)
+        db_pipe = elite_insert_db.EliteDatabasePipeline(db_session=self.db_session)
         league_id = db_pipe._input_data_in_league_table(
             league_uid=info_dict[LEAGUE_UID], long_name=info_dict[LEAGUE_NAME])
         logger.debug(f"League info dict ({info_dict[LEAGUE_UID]})"
@@ -41,7 +41,7 @@ class InputLeagueDict():
     def _input_league_achievements(self, achiev_dict: dict, league_id: int):
         """method for inputting  league achievements into DB"""
 
-        db_pipe = insert_db.DatabasePipeline(db_session=self.db_session)
+        db_pipe = elite_insert_db.EliteDatabasePipeline(db_session=self.db_session)
         for achiev in achiev_dict:
             db_pipe._input_achievement(achiev=achiev, 
                                        league_id=league_id)
@@ -93,5 +93,5 @@ class InputLeagueStandings():
         del position_dict[TEAM_URL]
         for stat in position_dict:
             row_dict[stat] = position_dict[stat]
-        db_pipe = insert_db.DatabasePipeline(db_session=self.db_session)
+        db_pipe = elite_insert_db.EliteDatabasePipeline(db_session=self.db_session)
         db_pipe._input_team_position(dict_=row_dict)

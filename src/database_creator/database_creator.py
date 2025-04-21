@@ -1229,7 +1229,7 @@ class GameStopage(Base):
         return (f"({self.id}, {self.stopage_id}, {self.play_id})")
     
 
-class EliteNHLNameMapper(Base):
+class NHLEliteNameMapper(Base):
 
     __tablename__ = "elite_nhl_name_mapper"
 
@@ -1238,8 +1238,8 @@ class EliteNHLNameMapper(Base):
                        ForeignKey("players.id"), 
                        nullable=False, 
                        unique=True)
-    elite_name = Column("elite_name", String, nullable=False)
     nhl_name = Column("nhl_name", String, nullable=False)
+    elite_name = Column("elite_name", String, nullable=False)
     team_id = Column("team_id", ForeignKey("teams.id"), nullable=False)
     season_id = Column("season_id", ForeignKey("seasons.id"), nullable=False)
     player_number = Column("player_number", Integer,  nullable=False)
