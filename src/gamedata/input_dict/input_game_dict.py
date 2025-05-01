@@ -1,7 +1,8 @@
-import gamedata.insert_db.insert_db_game_data as gamedata_insert_db
+import gamedata.insert_db.insert_db_game_data as insert_db
 import mappers.db_mappers as db_mapper
 
 from common_functions import dict_diff_unique
+from gamedata.input_dict.input_game_dict import BlockedShotDB, ChallengeDB, FaceOffDB, GiveAwayDB
 from decorators import time_execution
 import mappers.db_mappers as db_mapper
 from logger.logging_config import logger
@@ -16,7 +17,7 @@ class InputEliteNHLmapper():
     def __init__(self, db_session: Session):
         self.db_session = db_session
         self.mappers_o = db_mapper.GetDBID(self.db_session)
-        self.input_o = gamedata_insert_db.GameDataDB(
+        self.input_o = insert_db.GameDataDB(
             self.db_session)
 
 
@@ -58,20 +59,25 @@ class InputEliteNHLmapper():
 class InputGameInfo():
 
 
-    def __init__(self,  db_session: Session):
+    def __init__(self,  db_session: Session, player_mapper: dict):
         self.db_session = db_session
-        self.input_o = gamedata_insert_db.GameDataDB(
+        self.player_mapper = player_mapper
+        self.input_o = insert_db.GameDataDB(
             self.db_session)
         self.mappers_o = db_mapper.GetDBID(self.db_session)
         self.stadium_mapper = self.mappers_o.get_nhl_elite_stadium_mapper()
         self.input_gi = InputGeneralInfo(
             self.db_session, self.input_o, self.stadium_mapper)
+        self.input_shifts = InputShifts(self.db_session, input_o=self.input_o)
 
 
 
     def input_game_dict(self, game: dict) -> None:
 
-        match_id = self._input_general_info(game)
+        match_id = self.input_gi._input_general_info(game)
+        self.input_shifts._input_shifts(
+            game["shifts"], game["HT"], game["VT"], match_id)
+
 
     def _input_general_info(self, game: dict) -> int:
         match_id = self.input_gi._input_general_info(game)
@@ -95,7 +101,7 @@ class InputGeneralInfo():
 
 
     def __init__(self, db_session: Session, 
-                 input_o: gamedata_insert_db.GameDataDB, 
+                 input_o: insert_db.GameDataDB, 
                  stadium_mapper: dict):
         self.db_session = db_session
         self.input_o = input_o
@@ -141,12 +147,73 @@ class InputShifts():
 
 
     def __init__(self, db_session: Session, 
-                 input_o: gamedata_insert_db.GameDataDB):
+                 player_mapper: dict,
+                 input_o: insert_db.GameDataDB):
         self.db_session = db_session
+        self.player_mapper = player_mapper
         self.input_o = input_o
 
     
-    def _input_shifts(self, )
+    def _input_shifts(
+            self, shifts: dict, HT_id: int, VT_id: int, match_id :int) -> None:
+        ids = {"HT": HT_id, "VT": VT_id}
+        for team_type in shifts:
+            self._input_team_shifts(
+                shifts[team_type], ids[team_type], match_id)
+
+
+    def _input_team_shifts(
+            self, shifts: list, team_id: int, match_id: int) -> None:
+        for player_info in shifts:
+            self._input_player_shifts(
+                player_info, shifts[player_info], team_id, match_id)
+            
+
+    def _input_player_shifts(
+            self, player_info: tuple, shifts: list, team_id: int, 
+            match_id: int) -> None:
+        player_id = self.player_mapper[team_id][player_info]
+        for shift in shifts:
+            self._input_shift(shift, player_id, team_id, match_id)
+
+    
+    def _input_shift(
+            self, shift: dict, player_id: int, team_id: int, 
+            match_id: int) -> None:
+        self.input_o._input_shift(shift, player_id, team_id, match_id)
+
+
+
+class InputPBP():
+
+
+    def __init__(
+            self, db_session: Session, player_mapper: dict):
+        self.db_session = db_session
+        self.player_mapper = player_mapper
+        self.input_pbp = insert_db.PBPDB(self.db_session)
+
+
+    def _input_PBP(self, plays: list, match_id) -> None:
+        for play in plays:
+            self.input_pbp._input_play_wrapper(play, match_id)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     
