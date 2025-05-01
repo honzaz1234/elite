@@ -111,3 +111,15 @@ def log_and_raise(
         except Exception as e:
             logger.error(f"Couldn't raise exception: {e}")
             raise
+
+
+def dict_diff_unique(d1: dict, d2: dict) -> dict:
+    result = {}
+    for key in d1:
+        if key not in d2:
+            result[key] = d1[key]
+        elif isinstance(d1[key], dict) and isinstance(d2.get(key), dict):
+            nested = dict_diff_unique(d1[key], d2[key])
+            if nested:  # Only include non-empty nested differences
+                result[key] = nested
+    return result
