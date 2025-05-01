@@ -91,7 +91,8 @@ QUERIES_INFO = {
         "base_table": db.NHLEliteNameMapper,
         "selected_cols": [
             db.NHLEliteNameMapper.player_id,
-            db.NHLEliteNameMapper.nhl_name.label("player_name"),
+             db.NHLEliteNameMapper.elite_name,
+            db.NHLEliteNameMapper.nhl_name,
             db.NHLEliteNameMapper.player_number,
             db.NHLEliteNameMapper.team_id,
             db.Season.season,
@@ -117,6 +118,23 @@ QUERIES_INFO = {
         "filters": [
             (db.League.uid == "nhl")
         ]
+    },
+    "nhl_elite_names": {
+        "base_table": db.NHLEliteNameMapper,
+        "selected_cols": [
+            db.NHLEliteNameMapper.elite_name,
+            db.NHLEliteNameMapper.nhl_name,
+            ],
+        "joins": [
+        ],
+        "filters": [
+        ]
+    },
+    "nhl_elite_stadium_mapper": {
+        "base_table": db.StadiumMapper,
+        "selected_cols": [
+            db.StadiumMapper.stadium_nhl,
+            db.StadiumMapper.stadium_elite,
+        ]
     }
-
 }
