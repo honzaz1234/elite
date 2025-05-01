@@ -97,11 +97,12 @@ class DatabaseMethods():
         
 
 class Query():
-
     """class containing basic operations for the database"""
+
 
     def __init__(self, db_session: Session):
         self.db_session = db_session
+
         
     def _create_table_entry(self, table, **kwargs):
         """method for creating new row in selected table
@@ -141,3 +142,10 @@ class Query():
                        .where(where_col == where_val)
                        .values(**kwargs))
         return update_query
+    
+
+    def _get_value_from_table(self, cols: list, **kwargs):
+        row_data = self.db_session.query(*cols).filter_by(**kwargs).first()
+
+        return row_data
+
