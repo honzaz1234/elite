@@ -709,6 +709,7 @@ class Play(Base):
     id = Column(Integer, primary_key=True)
     play_type_id = Column(Integer, ForeignKey('play_types.id'), nullable=False)
     match_id = Column(Integer, ForeignKey('matches.id'), nullable=False)
+    period = Column(Integer, nullable=False)
     time = Column(Integer)
 
     def __init__(self, id, play_type_id, match_id, time):
