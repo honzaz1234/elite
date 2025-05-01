@@ -14,7 +14,6 @@ class InputPlayerDict():
     def __init__(self, db_session: Session):
         self.is_goalie = None
         self.db_session = db_session
-        pass
 
     def _set_is_goalie(self, dict_: dict):
 

@@ -128,7 +128,7 @@ class PBPDescriptionParser():
     PENALTY_PATTERN = rf"[A-Za-z\s/-]+"
     PENALTY_SHOT_PATTERN = "Penalty\sShot"
     PERIOD_STRING = "(Period\s+Start|Period\s+End|Shootout Completed)"
-    SHOT_PATTERN = "[A-Za-z\s-]+"
+    SHOT_PATTERN = "(?=.*[A-Za-z-])[A-Za-z\s-]+"
     DEFLECTION = '(Defensive|Offensive)'
 
 
@@ -452,7 +452,7 @@ class PBPPenaltyParser(PBPDescriptionParserMultipleOptions):
 class PBPGameStopageParser(PBPDescriptionParser):
 
 
-    PATTERN = rf"(?P<game_stopage_type>.+)"
+    PATTERN = rf"(?P<stopage_type>.+)"
 
 
 class PBPPeriod(PBPDescriptionParser):
