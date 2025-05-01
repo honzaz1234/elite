@@ -1,6 +1,6 @@
 import common_functions as cf
 
-from hockeydata.constants import *
+from constants import *
 from decorators import time_execution
 from logger.logging_config import logger
 from database_creator.database_creator import *
@@ -20,12 +20,14 @@ class GetDatabaseSession():
         self.session = None
         self.meta_data = None
 
+
     def set_up_connection(self) -> None:
         logger.info('New scrapping session started')
         self.start_session()
         are_seasons_filled = self.check_seasons_table()
         if are_seasons_filled==False:
             self.add_data_to_season_table()
+
 
     def start_session(self) -> None:
         self.engine = create_engine("sqlite:///" + self.database_path, echo=False)
@@ -35,6 +37,7 @@ class GetDatabaseSession():
         self.meta_data = Base.metadata
         logger.info(f"New DB session initiated with db at"
                     f" {self.database_path}")
+
 
     def clear_all_tables(self) -> None:
         if 'test' not in self.database_path.lower():
