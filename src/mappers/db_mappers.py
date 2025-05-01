@@ -141,7 +141,36 @@ class GetDBID():
             "number": player_number, 
             "player_id": player_id
             }
-        for season in selected_seasons:
-            if season not in season_team_players:
-                season_team_players[season] = {}
+        if selected_seasons is not None:
+            for season in selected_seasons:
+                if season not in season_team_players:
+                    season_team_players[season] = {}
+
         return season_team_players
+    
+    def get_elite_nhl_names(self) -> dict:
+
+        query_object = dq.DbDataGetter(session=self.session)
+        results = query_object.get_db_query_result(
+            query_name="nhl_elite_names", 
+            distinct=True)
+        name_mapper = {}
+        for row in results:
+            elite_name, nhl_name = row
+            name_mapper[nhl_name] = elite_name
+
+        return name_mapper
+    
+
+    def get_nhl_elite_stadium_mapper(self) -> dict:
+
+        query_object = dq.DbDataGetter(session=self.session)
+        results = query_object.get_db_query_result(
+            query_name="nhl_elite_names", 
+            distinct=True)
+        stadium_mapper = {}
+        for row in results:
+            nhl_stadium, elite_stadium = row
+            stadium_mapper[nhl_stadium] = elite_stadium
+
+        return stadium_mapper
