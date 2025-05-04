@@ -1,6 +1,6 @@
 import hockeydata.get_urls.get_urls as league_url
 
-from sqlalchemy import Boolean, Column, Date, Index, Integer, ForeignKey, Float, String
+from sqlalchemy import Boolean, Column, Date, Index, Integer, ForeignKey, Float, String, UniqueConstraint
 from sqlalchemy.orm import declarative_base
 
 
@@ -1202,17 +1202,17 @@ class PlayerOnIce(Base):
     __tablename__ = "on_ice_players"
 
     id = Column(Integer, primary_key=True)
+    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
-    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
 
-    def __init__(self, player_id, team_id, play_id):
+    def __init__(self, play_id, player_id, team_id):
+        self.play_id = play_id
         self.player_id = player_id
         self.team_id = team_id
-        self.play_id = play_id
 
     def __repr__(self):
-        return f"({self.id}, {self.player_id}, {self.team_id}, {self.play_id})"
+        return f"({self.id}, {self.play_id}, {self.player_id}, {self.team_id})"
     
 
 class GameStopageType(Base):
@@ -1254,8 +1254,7 @@ class NHLEliteNameMapper(Base):
     id = Column("id", Integer, primary_key=True)
     player_id = Column("player_id", 
                        ForeignKey("players.id"), 
-                       nullable=False, 
-                       unique=True)
+                       nullable=False)
     nhl_name = Column("nhl_name", String, nullable=False)
     elite_name = Column("elite_name", String, nullable=False)
     team_id = Column("team_id", ForeignKey("teams.id"), nullable=False)
@@ -1271,6 +1270,12 @@ class NHLEliteNameMapper(Base):
         self.season_id = season_id
         self.player_number = player_number
 
+        __table_args__ = (
+            UniqueConstraint(
+                'player_id', 'elite_name', 'nhl_name', 'team_id', 'season_id', 'player_number', name='uq_all_columns'
+                ),
+            )
+
     def __repr__(self):
         return (f"({self.id}, {self.player_id}, {self.elite_name}, "
                 f"{self.nhl_name}, {self.team_id}, {self.season_id}"
@@ -1279,31 +1284,66 @@ class NHLEliteNameMapper(Base):
 
 class BrokenPBP(Base):
 
-    __tablename__ = "broken_PBP"
+    __tablename__ = "broken_play"
 
-    id = Column("id", Integer, primary_key=True)
-    play_id = Column("play_id", 
-                    ForeignKey("plays.id"), 
-                    nullable=False)
-    play_desc = Column("play_desc", String, nullable=False)
+    id = Column(Integer, primary_key=True)
+    play_id = Column(ForeignKey("plays.id"), 
+                     nullable=False)
+    play_desc = Column(String, nullable=False)
 
 
-    def __init__(self, play_id,  play_desc):
-        self.player_id = play_id
+    def __init__(self, play_id, play_desc):
+        self.play_id = play_id
         self.play_desc = play_desc
 
+    def __repr__(self):
+        return (
+            f"({self.id}, {self.play_id}, {self.play_desc})"
+            )
+
+
+class BrokenPOI(Base):
+
+    __tablename__ = "broken_poi"
+
+    id = Column(Integer, primary_key=True)
+    play_id = Column(ForeignKey("plays.id"), 
+                     nullable=False)
+    team_id = Column("team_id", ForeignKey("teams.id"), nullable=False)
+    poi = Column(String, nullable=False)
+    error_type = Column(String, nullable=False)
+
+
+    def __init__(self, play_id, team_id, poi, error_type):
+        self.play_id = play_id
+        self.team_id = team_id
+        self.poi = poi
+        self.error_type = error_type
 
     def __repr__(self):
-        return (f"({self.id}, {self.play_id}, {self.play_desc})")
-    
+        return (
+            f"({self.id}, {self.play_id}, {self.team_id}, {self.poi}, "
+            f"{self.error_type})"
+            )
+
 
 class StadiumMapper(Base):
 
     __tablename__ = "stadium_mappers"
 
-    id = Column("id", Integer, primary_key=True)
-    stadium_nhl = Column("stadium_nhl", nullable=False)
-    stadium_elite = Column("stadium_elite", nullable=False)
+    id = Column(Integer, primary_key=True)
+    stadium_nhl = Column(String, nullable=False)
+    stadium_elite = Column(String, nullable=False)
+
+
+    def __init__(self, stadium_nhl, stadium_elite):
+        self.stadium_nhl = stadium_nhl
+        self.stadium_elite = stadium_elite
+
+    def __repr__(self):
+        return (
+            f"({self.id}, {self.stadium_nhl}, {self.stadium_elite})"
+            )
     
     
 
