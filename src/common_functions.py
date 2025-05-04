@@ -1,5 +1,3 @@
-import common_functions
-
 import requests
 import scrapy
 
@@ -33,7 +31,7 @@ def convert_season_format(season):
            "Invalid season format. Expected 'yyyy-yy'"
             " or 'yyyy-yyyy'." 
         )
-        common_functions.log_and_raise(error_message)
+        log_and_raise(error_message)
 
 
 @repeat_request_until_success
@@ -101,12 +99,12 @@ def convert_to_seconds(time_string: str) -> int:
 
 def log_and_raise(
         error_message: str, exception_class: type[Exception], **kwargs) -> None:
-    logger.error(error_message)
     try:
         raise exception_class(**kwargs)
     except TypeError:
         # Fallback: maybe it expected a message positional arg
         try:
+            logger.error(error_message)
             raise exception_class(error_message)
         except Exception as e:
             logger.error(f"Couldn't raise exception: {e}")

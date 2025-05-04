@@ -8,7 +8,7 @@ from decorators import time_execution
 from errors import EmptyReturnXpathValueError
 from logger.logging_config import logger
 
-import common_functions
+import common_functions as cf
 
 
 class TeamScraper():
@@ -151,7 +151,7 @@ class TeamScraper():
                       .xpath(TeamScraper.INFO_PATHS["short_name"])
                       .getall())
         if short_name == []:
-            common_functions.log_and_raise(
+            cf.log_and_raise(
                 None, 
                 EmptyReturnXpathValueError, 
                 xpath=TeamScraper.INFO_PATHS["short_name"],

@@ -4,7 +4,7 @@ import re
 import scrapy
 import time
 
-import common_functions
+import common_functions as cf
 
 from constants import *
 from decorators import time_execution
@@ -193,7 +193,7 @@ class PlayerGeneralInfo():
                          + PlayerGeneralInfo.PATHS["gi_right"]
                          + PlayerGeneralInfo.PROJECT_MAPPING[info_name][1]
                          + "[not(self::comment())]")
-        info_val = common_functions.get_single_xpath_value(
+        info_val = cf.get_single_xpath_value(
             sel=self.selector,
             xpath=info_path_val,
             optional=True
@@ -381,7 +381,7 @@ class Stats():
         """
 
         list_seasons = []
-        n_rows = len(common_functions.get_single_xpath_value(
+        n_rows = len(cf.get_single_xpath_value(
             sel=self.selector,
             xpath=path_year,
             optional=False
@@ -391,7 +391,7 @@ class Stats():
                      + '[' 
                      + str(index) 
                      + ']/td[1]//text()')
-            season = len(common_functions.get_single_xpath_value(
+            season = len(cf.get_single_xpath_value(
                 sel=self.selector,
                 xpath=xpath,
                 optional=True
@@ -614,7 +614,7 @@ class OneRowStat():
         """
 
         path_stat = self.path_to_row + OneRowStat.PATHS[key]
-        stat_list = common_functions.get_list_xpath_values(
+        stat_list = cf.get_list_xpath_values(
             sel=self.selector,
             xpath=path_stat,
             optional=True
@@ -636,7 +636,7 @@ class OneRowStat():
         """
         
         path_url = self.path_to_row + OneRowStat.PATHS[key_path]
-        list_data = common_functions.get_list_xpath_values(
+        list_data = cf.get_list_xpath_values(
             sel=self.selector, xpath=path_url, optional=False)
         url = list_data[0]
         logger.debug(f" General url for {key_regex}: {url}")

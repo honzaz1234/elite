@@ -77,7 +77,7 @@ class ChallengeDB(PBPDB):
                db.ChallengeResult, result=play["result"]
           )
           play_id = self.db_method._input_unique_data(
-               table=db.ChallengePlay
+               table=db.ChallengePlay,
                     play_id=play_id,
                     team_id=play["team_id"],
                     reason_id=reason_id,

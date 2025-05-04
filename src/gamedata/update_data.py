@@ -1,10 +1,10 @@
 import re
 import unicodedata
 
-import common_functions
+import common_functions as cf
 import  mappers.team_mappers as team_map
 
-from errors import MissingPlayerID, UpdateGameDataError, UpdatePlayKeyError
+from errors import MissingPlayerID, MissingPlayKeyError, TooManyPOIError, UpdateGameDataError, UpdatePlayError
 from logger.logging_config import logger
 
 
@@ -17,13 +17,13 @@ def get_updated_period(period: str) -> int:
     
     except ValueError:
         error_message = f"Invalid integer value: {period}"
-        common_functions.log_and_raise(error_message, ValueError)
+        cf.log_and_raise(error_message, ValueError)
     except TypeError:
         error_message = (
             f"TypeError: Expected str, int, or float, but got"
             f" {type(period).__name__}"
         )
-        common_functions.log_and_raise(error_message, TypeError)
+        cf.log_and_raise(error_message, TypeError)
 
 
 ZONE_MAPPER = {
@@ -164,7 +164,7 @@ class UpdateShifts():
                 f"Regex failed to match pattern for input: '"
                 f"{player_name_number}'"
             )
-            common_functions.log_and_raise(error_message, ValueError)
+            cf.log_and_raise(error_message, ValueError)
         player_dict = match.groupdict()
         player_name = f'{player_dict["first_name"]} {player_dict["surname"]}'
         
@@ -200,14 +200,14 @@ class UpdateShifts():
                 raise TypeError(error_message)
             match = re.search(self.SHIFT_PATTERN, shift_string)
             shift = match.group("shift")
-            shift_seconds = common_functions.convert_to_seconds(shift)
+            shift_seconds = cf.convert_to_seconds(shift)
             logger.debug(f"Pattern '{shift_string}' found")
 
             return shift_seconds
         except re.error as e:
-            common_functions.log_and_raise(e, re.error)
+            cf.log_and_raise(e, re.error)
         except TypeError as e:
-            common_functions.log_and_raise(e, TypeError)
+            cf.log_and_raise(e, TypeError)
 
 
 class UpdatePBP():
@@ -251,10 +251,11 @@ class UpdatePBP():
 
 
     def __init__(
-            self, player_mapper: dict, team_type_to_abb: dict, team_abb_to_db_id: dict):
+            self, player_mapper: dict, team_type_to_abb: dict, team_abb_to_db_id: dict, error_entries: dict):
         self.player_mapper = player_mapper
         self.team_type_to_abb = team_type_to_abb
         self.team_abb_to_db_id = team_abb_to_db_id
+        self.error_entries = error_entries
 
 
     def update_play(self, play: dict) -> dict:
@@ -264,15 +265,15 @@ class UpdatePBP():
         updated_play["time"] = self.get_updated_time(play["time"])
         if "error" not in play:
             try:
-                updated_play["play_info"] = self.update_play_info(
+                updated_play["play_info"] = self.update_play_info_wrapper(
                 play["play_info"])
-            except KeyError:
-                common_functions.log_and_raise(
-                    None, UpdatePlayKeyError, play=play)
+                updated_play["poi"] = self.get_updated_poi(play["poi"])
+            except (KeyError, MissingPlayerID, TooManyPOIError):
+                cf.log_and_raise(
+                    None, UpdatePlayError, play=play)
         else:
             updated_play["play_desc"] = play["play_desc"]
             updated_play["error"] = play["error"]
-        updated_play["poi"] = self.get_updated_poi(play["poi"])
 
         return updated_play
 
@@ -284,13 +285,13 @@ class UpdatePBP():
                     f"Expected a string or bytes-like object"
                     f", but got {type(time).__name__}"
                     )
-                common_functions.log_and_raise(error_message, TypeError)
-            shift_seconds = common_functions.convert_to_seconds(time)
+                cf.log_and_raise(error_message, TypeError)
+            shift_seconds = cf.convert_to_seconds(time)
             logger.debug(f"Pattern '{time}' found")
 
             return shift_seconds
         except TypeError as e:
-            common_functions.log_and_raise(e, TypeError)
+            cf.log_and_raise(e, TypeError)
 
 
     def get_updated_poi(self, poi: dict) -> dict:
@@ -307,12 +308,16 @@ class UpdatePBP():
     def get_updated_team_poi(
             self, team_poi: list, team_id: int, team_abb: str) -> list:
         updated_team_poi = []
+        if len(team_poi) > 6:
+            cf.log_and_raise(
+                None, TooManyPOIError, poi=team_poi, team_abb=team_abb)
+            
         for player_number in team_poi:
             try:
                 player_id = self.get_player_id(
                     team_id, int(player_number), team_abb)
             except KeyError as e:
-                common_functions.log_and_raise(
+                cf.log_and_raise(
                     None, 
                     MissingPlayerID, 
                     team_id=team_id,
@@ -331,7 +336,7 @@ class UpdatePBP():
             f"No player data found for player with number {player_number} "
             f"for team {team_abb} ({team_id})"
         )
-        common_functions.log_and_raise(error_message, KeyError)
+        cf.log_and_raise(error_message, KeyError)
     
 
     def update_zone(self, zone: str):
@@ -339,7 +344,7 @@ class UpdatePBP():
         updated_zone = self.ZONE_MAPPER[zone]
         #except KeyError:
         #    error_message = f"Unknown zone string: {zone}"
-        #    common_functions.log_and_raise(error_message, KeyError)
+        #    cf.log_and_raise(error_message, KeyError)
 
         return updated_zone
     
@@ -349,12 +354,22 @@ class UpdatePBP():
         if shot_type not in self.SHOT_TYPES:
             error_message = f"Shot type not known: {shot_type}"
             raise KeyError(error_message)
-           # common_functions.log_and_raise(error_message, KeyError) add after longer testing
+           # cf.log_and_raise(error_message, KeyError) add after longer testing
         
         return shot_type
     
 
-    def update_play_info(self, play: dict):
+    def update_play_info_wrapper(self, play_info: dict) -> dict:
+        try:
+            updated_play = self.update_play_info(play)
+        except KeyError:
+            cf.log_and_raise(
+                None, MissingPlayKeyError, play_info=play_info)
+
+        return updated_play
+
+
+    def update_play_info(self, play: dict) -> dict:
         pass
 
         
@@ -433,14 +448,27 @@ class GoalUpdater(UpdatePBP):
             play["goal"]["team"],
         )
         updated_dict["team_id"] = team_id
-        updated_dict["shot_type"] = SHOT_TYPE_MAPPER[play["goal"]["play_type"].lower()]
+        updated_dict["shot_type"] = (
+            SHOT_TYPE_MAPPER[play["goal"]["play_type"].lower()]
+            if "play_type" in play["goal"] else None
+            )
         updated_dict["zone"] = ZONE_MAPPER[play["goal"]["zone"].lower()]
-        updated_dict["distance"] = (int(play["goal"]["distance"])
-                                    if "distance" in play["goal"] else None)
-        updated_dict["deflection_type"] = (
+        updated_dict["distance"] = (
+            int(play["goal"]["distance"])
+            if "distance" in play["goal"] else None
+            )
+        if "deflection_type" in play["goal"]:
+            updated_dict["deflection_type"] = (
             DEFLECTION_TYPE_MAPPER[play["goal"]["deflection_type"]] 
             if play["goal"]["deflection_type"] is not None else None)
-        updated_dict["penalty_shot"] = play["goal"]["penalty_shot"] is not None
+        else:
+            updated_dict["deflection_type"] = None
+        if "penalty_shot" in play["goal"]:
+            updated_dict["penalty_shot"] = (
+                play["goal"]["penalty_shot"] is not None
+            )
+        else:
+            play["goal"]["penalty_shot"] = None
         updated_dict["own_goal"] = "own_goal" in play["goal"]
         if "assists" in play:
             updated_dict["assists"] = self.get_updated_assits(
@@ -494,9 +522,12 @@ class ShotUpdater(UpdatePBP):
         updated_dict["zone"] = ZONE_MAPPER[play["zone"].lower()]
         updated_dict["distance"] = (int(play["distance"])
                                     if "distance" in play else None)
-        updated_dict["deflection_type"] = (
-            DEFLECTION_TYPE_MAPPER[play["deflection"].lower()] 
-            if "deflection_type" in play else None)
+        if play["deflection_type"] is not None:
+            updated_dict["deflection_type"] = (
+                DEFLECTION_TYPE_MAPPER[play["deflection_type"].lower()]
+                )
+        else:
+            updated_dict["deflection_type"] = None
         updated_dict["penalty_shot"] = play["penalty_shot"] is not None
         updated_dict["broken_stick"] = play["broken_stick"] is not None
         updated_dict["over_board"] = play["over_board"] is not None
@@ -663,7 +694,7 @@ class PeriodUpdater(UpdatePBP):
     def update_play_info(self, play: dict) -> dict:
         updated_dict = {}
         updated_dict["period_type"] = PERIOD_TYPE_MAPPER[play["period_type"].lower()]
-        updated_dict["time"] = common_functions.convert_to_seconds(
+        updated_dict["time"] = cf.convert_to_seconds(
             play["time"])
         updated_dict["timezone"] = play["timezone"]
 
@@ -723,6 +754,12 @@ class  UpdateGameData():
         self.team_abb_to_db_id = {}
         self.nhl_db_mapper = nhl_db_mapper
         self.name_mapper = name_mapper
+        self.error_entries = {
+            "player_shifts": {
+                "too_many_poi": {},
+                "unknown_number": {}
+        }
+        }
 
 
     def update_game_data(self, game_data: dict) -> dict:
@@ -732,8 +769,8 @@ class  UpdateGameData():
         self.match_players_to_db_id(updated_data)
         try:
             updated_data["PBP"] = self.update_PBP(game_data["PBP"])
-        except (MissingPlayerID, UpdatePlayKeyError):
-            common_functions.log_and_raise(
+        except (MissingPlayerID, UpdatePlayError):
+            cf.log_and_raise(
                 None, 
                 UpdateGameDataError, 
                 game_id=game_data["id"],
@@ -847,7 +884,7 @@ class  UpdateGameData():
            #     f"(UID: {team_uid}) is not present in the "
            #     f"database"             
            #  )
-           # common_functions.log_and_raise(error_message, ValueError)
+           # cf.log_and_raise(error_message, ValueError)
 
 
     def try_find_match_with_nhl_db_mapper(
@@ -882,7 +919,8 @@ class  UpdateGameData():
     def get_PBP_class(self, play_type: str):
 
         return self.UPDATE_CLASSES[play_type](
-            self.player_mapper, self.team_type_to_abb, self.team_abb_to_db_id)
+            self.player_mapper, self.team_type_to_abb, self.team_abb_to_db_id, self.error_entries
+            )
     
 
 class MatchFinder():
@@ -897,14 +935,6 @@ class MatchFinder():
         self.nhl_db_mapper = nhl_db_mapper
         self.db_name = None
         self.scraped_name = None
-
-
-    def iterrate_to_find_match_wrapper(self) -> bool:
-        name_matched = self.iterrate_to_find_match()
-        if not name_matched:
-            name_matched = self.iterrate_to_find_normalized_match()
-        
-        return name_matched
 
 
     def iterrate_to_find_match(self) -> bool:
@@ -960,6 +990,16 @@ class MatchFinder():
 
 
 class SingleMatchFinder(MatchFinder):
+
+
+    def iterrate_to_find_match_wrapper(self) -> bool:
+        name_matched = self.iterrate_to_find_match()
+        if not name_matched:
+            name_matched = self.iterrate_to_find_normalized_match()
+        if not name_matched:
+            name_matched = self.iterrate_to_find_mapped_match()
+        
+        return name_matched
 
 
     def try_to_find_match(self, player_dict) -> bool:
@@ -1021,7 +1061,8 @@ class SingleMatchFinder(MatchFinder):
         for name in self.name_mapper:
             if name == self.player_info[0]:
                 self.scraped_name = self.player_info[0]
-                self.player_info[0] = self.name_mapper[name]
+                self.player_info = (
+                    self.name_mapper[name], self.player_info[0])
 
                 return True
         
@@ -1029,6 +1070,14 @@ class SingleMatchFinder(MatchFinder):
 
 
 class DuplicatesMatchFinder(MatchFinder):
+
+
+    def iterrate_to_find_match_wrapper(self) -> bool:
+        name_matched = self.iterrate_to_find_match()
+        if not name_matched:
+            name_matched = self.iterrate_to_find_normalized_match()
+        
+        return name_matched
 
 
     def try_to_find_match(self, player_dict) -> bool:

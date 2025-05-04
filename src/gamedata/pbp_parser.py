@@ -1,7 +1,7 @@
 import re
 import scrapy
 
-import common_functions
+import common_functions as cf
 
 from errors import WrongPlayDesc
 from logger.logging_config import logger
@@ -39,7 +39,7 @@ class PBPParser():
                 f"No PBP data was scraped for match: " 
                 f"{self.report_id}"
             )
-            common_functions.log_and_raise(error_message, ValueError)
+            cf.log_and_raise(error_message, ValueError)
 
         logger.info("Scraping of game PBP data from report" 
                     f"{self.report_id} finished")
@@ -48,7 +48,7 @@ class PBPParser():
     
 
     def get_attendance(self) -> str:
-        attendance_string = common_functions.get_single_xpath_value(
+        attendance_string = cf.get_single_xpath_value(
             sel=self.sel, xpath=self.XPATHS["attendance"], optional=False)
         attendance = re.findall("[0-9,]+", attendance_string)
         attendance = attendance.replace(",", "")
@@ -110,7 +110,7 @@ class PlayerOnIceParser():
 
 
     def get_team_players_on_ice(self) -> list:
-        player_nums = common_functions.get_list_xpath_values(
+        player_nums = cf.get_list_xpath_values(
             sel=self.sel, xpath=self.XPATHS["player_number"], optional=True)
         
         return player_nums
@@ -128,7 +128,7 @@ class PBPDescriptionParser():
     PENALTY_PATTERN = rf"[A-Za-z\s/-]+"
     PENALTY_SHOT_PATTERN = "Penalty\sShot"
     PERIOD_STRING = "(Period\s+Start|Period\s+End|Shootout Completed)"
-    SHOT_PATTERN = "(?=.*[A-Za-z-])[A-Za-z\s-]+"
+    SHOT_PATTERN = "[A-Za-z-]+(?: [A-Za-z-]+)*"
     DEFLECTION = '(Defensive|Offensive)'
 
 
@@ -145,7 +145,7 @@ class PBPDescriptionParser():
         except AttributeError:
             logger.info(f"Broken Play Desc String {self.play_desc}"
                         f" of type {self.play_type}")
-            common_functions.log_and_raise(
+            cf.log_and_raise(
                 None, WrongPlayDesc, play_desc=self.play_desc,
                 play_type=self.play_type)
 
@@ -164,7 +164,7 @@ class PBPDescriptionParserMultipleOptions(PBPDescriptionParser):
         try:
             play_dict =  match.groupdict()
         except AttributeError:
-            common_functions.log_and_raise(
+            cf.log_and_raise(
                 None, WrongPlayDesc, play_desc=self.play_desc,
                 play_type=self.play_type)
 
@@ -179,10 +179,13 @@ class PBPGoalParser(PBPDescriptionParser):
         rf"(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
         rf"(?P<player>{PBPDescriptionParser.PLAYER_PATTERN})"
         rf"(?:\(\d+\))?\s*,\s*"
-        rf"(?:(?P<penalty_shot>{PBPDescriptionParser.PENALTY_SHOT_PATTERN})\s*,\s*)?"
+        rf"(?:(?P<penalty_shot>{PBPDescriptionParser.PENALTY_SHOT_PATTERN})\s*"
+        rf"\s*)?"
         rf"(?P<play_type>{PBPDescriptionParser.SHOT_PATTERN})\s*"
-        rf"(?:,\s*(?P<deflection_type>{PBPDescriptionParser.DEFLECTION}\sDeflection))?"
-        rf"\s*,?\s*(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone\s*,?\s*"
+        rf"(?:,\s*(?P<deflection_type>{PBPDescriptionParser.DEFLECTION}"
+        rf"\sDeflection))?"
+        rf"\s*,?\s*(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone\s*,?"
+        rf"\s*"
         rf"(?P<distance>\d+)\s*ft\."
     )
 
@@ -214,7 +217,7 @@ class PBPGoalParser(PBPDescriptionParser):
                     break
             play_dict["goal"] = goal_match.groupdict()
         except AttributeError:
-            common_functions.log_and_raise(
+            cf.log_and_raise(
                 None, WrongPlayDesc, play_desc=self.play_desc,
                 play_type=self.play_type)
         assist_pattern = re.compile(self.PATTERN_A)
@@ -235,11 +238,12 @@ class PBPShotParser(PBPDescriptionParser):
     rf"(?P<team>{PBPDescriptionParser.TEAM_PATTERN})\s+ONGOAL\s*-\s*#"
     rf"(?P<player_number>{PBPDescriptionParser.NUMBER_PATTERN})\s+"
     rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s*,?\s*"
-    rf"(?:(?P<penalty_shot>{PBPDescriptionParser.PENALTY_SHOT_PATTERN})\s*,)?"
-    rf"(?P<shot_type>{PBPDescriptionParser.SHOT_PATTERN})\s*,?\s*"
-    rf"(?:(?P<deflection>{PBPDescriptionParser.DEFLECTION})\s+Deflection"
-    rf"\s*,\s*)?"
-    rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone,\s*" 
+    rf"(?:(?P<penalty_shot>{PBPDescriptionParser.PENALTY_SHOT_PATTERN})\s*,"
+    rf"\s*)?"
+    rf"(?P<shot_type>{PBPDescriptionParser.SHOT_PATTERN})\s*"
+    rf"(?:,\s*(?P<deflection_type>{PBPDescriptionParser.DEFLECTION}"
+    rf"\sDeflection))?"
+    rf"\s*,?\s*(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone\s*,?\s*"
     rf"(?P<distance>\d+)\s*ft\."
     rf"(?:\s*(?P<broken_stick>Broken Stick)\s*)?"
     rf"(?:\s*(?P<over_board>Flub)\s*)?" 
@@ -528,11 +532,11 @@ class PBPRowParser():
 
     def parse_row(self) -> dict:
         row_dict = {}
-        row_dict['period'] = common_functions.get_single_xpath_value(
+        row_dict['period'] = cf.get_single_xpath_value(
             sel=self.sel, xpath=self.XPATHS["period"], optional=False)
-        row_dict['play_type'] = common_functions.get_single_xpath_value(
+        row_dict['play_type'] = cf.get_single_xpath_value(
             sel=self.sel, xpath=self.XPATHS["play_type"], optional=False)
-        row_dict['time'] = common_functions.get_single_xpath_value(
+        row_dict['time'] = cf.get_single_xpath_value(
             sel=self.sel, xpath=self.XPATHS["time"], optional=False)
         row_dict["poi"] = self.get_players_on_ice()
         if row_dict['play_type'] not in self.SKIP_PLAY:
@@ -562,7 +566,7 @@ class PBPRowParser():
 
     def get_play_description(self, play_type: str) -> dict:
         try:
-            play_desc = common_functions.get_list_xpath_values(
+            play_desc = cf.get_list_xpath_values(
             sel=self.sel, xpath=self.XPATHS["play_desc"], optional=False)
             play_desc = " ".join(play_desc)
             row_desc_parser = self.row_desc_parser_factory(
@@ -571,7 +575,7 @@ class PBPRowParser():
 
             return play_desc_dict
         except WrongPlayDesc as e:
-            common_functions.log_and_raise(
+            cf.log_and_raise(
                 None, WrongPlayDesc, play_desc=e.play_desc,
                 play_type=e.play_type)    
         except AttributeError as e:
@@ -579,19 +583,19 @@ class PBPRowParser():
                 f"AttributeError in parsing play description: "
                 f"{e} | Input: {play_desc}"
             )
-            common_functions.log_and_raise(error_message, AttributeError)
+            cf.log_and_raise(error_message, AttributeError)
         except TypeError as e:
             error_message = (
                 f"TypeError while processing play description: {e} | "
                 f"Input: {play_desc}"
             )
-            common_functions.log_and_raise(error_message, TypeError)
+            cf.log_and_raise(error_message, TypeError)
         except Exception as e:
             error_message = (
                 f"TypeError while processing play description: {e} | "
                 f"Input: {play_desc}"
                 )
-            common_functions.log_and_raise(error_message, Exception)
+            cf.log_and_raise(error_message, Exception)
 
 
     def row_desc_parser_factory(

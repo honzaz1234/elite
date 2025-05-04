@@ -1,6 +1,6 @@
 import scrapy
 
-import common_functions
+import common_functions as cf
 
 from logger.logging_config import logger
 
@@ -37,7 +37,7 @@ class TSParser():
             parsed_players.append(player_dict)
         if not parsed_players:
             error_message = f"No data was scraped for match: {self.report_id}"
-            common_functions.log_and_raise(error_message, ValueError)
+            cf.log_and_raise(error_message, ValueError)
         logger.info("Scraping of player shift data from report" 
                     f"{self.report_id} finished")
 
@@ -77,7 +77,7 @@ class TSParser():
 
 
     def get_player_name(self, sel: scrapy.Selector) -> str:
-        player_name = common_functions.get_single_xpath_value(
+        player_name = cf.get_single_xpath_value(
             sel=sel, xpath="./td/text()", optional=False)
 
         return player_name  
@@ -98,11 +98,11 @@ class TSParser():
     def get_player_shift(self, shift_sel: scrapy.Selector, shift_idx: int) -> dict:
 
         shift_dict = {}
-        shift_dict["period"]  = common_functions.get_single_xpath_value(
+        shift_dict["period"]  = cf.get_single_xpath_value(
             sel=shift_sel, xpath="./td[2]/text()", optional=False)
-        shift_dict["shift_start"]  = common_functions.get_single_xpath_value(
+        shift_dict["shift_start"]  = cf.get_single_xpath_value(
             sel=shift_sel, xpath="./td[3]/text()", optional=False)
-        shift_dict["shift_end"]  = common_functions.get_single_xpath_value(
+        shift_dict["shift_end"]  = cf.get_single_xpath_value(
             sel=shift_sel, xpath="./td[4]/text()", optional=False)
         logger.debug(f"Shift n. {shift_idx}: {shift_dict}")
 
