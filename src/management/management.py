@@ -530,6 +530,8 @@ class ManageGame():
     
     
     def get_season_data(self, season: str, season_dict: dict) -> None:
+        if season not in self.games_done:
+            self.games_done[season] = {}
         try:
             self.scrape_and_input_season_games_into_db(season, season_dict)
         except Exception as e:
@@ -556,12 +558,12 @@ class ManageGame():
             [season])
         elite_nhl_mapper = self.mapper_o.get_elite_nhl_names()
         try:
-            for game in season_dict:
-                if game['report_id'] in self.games_done[season]:
+            for game in season_dict["report_data"]:
+                if game['id'] in self.games_done[season]:
                     continue
                 report_id = self.scrape_and_input_game_into_db(
-                    game, season_dict["season_long"], team_players, 
-                    elite_nhl_mapper_detail, elite_nhl_mapper)
+                    game, season_dict["season_long"], team_players[season], 
+                    elite_nhl_mapper_detail[season], elite_nhl_mapper)
                 self.games_done[season].append(report_id)
         finally:
             self.input_mapper_o.input_elite_nhl_mapper_dict(
@@ -576,11 +578,11 @@ class ManageGame():
             report_dict = self.scrape_game_data(
                 game_dict, season_long)
             updated_dict, player_mapper = self.update_game_data(
-                team_players, elite_nhl_mapper_detail, elite_nhl_mapper)
+                report_dict, team_players, elite_nhl_mapper_detail, elite_nhl_mapper)
             self.input_game_data(updated_dict, player_mapper)
         except:
             cf.log_and_raise(
-                None, GameDataError, game_id=game_dict["report_id"], season=season_long
+                None, GameDataError, game_id=game_dict["id"], season=season_long
                 )
 
         return report_dict['id']
@@ -589,7 +591,7 @@ class ManageGame():
     def scrape_game_data(
             self, game_dict: dict, season_long: str) -> dict:
         get_report_data = report_getter.GetReportData(
-            report_dict=game_dict["report_data"],
+            game_dict=game_dict,
             season_long=season_long)
         report_dict = get_report_data.get_all_report_data()
 

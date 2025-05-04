@@ -251,11 +251,10 @@ class UpdatePBP():
 
 
     def __init__(
-            self, player_mapper: dict, team_type_to_abb: dict, team_abb_to_db_id: dict, error_entries: dict):
+            self, player_mapper: dict, team_type_to_abb: dict, team_abb_to_db_id: dict):
         self.player_mapper = player_mapper
         self.team_type_to_abb = team_type_to_abb
         self.team_abb_to_db_id = team_abb_to_db_id
-        self.error_entries = error_entries
 
 
     def update_play(self, play: dict) -> dict:
@@ -512,10 +511,10 @@ class GoalUpdater(UpdatePBP):
     
 
     def get_updated_assist(
-            self, assist: dict, team_uid: int, team_abb: str, 
+            self, assist: dict, team_id: int, team_abb: str, 
             rank: int) -> dict:
         player_id = self.get_player_id(
-            team_uid,
+            team_id,
             int(assist["player_number"]),
             team_abb,
         )
@@ -934,7 +933,7 @@ class  UpdateGameData():
     def get_PBP_class(self, play_type: str):
 
         return self.UPDATE_CLASSES[play_type](
-            self.player_mapper, self.team_type_to_abb, self.team_abb_to_db_id, self.error_entries
+            self.player_mapper, self.team_type_to_abb, self.team_abb_to_db_id
             )
     
 
@@ -956,7 +955,6 @@ class MatchFinder():
         for player_dict in self.db_mapper:
             name_matched = self.try_to_find_match(player_dict)
             if name_matched:
-
                 return True
             
         return False
