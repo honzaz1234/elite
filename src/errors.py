@@ -43,15 +43,48 @@ class UpdateGameDataError(Exception):
         super().__init__(message)
 
 
-class UpdatePlayKeyError(KeyError):
+class UpdatePlayError(KeyError):
 
 
 
     def __init__(self, play: dict):
         message = {
-            f"Key missing in dict {play}"
+            f"Error raised while updating following play dict: {play}"
         }
         super().__init__(message)
+
+
+class TooManyPOIError(ValueError):
+
+
+    def __init__(self, poi: list, team_abb: str):
+        message = {
+            f"There is too many players on ice: {poi} for team {team_abb}"
+        }
+        super().__init__(message)
+
+
+class MissingPlayKeyError(KeyError):
+
+
+    def __init__(self, play_info: dict):
+        message = {
+            f"There is a missing key in play info dict: {play_info}"
+        }
+        super().__init__(message)
+
+
+class GameDataError(Exception):
+
+
+    def __init__(self, game_id: int, season: str):
+        message = {
+            f"Game Data Pipe Line failed for game {game_id} in season {season}"
+        }
+        super().__init__(message)
+
+
+
 
 
 
