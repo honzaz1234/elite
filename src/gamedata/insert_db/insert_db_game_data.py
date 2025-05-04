@@ -14,7 +14,7 @@ class PBPDB():
         self.db_method = db_insert.DatabaseMethods(self.db_session)
 
 
-     def _input_play_wrapper(self, play: dict, match_id: int) -> None:
+     def _input_play_info_wrapper(self, play: dict, match_id: int) -> int:
 
           play_type_id = self.db_method._input_unique_data(
               table=db.PlayType, play_type=play["play_type"]
@@ -26,14 +26,45 @@ class PBPDB():
                period=play["period"],
                time=play["time"]
           )
-          self._input_play(play["play_info"], play_id)
+          if "error" in play:
+               self._input_broken_play_info(play_id, play["play_desc"])
+          self._input_play_info(play["play_info"], play_id)
 
+          return play_id
+
+
+     def _input_broken_play_info(self, play_id: int, play_desc: str) -> int:
+          play_id = self.db_method._input_unique_data(db.BrokenPBP,
+                                                       play_id=play_id,
+                                                       play_desc=play_desc)
 
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
           pass
+     
 
+     def _input_player_shift(
+               self, play_id: int, player_id: int, team_id: int) -> int:
+          shift_id = self.db_method._input_unique_data(db.PlayerOnIce,
+                                                       play_id=play_id,
+                                                       player_id=player_id,
+                                                       team_id=team_id)
+          
+          return shift_id
+     
 
+     def _input_broken_poi(
+               self, play_id: int, team_id: int, poi: str, 
+               error_type: str) -> int:
+          shift_id = self.db_method._input_unique_data(db.BrokenPOI,
+                                                       play_id=play_id,
+                                                       team_id=team_id,
+                                                       poi=poi,
+                                                       error_type=error_type)
+          
+          return shift_id
+          
+                                                            
 class BlockedShotDB(PBPDB):
 
 
@@ -142,7 +173,7 @@ class GoalDB(PBPDB):
                db.DeflectionType,
                deflection=play["deflection_type"],
           )
-          goal_id = self.db_method._input_unique_data(
+          play_id = self.db_method._input_unique_data(
                db.GoalPlay,
                play_id=play_id,
                distance=play["distance"],
@@ -158,12 +189,12 @@ class GoalDB(PBPDB):
           for assist in play["assists"]:
                self.db_method._input_unique_data(
                     db.AssistPlay,
-                    goal_id=goal_id,
+                    goal_id=play_id,
                     player_id=assist["player_id"],
                     is_primary=assist["is_primary"]
                )
 
-          return goal_id
+          return play_id
      
 
 class HitDB(PBPDB):
