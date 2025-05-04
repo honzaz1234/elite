@@ -2,7 +2,6 @@ import gamedata.insert_db.insert_db_game_data as insert_db
 import mappers.db_mappers as db_mapper
 
 from common_functions import dict_diff_unique
-from gamedata.input_dict.input_game_dict import BlockedShotDB, ChallengeDB, FaceOffDB, GiveAwayDB
 from decorators import time_execution
 import mappers.db_mappers as db_mapper
 from logger.logging_config import logger
@@ -196,7 +195,29 @@ class InputPBP():
 
     def _input_PBP(self, plays: list, match_id) -> None:
         for play in plays:
-            self.input_pbp._input_play_wrapper(play, match_id)
+            play_id = self.input_pbp._input_play_info_wrapper(play, match_id)
+            self._input_poi(play_id, play["shifts"])
+
+
+    def _input_poi(self, play_id: int, shifts: dict) -> None:
+        if "error" in shifts:
+            for team_id in shifts["error"]:
+                poi = shifts["error"]["poi"]
+                error_type = shifts["error"]["error_type"]
+                self.input_pbp._input_broken_poi(
+                    play_id, team_id, poi, error_type)
+        for team_id in shifts:
+            self._input_team_poi(self, play_id, shifts[team_id])
+
+
+    def _input_team_poi(self, play_id: int, team_shifts: list) -> None:
+        for player_id in team_shifts:
+            self.input_pbp._input_player_shift(play_id, player_id)
+
+
+
+
+
 
 
 
