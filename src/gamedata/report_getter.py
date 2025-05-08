@@ -121,9 +121,9 @@ class ReportIDGetter():
 class GetReportData():
 
 
-    def __init__(self, report_dict: dict, season_long: str):
-        self.report_dict = report_dict
-        self.report_id = report_dict["id"]
+    def __init__(self, game_dict: dict, season_long: str):
+        self.game_dict = game_dict
+        self.report_id = game_dict["id"]
         self.PBP_id = "PL" + self.report_id
         # visitor team report id
         self.VTS_id = "TV" + self.report_id
@@ -134,14 +134,14 @@ class GetReportData():
     @time_execution
     def get_all_report_data(self) -> dict:
         logger.info(f"Scraping of data for a game {self.report_id} from date"
-                    f" {self.report_dict['date']} and season {self.season}"    f" started...")
-        self.report_dict["PBP"] = self.get_PBP_data()
-        self.report_dict["HTS"] = self.get_TS_data(self.HTS_id, "HTS")
-        self.report_dict["VTS"] = self.get_TS_data(self.VTS_id, "VTS")
+                    f" {self.game_dict['date']} and season {self.season}"    f" started...")
+        self.game_dict["PBP"], self.game_dict["attendance"] = self.get_PBP_data()
+        self.game_dict["HTS"] = self.get_TS_data(self.HTS_id, "HTS")
+        self.game_dict["VTS"] = self.get_TS_data(self.VTS_id, "VTS")
         logger.info(f"Scraping of data for a game {self.report_id} from date"
-                    f" {self.report_dict['date']} and season {self.season}"    f" finished.")
+                    f" {self.game_dict['date']} and season {self.season}"    f" finished.")
 
-        return self.report_dict
+        return self.game_dict
     
 
     def get_PBP_data(self) -> list:
@@ -155,10 +155,11 @@ class GetReportData():
         pbp_o = pbp_parser.PBPParser(htm=htm,
                                     report_id=self.report_id)
         plays = pbp_o.parse_htm_file()
+        attendance = pbp_o.get_attendance()
         logger.debug(f"Scraping of PBP data for report {self.report_id}"
                         f" from season {self.season} finished.")
         
-        return plays
+        return plays, attendance
         
     
     def get_TS_data(self, report_id: str, type_: str) -> list:
