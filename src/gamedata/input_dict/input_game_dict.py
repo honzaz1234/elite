@@ -67,8 +67,10 @@ class InputGameInfo():
         self.stadium_mapper = self.mappers_o.get_nhl_elite_stadium_mapper()
         self.input_gi = InputGeneralInfo(
             self.db_session, self.input_o, self.stadium_mapper)
-        self.input_shifts = InputShifts(self.db_session, input_o=self.input_o)
-
+        self.input_shifts = InputShifts(
+            self.db_session, player_mapper)
+        self.input_PBP = InputPBP(
+            self.db_session, player_mapper)
 
 
     def input_game_dict(self, game: dict) -> None:
@@ -76,24 +78,13 @@ class InputGameInfo():
         match_id = self.input_gi._input_general_info(game)
         self.input_shifts._input_shifts(
             game["shifts"], game["HT"], game["VT"], match_id)
+        self.input_PBP._input_PBP(game["PBP"], match_id)
 
 
     def _input_general_info(self, game: dict) -> int:
         match_id = self.input_gi._input_general_info(game)
 
         return match_id
-    
-
-    def _get_general_info_input_dict(game: dict, stadium_id: int):
-        input_dict = {}
-        input_dict["stadium_id"] = stadium_id
-        input_dict["HT"] = game["HT"]
-        input_dict["VT"] = game["HT"]
-        input_dict["date"] = game["date"]
-        input_dict["time"] = game["time"]
-        input_dict["attendance"] = game["attendance"]
-
-        return input_dict
     
 
 class InputGeneralInfo():
@@ -130,13 +121,14 @@ class InputGeneralInfo():
         return stadium_id
 
     
-    def _get_general_info_input_dict(game: dict, stadium_id: int):
+    def _get_general_info_input_dict(self, game: dict, stadium_id: int):
         input_dict = {}
         input_dict["stadium_id"] = stadium_id
+        input_dict["match_id"] = game["match_id"]
         input_dict["HT"] = game["HT"]
-        input_dict["VT"] = game["HT"]
+        input_dict["VT"] = game["VT"]
         input_dict["date"] = game["date"]
-        input_dict["time"] = game["time"]
+        input_dict["time"] = game["start_time_UTC"]
         input_dict["attendance"] = game["attendance"]
 
         return input_dict
@@ -145,18 +137,16 @@ class InputGeneralInfo():
 class InputShifts():
 
 
-    def __init__(self, db_session: Session, 
-                 player_mapper: dict,
-                 input_o: insert_db.GameDataDB):
+    def __init__(self, db_session: Session, player_mapper: dict):
         self.db_session = db_session
         self.player_mapper = player_mapper
-        self.input_o = input_o
+        self.input_o = insert_db.GameDataDB(db_session)
 
     
     def _input_shifts(
             self, shifts: dict, HT_id: int, VT_id: int, match_id :int) -> None:
-        ids = {"HT": HT_id, "VT": VT_id}
-        for team_type in shifts:
+        ids = {"TH": HT_id, "TV": VT_id}
+        for team_type in ids:
             self._input_team_shifts(
                 shifts[team_type], ids[team_type], match_id)
 
@@ -190,13 +180,18 @@ class InputPBP():
             self, db_session: Session, player_mapper: dict):
         self.db_session = db_session
         self.player_mapper = player_mapper
-        self.input_pbp = insert_db.PBPDB(self.db_session)
+        self.input_pbp = insert_db.PBPDB(db_session)
+        self.input_o = insert_db.GameDataDB(db_session)
 
 
     def _input_PBP(self, plays: list, match_id) -> None:
         for play in plays:
-            play_id = self.input_pbp._input_play_info_wrapper(play, match_id)
-            self._input_poi(play_id, play["shifts"])
+            play_id = self.input_o._input_play(play, match_id)
+            try:
+                self._input_poi(play_id, play["poi"])
+            except Exception as e:
+                print(play)
+                raise e
 
 
     def _input_poi(self, play_id: int, shifts: dict) -> None:
@@ -207,12 +202,13 @@ class InputPBP():
                 self.input_pbp._input_broken_poi(
                     play_id, team_id, poi, error_type)
         for team_id in shifts:
-            self._input_team_poi(self, play_id, shifts[team_id])
+            self._input_team_poi(play_id, shifts[team_id], team_id)
 
 
-    def _input_team_poi(self, play_id: int, team_shifts: list) -> None:
+    def _input_team_poi(
+            self, play_id: int, team_shifts: list, team_id: int) -> None:
         for player_id in team_shifts:
-            self.input_pbp._input_player_shift(play_id, player_id)
+            self.input_pbp._input_poi(play_id, player_id, team_id)
 
 
 
