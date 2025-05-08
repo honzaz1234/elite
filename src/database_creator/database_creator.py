@@ -613,8 +613,7 @@ class PlayType(Base):
     id = Column(Integer, primary_key=True)
     play_type = Column(String, nullable=False, unique=True)
 
-    def __init__(self, id, play_type):
-        self.id = id
+    def __init__(self, play_type):
         self.play_type = play_type
 
     def __repr__(self):
@@ -625,8 +624,7 @@ class ShotType(Base):
     id = Column(Integer, primary_key=True)
     shot_type = Column(String, nullable=False, unique=True)
 
-    def __init__(self, id, shot_type):
-        self.id = id
+    def __init__(self, shot_type):
         self.shot_type = shot_type
 
     def __repr__(self):
@@ -639,8 +637,7 @@ class Zone(Base):
     id = Column(Integer, primary_key=True)
     zone = Column(String, nullable=False, unique=True)
 
-    def __init__(self, id, zone):
-        self.id = id
+    def __init__(self, zone):
         self.zone = zone
 
     def __repr__(self):
@@ -653,8 +650,7 @@ class ShotResult(Base):
     id = Column(Integer, primary_key=True)
     shot_result = Column(String, nullable=False, unique=True)
 
-    def __init__(self, id, shot_result):
-        self.id = id
+    def __init__(self, shot_result):
         self.shot_result = shot_result
 
     def __repr__(self):
@@ -667,28 +663,29 @@ class PenaltyType(Base):
     id = Column(Integer, primary_key=True)
     penalty_type = Column(String, nullable=False, unique=True)
 
-    def __init__(self, id, penalty_type):
-        self.id = id
+    def __init__(self, penalty_type):
         self.penalty_type = penalty_type
 
     def __repr__(self):
         return f"({self.id}, {self.penalty_type})"
+
 
 class Match(Base):
 
     __tablename__ = 'matches'
 
     id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, nullable=False, unique=True)
     stadium_id = Column(Integer, ForeignKey('stadiums.id'), nullable=False)
-    date = Column(Date, nullable=False)
+    date = Column(String, nullable=False)
     time = Column(Integer)
     attendance = Column(Integer)
     home_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     away_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
 
-    def __init__(self, id, stadium_id, date, time, 
+    def __init__(self, match_id, stadium_id, date, time, 
                  attendance, home_team_id, away_team_id):
-        self.id = id
+        self.match_id = match_id
         self.stadium_id = stadium_id
         self.date = date
         self.time = time
@@ -697,9 +694,9 @@ class Match(Base):
         self.away_team_id = away_team_id
 
     def __repr__(self):
-        return (f"({self.id}, {self.stadium_id}, {self.date}, "
-               f"{self.time}, {self.attendance}, {self.home_team_id}, "
-               f"{self.away_team_id})")
+        return (f"({self.id}, {self.match_id}, {self.stadium_id}, "
+               f"{self.date}, {self.time}, {self.attendance}, "
+               f"{self.home_team_id}, {self.away_team_id})")
 
 
 class Play(Base):
@@ -712,15 +709,15 @@ class Play(Base):
     period = Column(Integer, nullable=False)
     time = Column(Integer)
 
-    def __init__(self, id, play_type_id, match_id, time):
-        self.id = id
+    def __init__(self, play_type_id, match_id, period, time):
         self.play_type_id = play_type_id
         self.match_id = match_id
+        self.period = period
         self.time = time
 
     def __repr__(self):
         return (f"({self.id}, {self.play_type_id}, {self.match_id}, "
-               f"{self.time})")
+               f"{self.period}, {self.time})")
 
 
 class GoalPlay(Base):
@@ -784,12 +781,12 @@ class DeflectionType(Base):
     id = Column(Integer, primary_key=True)
     deflection_type = Column(String, nullable=False)
 
-    def __init__(self, deflection):
+    def __init__(self, deflection_type):
 
-        self.deflection = deflection
+        self.deflection_type = deflection_type
 
     def __repr__(self):
-        return (f"({self.id}, {self.deflection}")
+        return (f"({self.id}, {self.deflection_type}")
 
 
 class ShotPlay(Base):
@@ -806,10 +803,10 @@ class ShotPlay(Base):
     penalty_shot = Column(Boolean, nullable=False)
     broken_stick = Column(Boolean, nullable=False)
     over_board = Column(Boolean, nullable=False)
-    deflection_id = Column(Integer, ForeignKey('deflection_types.id'))
+    deflection_type_id = Column(Integer, ForeignKey('deflection_types.id'))
 
     def __init__(
-            self, play_id, player_id, team_id, zone_id, shot_type_id,distance, penalty_shot, broken_stick, over_board, deflection_id):
+            self, play_id, player_id, team_id, zone_id, shot_type_id,distance, penalty_shot, broken_stick, over_board, deflection_type_id):
         self.play_id = play_id
         self.player_id = player_id
         self.team_id = team_id
@@ -819,14 +816,14 @@ class ShotPlay(Base):
         self.penalty_shot = penalty_shot
         self.broken_stick = broken_stick
         self.over_board = over_board
-        self.deflection_id = deflection_id
+        self.deflection_type_id = deflection_type_id
 
     def __repr__(self):
         return (f"({self.id}, {self.play_id}, {self.player_id},"
                 f" {self.team_id}, {self.zone_id}, {self.shot_type_id}, "
                 f"{self.distance}, {self.penalty_shot}, "
                 f"{self.broken_stick}, {self.over_board}, "
-                f"{self.deflection_id})")
+                f"{self.deflection_type_id})")
 
 
 class HitPlay(Base):
@@ -838,6 +835,7 @@ class HitPlay(Base):
     hitter_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     hitter_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     victim_id = Column(Integer, ForeignKey('players.id'), nullable=False)
+    victim_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
 
     def __init__(self, play_id, hitter_id, hitter_team_id, victim_id, 
@@ -1186,15 +1184,21 @@ class PlayerShift(Base):
     shift_start = Column(Integer, nullable=False)
     shift_end = Column(Integer, nullable=False)
 
-    def __init__(self, player_id, period, shift_start, shift_end):
+    def __init__(
+            self, play_id, player_id, team_id, period, shift_start, shift_end):
+        self.play_id = play_id
         self.player_id = player_id
+        self.team_id = team_id
         self.period = period
         self.shift_start = shift_start
         self.shift_end = shift_end
 
     def __repr__(self):
-        return (f"({self.id}, {self.player_id}, {self.period}, "
-               f"{self.shift_start}, {self.shift_end})")
+        return (
+            f"({self.id}, {self.play_id}, {self.player_id}, "
+            f"{self.team_id}, {self.period}, {self.shift_start}, "
+            f"{self.shift_end})"
+            )
 
 
 class PlayerOnIce(Base):
@@ -1229,7 +1233,7 @@ class GameStopageType(Base):
         return (f"({self.id}, {self.stopage_type}")
     
 
-class GameStopage(Base):
+class GameStopagePlay(Base):
 
     __tablename__ = "game_stopages"
 
