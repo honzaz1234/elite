@@ -531,7 +531,7 @@ class ManageGame():
     
     def get_season_data(self, season: str, season_dict: dict) -> None:
         if season not in self.games_done:
-            self.games_done[season] = {}
+            self.games_done[season] = []
         try:
             self.scrape_and_input_season_games_into_db(season, season_dict)
         except Exception as e:
@@ -565,11 +565,16 @@ class ManageGame():
                     game, season_dict["season_long"], team_players[season], 
                     elite_nhl_mapper_detail[season], elite_nhl_mapper)
                 self.games_done[season].append(report_id)
-        finally:
             self.input_mapper_o.input_elite_nhl_mapper_dict(
                 elite_nhl_mapper_detail)
+            self.session.close()
+        except Exception as e:
+            self.input_mapper_o.input_elite_nhl_mapper_dict(
+                elite_nhl_mapper_detail)
+            self.session.close()
+            raise e
+            
         
-
     @time_execution
     def scrape_and_input_game_into_db(
         self, game_dict: dict, season_long: str, team_players: dict, 
