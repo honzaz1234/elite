@@ -3,6 +3,9 @@ import requests
 import ssl
 import time
 
+from functools import wraps
+from sqlalchemy.exc import SQLAlchemyError
+
 from logger.logging_config import logger
 
 
@@ -31,6 +34,7 @@ def repeat_request_until_success(func):
 
     return wrapper 
                 
+                
 def time_execution(func):
     def wrapper(*args, **kwargs):
         start_time = time.time() 
@@ -41,6 +45,24 @@ def time_execution(func):
                     f"{execution_time:.6f} seconds")
         return result
       
+    return wrapper
+
+
+def sql_executor(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        try:
+            result = func(self, *args, **kwargs)
+            return result
+        except SQLAlchemyError as e:
+            print(f"args: {args}")
+            print(f"kwargs: {kwargs}")
+            logger.error(f"Error in executing SQL code. Initiallizing DB "
+                         f"rollback")
+            self.db_session.rollback()
+            logger.info("Rollback initialized. DB session closed")
+            raise e
+
     return wrapper
                  
 
