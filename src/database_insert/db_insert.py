@@ -1,4 +1,5 @@
 from constants import *
+from decorators import sql_executor
 from logger.logging_config import logger
 
 from sqlalchemy import update
@@ -9,11 +10,14 @@ class DatabaseMethods():
 
     """class containg operations for dealing with the data in the database"""
 
+
     def __init__(self, db_session: Session):
         self.db_session = db_session
         self.query = Query(self.db_session)
         pass
 
+
+    @sql_executor
     def _input_data(self, table, **kwargs) -> int:
         """method for adding a row to a table
            Parameters: table - to which table should data be inputted
@@ -31,6 +35,7 @@ class DatabaseMethods():
         return id
     
 
+    @sql_executor
     def _input_unique_data_NA_excluded(
             self, table, non_condition, **kwargs) -> int:
         if non_condition == None:
@@ -38,7 +43,8 @@ class DatabaseMethods():
         id = self._input_unique_data(table=table, **kwargs)
         return id
     
-        
+
+    @sql_executor    
     def _input_unique_data(self, table, **kwargs) -> int:
         """inputs data into database when it is not there already 
             and returns the id of entry
@@ -49,14 +55,15 @@ class DatabaseMethods():
         id = self.query._find_id_in_table(table=table, **kwargs)
         if id is None:
             logger.debug(f"Data is not in db in table {table.__tablename__}"
-                         f" yet, data insert will follow")
+                        f" yet, data insert will follow")
             id = self._input_data(table=table, **kwargs)
         else:
             logger.debug(f"Data is already in db in table"
-                         f" {table.__tablename__} at index {id}")
+                        f" {table.__tablename__} at index {id}")
         return id
     
 
+    @sql_executor
     def _update_data(self, table, where_col, where_val, **kwargs):
         """ method for updating value of already existing  
             row in table
@@ -76,6 +83,7 @@ class DatabaseMethods():
                      f" {update_query}  commited")
         
 
+    @sql_executor
     def _input_uid(self, table, uid_val, **kwargs) -> int:
         """method for inputing uid in database
            Parameters: table - table in which uid is inputted
@@ -94,8 +102,8 @@ class DatabaseMethods():
             logger.debug(f"UID {uid_val} already found in table"
                          f" {table.__tablename__}, at index {id}")
         return id
-        
 
+        
 class Query():
     """class containing basic operations for the database"""
 
@@ -111,6 +119,7 @@ class Query():
         """
 
         entry = table(**kwargs)
+
         return entry
     
 
