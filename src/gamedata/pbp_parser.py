@@ -12,7 +12,7 @@ class PBPParser():
 
 
     XPATHS = {
-        "attendance": "//td[contains(text(), 'Attendance')]",
+        "attendance": "//td[contains(text(), 'Attendance')]/text()",
         "table": "//div[@class='page']/table",
     }
 
@@ -50,7 +50,7 @@ class PBPParser():
     def get_attendance(self) -> str:
         attendance_string = cf.get_single_xpath_value(
             sel=self.sel, xpath=self.XPATHS["attendance"], optional=False)
-        attendance = re.findall("[0-9,]+", attendance_string)
+        attendance = re.findall("Attendance\s*([0-9,]+)", attendance_string)[0]
         attendance = attendance.replace(",", "")
 
         return attendance
