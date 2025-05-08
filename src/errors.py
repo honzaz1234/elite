@@ -34,9 +34,9 @@ class MissingPlayerID(KeyError):
 
 class UpdateGameDataError(Exception):
 
-    def __init__(self, game_id, team_home, team_away, date):
+    def __init__(self, match_id, team_home, team_away, date):
         message = (
-            f"Error in updating game data of game {game_id} between "
+            f"Error in updating game data of game {match_id} between "
             f"teams {team_home} and {team_away} "
             f"from data {date}"
                   )
