@@ -1,6 +1,8 @@
 import re
 import unicodedata
 
+from datetime import datetime
+
 import common_functions as cf
 import  mappers.team_mappers as team_map
 
@@ -381,7 +383,7 @@ class UpdatePBP():
 
     def update_play_info_wrapper(self, play_info: dict) -> dict:
         try:
-            updated_play = self.update_play_info(play)
+            updated_play = self.update_play_info(play_info)
         except KeyError:
             cf.log_and_raise(
                 None, MissingPlayKeyError, play_info=play_info)
@@ -669,9 +671,9 @@ class PenaltyUpdater(UpdatePBP):
         updated_dict["zone"] = ZONE_MAPPER[play["zone"].lower()]
         if "penalty_modifier" in play:
             if play["penalty_modifier"] is not None:
-                updated_dict["major"] = True
+                updated_dict["major_penalty"] = True
             else:
-                updated_dict["major"] = False
+                updated_dict["major_penalty"] = False
         else:
             updated_dict["major"] = False
         if "drawn_team" in play:
@@ -787,14 +789,14 @@ class  UpdateGameData():
             cf.log_and_raise(
                 None, 
                 UpdateGameDataError, 
-                game_id=game_data["id"],
+                match_id=game_data["id"],
                 team_home=game_data["HT"],
                 team_away=game_data["VT"],
                 date=game_data["date"]
                 )
 
         logger.info(f"Updating dict of game from date {updated_data['date']} "
-                    f"({updated_data['game_id']}) was succesfull")
+                    f"({updated_data['match_id']}) was succesfull")
         return updated_data
     
 
@@ -805,8 +807,11 @@ class  UpdateGameData():
         updated_data["VT"] = self.get_team_id(game_data["VT"])
         updated_data["TH"] = game_data["HT"]
         updated_data["TV"] = game_data["VT"]
-        updated_data["game_id"] = game_data["id"]  
-        updated_data["date"] = game_data["date"]
+        updated_data["attendance"] = int(game_data["attendance"])
+        updated_data["match_id"] = int(game_data["id"])  
+        updated_data["date"] = (
+            datetime.strptime(game_data["date"], '%Y-%m-%d').date()
+            )
         updated_data["stadium"] = game_data["stadium"]
         updated_data["start_time_UTC"] = game_data["start_time_UTC"]
 
@@ -863,6 +868,7 @@ class  UpdateGameData():
             team_id: int, team_abb: str) -> None:
         self.player_mapper[team_id] = {}
         for player_info in team_shifts:
+            print(player_info)
             self.match_player_to_db_id(
                 player_info, team_uid, team_id, team_abb)
         logger.debug(f"Matching players from NHL data to DB data for team"
@@ -908,8 +914,7 @@ class  UpdateGameData():
             if ((player_info[0] == nhl_name) 
             & (player_info[1] == mapper_dict["number"])):
                 self.player_mapper[team_id][player_info] = (
-                    mapper_dict["db_name"],
-                    mapper_dict["number"]
+                    mapper_dict["player_id"]
                 )
                 
                 return True
@@ -1095,11 +1100,13 @@ class DuplicatesMatchFinder(MatchFinder):
 
     def try_to_find_match(self, player_dict) -> bool:
         if self.player_info[0].lower() == player_dict["player_name"].lower():
-            self.player_id = input("Name of the player is duplicated for"
-                            " given team season combination. Set"
-                            " it manually: ")
+            self.player_id = input(
+                "Name of the player is duplicated for "
+                "given team season combination. Set "
+                "it manually: ")
             self.elite_nhl_mapper_detail[self.player_info[0]] = self.create_match_dict(
-                         player_dict["player_name"], self.player_info[1], player_dict)
+                         player_dict["player_name"], self.player_info[1], 
+                         self.player_id)
             
             return True
         
