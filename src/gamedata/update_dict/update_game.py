@@ -264,6 +264,7 @@ class UpdatePBP():
         updated_play["period"] = get_updated_period(play["period"])
         updated_play["play_type"] = play["play_type"]
         updated_play["time"] = self.get_updated_time(play["time"])
+        updated_play["poi"] = self.get_updated_poi(play["poi"])
         if "error" not in play:
             try:
                 updated_play["play_info"] = self.update_play_info_wrapper(
@@ -271,8 +272,6 @@ class UpdatePBP():
             except (MissingPlayKeyError):
                 cf.log_and_raise(
                     None, UpdatePlayError, play=play)
-            finally:
-                updated_play["poi"] = self.get_updated_poi(play["poi"])
         else:
             updated_play["play_desc"] = play["play_desc"]
             updated_play["error"] = play["error"]
