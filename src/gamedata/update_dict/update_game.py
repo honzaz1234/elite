@@ -268,10 +268,11 @@ class UpdatePBP():
             try:
                 updated_play["play_info"] = self.update_play_info_wrapper(
                 play["play_info"])
-                updated_play["poi"] = self.get_updated_poi(play["poi"])
-            except (KeyError):
+            except (MissingPlayKeyError):
                 cf.log_and_raise(
                     None, UpdatePlayError, play=play)
+            finally:
+                updated_play["poi"] = self.get_updated_poi(play["poi"])
         else:
             updated_play["play_desc"] = play["play_desc"]
             updated_play["error"] = play["error"]
