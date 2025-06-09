@@ -1,7 +1,9 @@
 import database_creator.database_creator as db
 import database_insert.db_insert as db_insert
 
+from common_functions import log_and_raise
 from constants import *
+from errors import InputPlayDBError
 from logger.logging_config import logger
 from sqlalchemy.orm import Session
 
@@ -14,11 +16,11 @@ class PBPDB():
         self.db_method = db_insert.DatabaseMethods(self.db_session)
 
 
-     def _input_broken_play_info(self, play_id: int, play_desc: str) -> int:
+     def _input_broken_play_info(self, play_id: int, play_desc: str) -> None:
           play_id = self.db_method._input_unique_data(db.BrokenPBP,
                                                        play_id=play_id,
                                                        play_desc=play_desc)
-
+          
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
           pass
@@ -86,7 +88,7 @@ class ChallengeDB(PBPDB):
                db.ChallengeReason, challenge_reason=play["reason"]
           )
           result_id = self.db_method._input_unique_data(
-               db.ChallengeResult, result=play["result"]
+               db.ChallengeResult, challenge_result=play["result"]
           )
           play_id = self.db_method._input_unique_data(
                table=db.ChallengePlay,
@@ -150,13 +152,10 @@ class GoalDB(PBPDB):
                db.ShotType,
                shot_type=play["shot_type"],
           )
-          if play["deflection_type"] is not None:
-               deflection_type_id = self.db_method._input_unique_data(
-                    db.DeflectionType,
-                    deflection=play["deflection_type"],
-               )
-          else:
-               deflection_type_id = None
+          deflection_type_id = self.db_method.get_compulsory_table_id(
+               db.DeflectionType, 
+               play["deflection_type"], 
+               deflection=play["deflection_type"])
           play_id = self.db_method._input_unique_data(
                db.GoalPlay,
                play_id=play_id,
@@ -170,6 +169,9 @@ class GoalDB(PBPDB):
                zone_id=zone_id
           )
 
+          if "assists" not in play:
+               return play_id
+          
           for assist in play["assists"]:
                self.db_method._input_unique_data(
                     db.AssistPlay,
@@ -206,16 +208,21 @@ class MissedShotDB(PBPDB):
 
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
-         shot_result_id = self.db_method._input_unique_data(
-              table=db.ShotResult, shot_result=play["shot_result"]
+         shot_result_id = self.db_method.get_compulsory_table_id(
+              db.ShotResult,
+              play["shot_result"],
+              shot_result=play["shot_result"]
          )
-         shot_type_id = self.db_method._input_unique_data(
-              table=db.ShotType, shot_type=play["shot_type"]
+         zone_id = self.db_method.get_compulsory_table_id(
+              db.Zone,
+              play["zone"],
+              zone=play["zone"]
          )
-         zone_id = self.db_method._input_unique_data(
-              table=db.Zone, zone=play["zone"]
+         shot_type_id = self.db_method.get_compulsory_table_id(
+              db.ShotType,
+              play["shot_type"],
+              shot_type=play["shot_type"]
          )
-         
          play_id = self.db_method._input_unique_data(
               table=db.MissedShotPlay,
                    play_id=play_id,
@@ -264,18 +271,18 @@ class PenaltyDB(PBPDB):
               table=db.Zone, zone=play["zone"]
          )    
           play_id = self.db_method._input_unique_data(
-              table=db.PenaltyPlay,
-                   play_id=play_id,
-                   offender_id=play["offender_id"],
-                   offender_team_id=play["offender_team_id"],
-                   served_by_id=play["served_player_id"],
-                   victim_id=play["victim_id"],
-                   victim_team_id=play["victim_team_id"],
-                   zone_id=zone_id,
-                   penalty_type_id=penalty_type_id,
-                   penalty_minutes=play["penalty_minutes"],
-                   major_penalty=play["major_penalty"]
-         )
+               table=db.PenaltyPlay,
+                    play_id=play_id,
+                    offender_id=play["offender_id"],
+                    offender_team_id=play["offender_team_id"],
+                    served_by_id=play["served_player_id"],
+                    victim_id=play["victim_id"],
+                    victim_team_id=play["victim_team_id"],
+                    zone_id=zone_id,
+                    penalty_type_id=penalty_type_id,
+                    penalty_minutes=play["penalty_minutes"],
+                    major_penalty=play["major_penalty"]
+                    )
           
 
 class ShotDB(PBPDB):
@@ -288,13 +295,11 @@ class ShotDB(PBPDB):
           shot_type_id = self.db_method._input_unique_data(
               table=db.ShotType, shot_type=play["shot_type"]
          )
-          if play["deflection_type"] is not None:
-               deflection_type_id = self.db_method._input_unique_data(
-                    table=db.DeflectionType, 
-                    deflection_type=play["deflection_type"]
-         )
-          else: 
-               deflection_type_id = None
+          deflection_type_id = self.db_method.get_compulsory_table_id(
+               db.DeflectionType,
+               play["deflection_type"],
+               deflection_type=play["deflection_type"]
+          )
           play_id = self.db_method._input_unique_data(
               table=db.ShotPlay,
                    play_id=play_id,
@@ -315,7 +320,7 @@ class ShotDB(PBPDB):
 class TakeAwayDB(PBPDB):
 
 
-     def _input_play_info(self, play: dict, play_id) -> int:
+     def _input_play_info(self, play: dict, play_id: int) -> int:
           zone_id = self.db_method._input_unique_data(
                db.Zone,
                zone=play["zone"],
@@ -334,7 +339,7 @@ class TakeAwayDB(PBPDB):
 class DelayedPenaltyDB(PBPDB):
 
 
-     def _input_play_info(self, play: dict, play_id) -> int:
+     def _input_play_info(self, play: dict, play_id: int) -> int:
           play_id = self.db_method._input_unique_data(
                db.DelayedPenaltyPlay,
                play_id=play_id,
@@ -347,7 +352,7 @@ class DelayedPenaltyDB(PBPDB):
 class GameStopageDB(PBPDB):
 
 
-     def _input_play_info(self, play: dict, play_id) -> int:
+     def _input_play_info(self, play: dict, play_id: int) -> int:
           stopage_type_id = self.db_method._input_unique_data(
                db.GameStopageType,
                stopage_type=play["stopage_type"]
@@ -368,6 +373,7 @@ class GameDataDB():
     INPUT_CLASSES = {
      "BLOCK": BlockedShotDB,
      "CHL": ChallengeDB,
+     "DELPEN": DelayedPenaltyDB,
      "FAC": FaceOffDB,
      "GIVE": GiveAwayDB,
      "GOAL": GoalDB,
@@ -379,7 +385,7 @@ class GameDataDB():
      "SOC": PeriodDB,
      "SHOT": ShotDB,
      "STOP": GameStopageDB,
-     "TAKE": TakeAwayDB
+     "TAKE": TakeAwayDB,
      }  
 
 
@@ -405,6 +411,14 @@ class GameDataDB():
             return mapper_id
     
 
+    def _input_stadium_mapper(self, nhl_name: str, elite_name: str) -> int:
+         self.db_method._input_unique_data(
+              table=db.StadiumMapper,
+              nhl_name=nhl_name,
+              elite_name=elite_name
+         )
+         
+    
     def _input_general_info(self, dict_: dict) -> int:
          match_id = self.db_method._input_unique_data(
               table=db.Match,
@@ -426,10 +440,10 @@ class GameDataDB():
     
     
     def _get_stadium_name(self, stadium_id) -> str|None:
-         stadium_name = self.query._get_value_from_table(
+         row_data = self.query._get_value_from_table(
             [db.Stadium.stadium], id=stadium_id)
          
-         return stadium_name
+         return row_data.stadium
     
 
     def _input_shift(
@@ -449,7 +463,7 @@ class GameDataDB():
          return shift_id
     
 
-    def _input_play(self, play: dict, match_id: int) -> None:
+    def _input_play(self, play: dict, match_id: int) -> int:
 
           play_type_id = self.db_method._input_unique_data(
               table=db.PlayType, play_type=play["play_type"]
@@ -464,10 +478,19 @@ class GameDataDB():
           )
           input_po = self._play_factory(play["play_type"])
           if "error" in play:
-               input_po._input_broken_play_info(play_id, play["play_desc"])
-               return
-          input_po._input_play_info(play["play_info"], play_id)
-
+               input_po._input_broken_play_info(
+                    play_id, play["play_desc"])
+               
+               return play_id
+          try:
+               input_po._input_play_info(play["play_info"], play_id)
+          except Exception as e:
+               log_and_raise(
+                    None, InputPlayDBError, original_message=e, 
+                    play_type=play["play_type"],
+                    play=play)
+               
+          return play_id
 
 
     def _play_factory(self, play_type: str):

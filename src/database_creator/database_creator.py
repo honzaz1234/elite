@@ -760,7 +760,7 @@ class AssistPlay(Base):
 
     id = Column(Integer, primary_key=True)
     goal_id = Column(Integer, ForeignKey('goal_plays.id'), nullable=False)
-    player_id = Column(Integer, primary_key=True, nullable=False)
+    player_id = Column(Integer, nullable=False)
     is_primary = Column(Boolean, nullable=False)
 
     def __init__(self, goal_id, player_id, is_primary):
@@ -771,7 +771,7 @@ class AssistPlay(Base):
 
     def __repr__(self):
         return (f"({self.id}, {self.goal_id}, {self.player_id}, "
-               f"{self.is_primary}")
+               f"{self.is_primary})")
     
 
 class DeflectionType(Base):
@@ -929,11 +929,10 @@ class MissedShotPlay(Base):
     play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
-    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+    zone_id = Column(Integer, ForeignKey('zones.id'))
     shot_type_id = Column(Integer, ForeignKey('shot_types.id'), nullable=False)
     shot_result_id = Column(Integer, 
-                            ForeignKey('shot_results.id'), 
-                            nullable=False)
+                            ForeignKey('shot_results.id'))
     distance = Column(Integer)
     broken_stick = Column(Boolean, nullable=False)
     over_board = Column(Boolean, nullable=False)
@@ -1014,11 +1013,11 @@ class PenaltyPlay(Base):
 
     id = Column(Integer, primary_key=True)
     major_penalty = Column(Boolean, nullable=False)
-    offender_id = Column(Integer, ForeignKey('players.id'), nullable=False)
+    offender_id = Column(Integer, ForeignKey('players.id'))
     offender_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     served_by_id = Column(Integer, ForeignKey('players.id'))
-    victim_id = Column(Integer, ForeignKey('players.id'), nullable=False)
-    victim_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
+    victim_id = Column(Integer, ForeignKey('players.id'))
+    victim_team_id = Column(Integer, ForeignKey('teams.id'))
     zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
     penalty_type_id = Column(Integer, 
                              ForeignKey('penalty_types.id'), 
@@ -1082,7 +1081,7 @@ class ChallengePlay(Base):
 
     id = Column(Integer, primary_key=True)
     play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
-    team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
+    team_id = Column(Integer, ForeignKey('teams.id'))
     reason_id = Column(Integer, 
                         ForeignKey('challenge_reasons.id'),  
                         nullable=False)
@@ -1092,17 +1091,17 @@ class ChallengePlay(Base):
     league_challenge = Column(Boolean)
 
     def __init__(
-            self, play_id, team_id, challenge_reason_id, challenge_result_id,
+            self, play_id, team_id, reason_id, result_id,
             league_challenge):
         self.play_id = play_id
         self.team_id = team_id
-        self.challenge_reason_id = challenge_reason_id
-        self.challenge_result_id = challenge_result_id
+        self.reason_id = reason_id
+        self.result_id = result_id
         self.league_challenge=league_challenge
 
     def __repr__(self):
-        return (f"({self.id}, {self.play_id}, {self.challenge_reason_id}," 
-                f"{self.challenge_result_id}, {self.league_challenge})")
+        return (f"({self.id}, {self.play_id}, {self.reason_id}," 
+                f"{self.result_id}, {self.league_challenge})")
     
 
 class DelayedPenaltyPlay(Base):
@@ -1336,17 +1335,17 @@ class StadiumMapper(Base):
     __tablename__ = "stadium_mappers"
 
     id = Column(Integer, primary_key=True)
-    stadium_nhl = Column(String, nullable=False)
-    stadium_elite = Column(String, nullable=False)
+    nhl_name = Column(String, nullable=False)
+    elite_name = Column(String, nullable=False)
 
 
-    def __init__(self, stadium_nhl, stadium_elite):
-        self.stadium_nhl = stadium_nhl
-        self.stadium_elite = stadium_elite
+    def __init__(self, nhl_name, elite_name):
+        self.nhl_name = nhl_name
+        self.elite_name = elite_name
 
     def __repr__(self):
         return (
-            f"({self.id}, {self.stadium_nhl}, {self.stadium_elite})"
+            f"({self.id}, {self.nhl_name}, {self.elite_name})"
             )
     
     

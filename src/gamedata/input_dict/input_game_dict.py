@@ -21,6 +21,12 @@ class InputEliteNHLmapper():
 
 
     @time_execution
+    def input_all_mappers(
+            self, elite_nhl_mapper: dict, stadium_mapper: dict) -> None:
+        self.input_elite_nhl_mapper_dict(elite_nhl_mapper)
+        self.input_stadium_mapper(stadium_mapper)
+
+
     def input_elite_nhl_mapper_dict(self, elite_nhl_mapper: dict) -> None:
         """wrapper method for inputting  all scraped data from dict to DB"""
         db_nhl_elite_mapper = self.mappers_o.get_elite_nhl_mapper()
@@ -55,18 +61,33 @@ class InputEliteNHLmapper():
         self.input_o._input_nhl_elite_player_mapper(input_dict)
 
 
+    def input_stadium_mapper(self, stadium_mapper):
+        db_stadium_mapper = self.mappers_o.get_nhl_elite_stadium_mapper()
+        stadium_mapper = dict_diff_unique(
+            stadium_mapper, db_stadium_mapper)
+        for stadium in stadium_mapper:
+            self._input_mapped_stadium_into_db(
+                stadium, stadium_mapper[stadium])
+        logger.info(f"Stadium mapper succesfully inputted into db")
+
+
+    def _input_mapped_stadium_into_db(
+            self, nhl_name: str, elite_name: str) -> None:
+        self.input_o._input_stadium_mapper(nhl_name, elite_name)
+
+
 class InputGameInfo():
 
 
-    def __init__(self,  db_session: Session, player_mapper: dict):
+    def __init__(
+            self,  db_session: Session, player_mapper: dict, 
+            stadium_mapper: dict):
         self.db_session = db_session
-        self.player_mapper = player_mapper
         self.input_o = insert_db.GameDataDB(
             self.db_session)
         self.mappers_o = db_mapper.GetDBID(self.db_session)
-        self.stadium_mapper = self.mappers_o.get_nhl_elite_stadium_mapper()
         self.input_gi = InputGeneralInfo(
-            self.db_session, self.input_o, self.stadium_mapper)
+            self.db_session, self.input_o, stadium_mapper)
         self.input_shifts = InputShifts(
             self.db_session, player_mapper)
         self.input_PBP = InputPBP(
@@ -112,8 +133,10 @@ class InputGeneralInfo():
         stadium_id = self.input_o._get_stadium_id(stadium)
         if stadium_id is None:
             stadium_id = input(f"Stadium under name {stadium} does not exist "
-                               "in the DB. Input stadium ID manually")
+                               "in the DB. Input stadium ID manually: ")
             stadium_elite = self.input_o._get_stadium_name(stadium_id)
+            if stadium_elite is None:
+                raise 
             self.stadium_mapper[stadium] = stadium_elite
             logger.info(f"Stadium {stadium} was added to the stadium mapper"
                         f" with value {stadium_elite}")
@@ -190,19 +213,20 @@ class InputPBP():
             try:
                 self._input_poi(play_id, play["poi"])
             except Exception as e:
+                print(e)
                 print(play)
                 raise e
 
 
     def _input_poi(self, play_id: int, shifts: dict) -> None:
-        if "error" in shifts:
-            for team_id in shifts["error"]:
-                poi = shifts["error"]["poi"]
-                error_type = shifts["error"]["error_type"]
+        if "poi" in shifts.get("error", {}):
+            for team_id, error_data in shifts["error"].items():
+                poi = error_data.get("poi")
+                error_type = error_data.get("error_type")
                 self.input_pbp._input_broken_poi(
                     play_id, team_id, poi, error_type)
-        for team_id in shifts:
-            self._input_team_poi(play_id, shifts[team_id], team_id)
+            for team_id in shifts:
+                self._input_team_poi(play_id, shifts[team_id], team_id)
 
 
     def _input_team_poi(

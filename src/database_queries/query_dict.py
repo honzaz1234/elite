@@ -133,8 +133,8 @@ QUERIES_INFO = {
     "nhl_elite_stadium_mapper": {
         "base_table": db.StadiumMapper,
         "selected_cols": [
-            db.StadiumMapper.stadium_nhl,
-            db.StadiumMapper.stadium_elite,
+            db.StadiumMapper.nhl_name,
+            db.StadiumMapper.elite_name,
         ]
     }
 }

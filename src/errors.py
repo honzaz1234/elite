@@ -83,6 +83,17 @@ class GameDataError(Exception):
         }
         super().__init__(message)
 
+class InputPlayDBError(Exception):
+
+
+    def __init__(self, original_message: str, play_type: str, play: dict):
+        message = {
+            f"{original_message} ({play_type}) ({play})"
+        }
+        super().__init__(message)
+
+
+
 
 
 

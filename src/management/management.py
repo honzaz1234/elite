@@ -557,34 +557,36 @@ class ManageGame():
         elite_nhl_mapper_detail = self.mapper_o.get_elite_nhl_mapper(
             [season])
         elite_nhl_mapper = self.mapper_o.get_elite_nhl_names()
+        stadium_mapper = self.mapper_o.get_nhl_elite_stadium_mapper()
         try:
             for game in season_dict["report_data"]:
                 if game['id'] in self.games_done[season]:
                     continue
                 report_id = self.scrape_and_input_game_into_db(
                     game, season_dict["season_long"], team_players[season], 
-                    elite_nhl_mapper_detail[season], elite_nhl_mapper)
+                    elite_nhl_mapper_detail[season], elite_nhl_mapper, stadium_mapper)
                 self.games_done[season].append(report_id)
-            self.input_mapper_o.input_elite_nhl_mapper_dict(
-                elite_nhl_mapper_detail)
+            self.input_mapper_o.input_all_mappers(
+                elite_nhl_mapper_detail, stadium_mapper)
             self.session.close()
         except Exception as e:
-            self.input_mapper_o.input_elite_nhl_mapper_dict(
-                elite_nhl_mapper_detail)
+            self.input_mapper_o.input_all_mappers(
+                elite_nhl_mapper_detail, stadium_mapper)
             self.session.close()
             raise e
-            
         
+            
     @time_execution
     def scrape_and_input_game_into_db(
         self, game_dict: dict, season_long: str, team_players: dict, 
-        elite_nhl_mapper_detail: dict, elite_nhl_mapper: dict) -> int:
+        elite_nhl_mapper_detail: dict, elite_nhl_mapper: dict, 
+        stadium_mapper: dict) -> int:
         try:
             report_dict = self.scrape_game_data(
                 game_dict, season_long)
             updated_dict, player_mapper = self.update_game_data(
                 report_dict, team_players, elite_nhl_mapper_detail, elite_nhl_mapper)
-            self.input_game_data(updated_dict, player_mapper)
+            self.input_game_data(updated_dict, player_mapper, stadium_mapper)
         except:
             cf.log_and_raise(
                 None, GameDataError, game_id=game_dict["id"], season=season_long
@@ -613,8 +615,11 @@ class ManageGame():
         return updated_game_data, ugo.player_mapper
     
 
-    def input_game_data(self, updated_data: dict, player_mapper: dict) -> None:
-        input_o = input_game.InputGameInfo(self.session, player_mapper)
+    def input_game_data(
+            self, updated_data: dict, player_mapper: dict, 
+            stadium_mapper: dict) -> None:
+        input_o = input_game.InputGameInfo(
+            self.session, player_mapper, stadium_mapper)
         input_o.input_game_dict(updated_data)
 
 

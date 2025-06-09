@@ -17,6 +17,16 @@ class DatabaseMethods():
         pass
 
 
+    def get_compulsory_table_id(self, table, value, **kwargs) -> int:
+        if value is not None:
+            table_id =  self._input_unique_data(
+                table=table, **kwargs)
+        else:
+            table_id = None
+
+        return table_id
+
+
     @sql_executor
     def _input_data(self, table, **kwargs) -> int:
         """method for adding a row to a table
@@ -102,8 +112,8 @@ class DatabaseMethods():
             logger.debug(f"UID {uid_val} already found in table"
                          f" {table.__tablename__}, at index {id}")
         return id
-
-        
+    
+    
 class Query():
     """class containing basic operations for the database"""
 

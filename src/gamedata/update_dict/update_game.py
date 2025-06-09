@@ -338,6 +338,7 @@ class UpdatePBP():
             try:
                 player_id = self.get_player_id(
                     team_id, int(player_number), team_abb)
+                updated_team_poi.append(player_id)
             except KeyError as e:
                 cf.log_and_raise(
                     None, 
@@ -665,6 +666,8 @@ class PenaltyUpdater(UpdatePBP):
                 int(play["player_number"]),
                 play["team"]
             )
+        else:
+             updated_dict["offender_id"] = None
         updated_dict["offender_team_id"] = team_id
         updated_dict["penalty_type"] = PENALTY_MAPPER[play["penalty_type"].lower().strip()]
         updated_dict["penalty_minutes"] = int(play["penalty_minutes"])
@@ -675,7 +678,7 @@ class PenaltyUpdater(UpdatePBP):
             else:
                 updated_dict["major_penalty"] = False
         else:
-            updated_dict["major"] = False
+            updated_dict["major_penalty"] = False
         if "drawn_team" in play:
             drawn_team_id = self.team_abb_to_db_id[play["drawn_team"]]
             updated_dict["victim_id"] = self.get_player_id(
@@ -686,6 +689,7 @@ class PenaltyUpdater(UpdatePBP):
             updated_dict["victim_team_id"] = drawn_team_id
         else:
             updated_dict["victim_team_id"] = None
+            updated_dict["victim_id"] = None
         if "served_player_name" in play:
             updated_dict["served_player_id"] = self.get_player_id(
                 team_id,
@@ -868,7 +872,6 @@ class  UpdateGameData():
             team_id: int, team_abb: str) -> None:
         self.player_mapper[team_id] = {}
         for player_info in team_shifts:
-            print(player_info)
             self.match_player_to_db_id(
                 player_info, team_uid, team_id, team_abb)
         logger.debug(f"Matching players from NHL data to DB data for team"
