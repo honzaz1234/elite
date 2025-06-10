@@ -491,7 +491,7 @@ class GoalUpdater(UpdatePBP):
                 play["goal"]["penalty_shot"] is not None
             )
         else:
-            play["goal"]["penalty_shot"] = None
+            updated_dict["penalty_shot"] = False
         updated_dict["own_goal"] = "own_goal" in play["goal"]
         if "assists" in play:
             updated_dict["assists"] = self.get_updated_assits(
