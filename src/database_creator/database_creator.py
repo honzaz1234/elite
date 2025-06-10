@@ -1184,7 +1184,7 @@ class PlayerShift(Base):
     __tablename__ = "player_shifts"
 
     id = Column(Integer, primary_key=True)
-    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
+    match_id = Column(Integer, ForeignKey('matches.id'), nullable=False)
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     period = Column(Integer, nullable=False)
@@ -1192,8 +1192,9 @@ class PlayerShift(Base):
     shift_end = Column(Integer, nullable=False)
 
     def __init__(
-            self, play_id, player_id, team_id, period, shift_start, shift_end):
-        self.play_id = play_id
+            self, match_id, player_id, team_id, period, shift_start, 
+            shift_end):
+        self.match_id = match_id
         self.player_id = player_id
         self.team_id = team_id
         self.period = period
@@ -1202,7 +1203,7 @@ class PlayerShift(Base):
 
     def __repr__(self):
         return (
-            f"({self.id}, {self.play_id}, {self.player_id}, "
+            f"({self.id}, {self.match_id}, {self.player_id}, "
             f"{self.team_id}, {self.period}, {self.shift_start}, "
             f"{self.shift_end})"
             )
