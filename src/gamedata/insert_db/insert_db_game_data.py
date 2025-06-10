@@ -3,6 +3,7 @@ import database_insert.db_insert as db_insert
 
 from common_functions import log_and_raise
 from constants import *
+from decorators import time_execution
 from errors import InputPlayDBError
 from logger.logging_config import logger
 from sqlalchemy.orm import Session
@@ -148,8 +149,9 @@ class GoalDB(PBPDB):
                db.Zone,
                zone=play["zone"],
           )
-          shot_type_id = self.db_method._input_unique_data(
+          shot_type_id = self.db_method.get_compulsory_table_id(
                db.ShotType,
+               play["shot_type"],
                shot_type=play["shot_type"],
           )
           deflection_type_id = self.db_method.get_compulsory_table_id(
