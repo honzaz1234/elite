@@ -34,7 +34,7 @@ class InputEliteNHLmapper():
             elite_nhl_mapper, db_nhl_elite_mapper)
         for season in elite_nhl_mapper:
             self._input_nhl_elite_season_dict(elite_nhl_mapper[season], season)
-        logger.info(f"Elite NHL mapper succesfully inputted into db")
+        logger.info("Elite NHL mapper succesfully inputted into db")
 
 
     def _input_nhl_elite_season_dict(
@@ -68,7 +68,7 @@ class InputEliteNHLmapper():
         for stadium in stadium_mapper:
             self._input_mapped_stadium_into_db(
                 stadium, stadium_mapper[stadium])
-        logger.info(f"Stadium mapper succesfully inputted into db")
+        logger.info("Stadium mapper succesfully inputted into db")
 
 
     def _input_mapped_stadium_into_db(
@@ -93,7 +93,7 @@ class InputGameInfo():
         self.input_PBP = InputPBP(
             self.db_session, player_mapper)
 
-
+    @time_execution
     def input_game_dict(self, game: dict) -> None:
 
         match_id = self.input_gi._input_general_info(game)
@@ -119,6 +119,7 @@ class InputGeneralInfo():
         self.stadium_mapper = stadium_mapper
 
 
+    @time_execution
     def _input_general_info(self, game):
         stadium_id = self._get_stadium_id(game["stadium"])
         input_dict = self._get_general_info_input_dict(game, stadium_id)
@@ -138,8 +139,9 @@ class InputGeneralInfo():
             if stadium_elite is None:
                 raise 
             self.stadium_mapper[stadium] = stadium_elite
-            logger.info(f"Stadium {stadium} was added to the stadium mapper"
-                        f" with value {stadium_elite}")
+            logger.info(
+                "Stadium %s was added to the stadium mapper with value %s", stadium, stadium_elite
+                )
 
         return stadium_id
 
@@ -166,6 +168,7 @@ class InputShifts():
         self.input_o = insert_db.GameDataDB(db_session)
 
     
+    @time_execution
     def _input_shifts(
             self, shifts: dict, HT_id: int, VT_id: int, match_id :int) -> None:
         ids = {"TH": HT_id, "TV": VT_id}
@@ -207,6 +210,7 @@ class InputPBP():
         self.input_o = insert_db.GameDataDB(db_session)
 
 
+    @time_execution
     def _input_PBP(self, plays: list, match_id) -> None:
         for play in plays:
             play_id = self.input_o._input_play(play, match_id)
@@ -226,6 +230,8 @@ class InputPBP():
                 self.input_pbp._input_broken_poi(
                     play_id, team_id, poi, error_type)
             for team_id in shifts:
+                if team_id == "error":
+                    continue
                 self._input_team_poi(play_id, shifts[team_id], team_id)
 
 

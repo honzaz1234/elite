@@ -20,16 +20,16 @@ def repeat_request_until_success(func):
                 result = func(*args, **kwargs)
                 return result
             except AssertionError as e:
-                logger.info(f"Attempt {attempt} executing function "
-                            f"{func.__name__} failed: {e}")
+                logger.info("Attempt %s executing function  %s "
+                            "failed: %s", attempt, {func.__name__}, e)
                 time.sleep(10)
             except (ConnectionError, requests.Timeout, ssl.SSLError, OSError):
-                logger.info(f"Attempt {attempt} executing function "
-                            f"{func.__name__} failed: {e}")
+                logger.info("Attempt %s executing function %s "
+                            "failed: %s", attempt, {func.__name__}, e)
                 time.sleep(120)
             except(sp.TimeoutError):
                 time.sleep(60)
-        logger.info(f'Max attempt ({attempt}) was reached')
+        logger.info('Max attempt (%s) was reached', attempt)
         raise
 
     return wrapper 
@@ -41,8 +41,8 @@ def time_execution(func):
         result = func(*args, **kwargs)  
         end_time = time.time() 
         execution_time = end_time - start_time  
-        logger.info(f"Execution time of {func.__name__}: " 
-                    f"{execution_time:.6f} seconds")
+        logger.info("Execution time of %s: %.6f seconds", 
+                    func.__name__, execution_time)
         return result
       
     return wrapper
@@ -57,8 +57,8 @@ def sql_executor(func):
         except SQLAlchemyError as e:
             print(f"args: {args}")
             print(f"kwargs: {kwargs}")
-            logger.error(f"Error in executing SQL code. Initiallizing DB "
-                         f"rollback")
+            logger.error("Error in executing SQL code. Initiallizing DB "
+                         "rollback")
             self.db_session.rollback()
             logger.info("Rollback initialized. DB session closed")
             raise e

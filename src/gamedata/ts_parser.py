@@ -21,8 +21,10 @@ class TSParser():
 
 
     def parse_htm_file(self) -> list:
-        logger.info("Scraping of player shift data from report" 
-                    f"{self.report_id} started")
+        logger.info(
+            "Scraping of player shift data from report %s started", 
+            self.report_id
+            )
         parsed_players = []
         sel_rows = self.sel.xpath(self.XPATHS["table_row"])
         player_index_ranges = self.get_list_with_player_index_ranges(
@@ -38,8 +40,10 @@ class TSParser():
         if not parsed_players:
             error_message = f"No data was scraped for match: {self.report_id}"
             cf.log_and_raise(error_message, ValueError)
-        logger.info("Scraping of player shift data from report" 
-                    f"{self.report_id} finished")
+        logger.info(
+            "Scraping of player shift data from report %s finished", 
+            self.report_id
+            )
 
         return parsed_players
     
@@ -64,14 +68,16 @@ class TSParser():
     def get_player_dict(
             self, sel_rows: list, index_range: tuple, 
             player_idx: int) -> dict:
-        logger.debug(f"Scraping of shift data for "
-                     f"player n.: {player_idx} started")
+        logger.debug(
+            "Scraping of shift data for player n.: %s started", player_idx
+            )
         player_name = self.get_player_name(sel_rows[index_range[0]])
         shift_selectors = sel_rows[index_range[0] + 2: index_range[1]]
         player_dict = {}
         player_dict[player_name] = self.get_player_shifts(shift_selectors)
-        logger.debug(f"Scraping of shift data for "
-                     f"player n.: {player_idx} finished")
+        logger.debug(
+            "Scraping of shift data for player n.: %s finished", player_idx
+            )
 
         return player_dict
 
@@ -104,6 +110,6 @@ class TSParser():
             sel=shift_sel, xpath="./td[3]/text()", optional=False)
         shift_dict["shift_end"]  = cf.get_single_xpath_value(
             sel=shift_sel, xpath="./td[4]/text()", optional=False)
-        logger.debug(f"Shift n. {shift_idx}: {shift_dict}")
+        logger.debug("Shift n. %s: %s", shift_idx, shift_dict)
 
         return shift_dict

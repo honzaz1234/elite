@@ -55,16 +55,14 @@ class ReportIDGetter():
             scraped_data = {}
             scraped_data["season_long"] = convert_season_format(season)
             scraped_data["report_data"] = []
-        logger.info(f"Scraping of Report IDs for season: "
-                    f"{season} started")
+        logger.info("Scraping of Report IDs for season: %s started", season)
         season_dates = generate_dates_between(
             start_date=season_ranges_dict["start_date"],
             end_date=season_ranges_dict["end_date"])
         scraped_data["report_data"] = self.get_report_ids(
             season_dates=season_dates,
             report_data_all=scraped_data["report_data"])
-        logger.info(f"Scraping of Report IDs for season: "
-                    f"{season} finished")
+        logger.info("Scraping of Report IDs for season: %s finished", season)
 
         return scraped_data
     
@@ -78,18 +76,22 @@ class ReportIDGetter():
         for date in dates_to_scrape:
             report_data = self.get_daily_report_ids(date=date)
             report_data_all = report_data_all + report_data
-            logger.debug(f"Report data for date {date}: {report_data}")
+            logger.debug("Report data for date %s: %s", date, report_data)
 
         return report_data_all
 
 
     @repeat_request_until_success
     def get_daily_report_ids(self, date: str) -> list:
-        logger.debug(f"Scraping of daily report IDs for date {date} started..")
+        logger.debug(
+            "Scraping of daily report IDs for date %s started..", date
+            )
         request_url = f"https://api-web.nhle.com/v1/score/{date}"
         data = get_valid_request(request_url, 'json')
         report_data = self.parse_response(data=data, date=date)
-        logger.debug(f"Scraping of daily report IDs for date {date} finished.")
+        logger.debug(
+            "Scraping of daily report IDs for date %s finished.", date
+            )
 
         return report_data
 
@@ -113,7 +115,7 @@ class ReportIDGetter():
         match_dict["start_time_UTC"] = match_data["startTimeUTC"]
         match_dict["HT"] = match_data["homeTeam"]["abbrev"]
         match_dict["VT"] = match_data["awayTeam"]["abbrev"]
-        logger.debug(f"{match_dict}")
+        logger.debug("%s", match_dict)
 
         return match_dict
     
@@ -133,20 +135,31 @@ class GetReportData():
 
     @time_execution
     def get_all_report_data(self) -> dict:
-        logger.info(f"Scraping of data for a game {self.report_id} from date"
-                    f" {self.game_dict['date']} and season {self.season}"    f" started...")
+        logger.info(
+            "Scraping of data for a game %s from date %s and season %s" "started...",
+            self.report_id,
+            self.game_dict['date'],
+            self.season
+        )
         self.game_dict["PBP"], self.game_dict["attendance"] = self.get_PBP_data()
         self.game_dict["HTS"] = self.get_TS_data(self.HTS_id, "HTS")
         self.game_dict["VTS"] = self.get_TS_data(self.VTS_id, "VTS")
-        logger.info(f"Scraping of data for a game {self.report_id} from date"
-                    f" {self.game_dict['date']} and season {self.season}"    f" finished.")
+        logger.info(
+            "Scraping of data for a game %s from date %s and season %s finished.",
+            self.report_id,
+            self.game_dict['date'],
+            self.season
+            )
 
         return self.game_dict
     
 
     def get_PBP_data(self) -> list:
-        logger.debug(f"Scraping of PBP data for report {self.report_id} from"
-                     f"season {self.season} started...")
+        logger.debug(
+            "Scraping of PBP data for report %s from season %s started...",
+            self.report_id,
+            self.season
+            )
         request_url = (
             f"https://www.nhl.com/scores/htmlreports"
             f"/{self.season}/{self.PBP_id}.HTM"
@@ -156,16 +169,22 @@ class GetReportData():
                                     report_id=self.report_id)
         plays = pbp_o.parse_htm_file()
         attendance = pbp_o.get_attendance()
-        logger.debug(f"Scraping of PBP data for report {self.report_id}"
-                        f" from season {self.season} finished.")
+        logger.debug(
+            "Scraping of PBP data for report %s from season %s finished.",
+            self.report_id,
+            self.season
+            )
         
         return plays, attendance
         
     
     def get_TS_data(self, report_id: str, type_: str) -> list:
 
-        logger.debug(f"Scraping of HTS data for report {self.report_id} from"
-                        f"season {self.season} started...")
+        logger.debug(
+            "Scraping of HTS data for report %s from season %s started...",
+            self.report_id,
+            self.season
+            )
         request_url = (
             f"https://www.nhl.com/scores/htmlreports"
             f"/{self.season}/{report_id}.HTM"
@@ -176,9 +195,13 @@ class GetReportData():
                                     report_id=self.report_id)
             plays = ts_o.parse_htm_file()
         except Exception as e:
-            logger.error(f"Scraping of {type_} data for report "
-                         f"{self.report_id} season {self.season} failed: {e}") 
-        logger.debug(f"Scraping of {type_} data for report "
-                     f"{self.report_id} from season {self.season} finished.")
+            logger.error(
+                "Scraping of %s data for report %s season %s failed: %s",
+                type_, self.report_id, self.season, e
+                )
+        logger.debug(
+            "Scraping of %s data for report %s from season %s finished.",
+            type_, self.report_id, self.season
+            )
         
         return plays

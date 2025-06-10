@@ -42,6 +42,7 @@ def get_valid_request(url: str, return_type: str, params: dict=None,
     if return_type=="json":
 
         return response.json()
+    
     elif return_type=="content":
 
         return response.content
@@ -53,7 +54,7 @@ def get_single_xpath_value(
     return_val = sel.xpath(xpath).get()
     if return_val is None:
         if optional:
-            logger.debug(f"Value for xpath: {xpath} is {None}")
+            logger.debug("Value for xpath: %s is %s", xpath, None)
         else:
             error_message = (
                 f"Error: play_type is None – XPath ({xpath}) extraction"
@@ -71,7 +72,7 @@ def get_list_xpath_values(
     return_vals = sel.xpath(xpath).getall()
     if return_vals == []:
         if optional:
-            logger.debug(f"Value for Xpath: {xpath} is []")
+            logger.debug("Value for Xpath: %s is []", xpath)
         else:
             error_message =  (
                 f"Extracted value from XPath ({xpath}) is []"
@@ -107,7 +108,7 @@ def log_and_raise(
             logger.error(error_message)
             raise exception_class(error_message)
         except Exception as e:
-            logger.error(f"Couldn't raise exception: {e}")
+            logger.error("Couldn't raise exception: %s", e)
             raise
 
 

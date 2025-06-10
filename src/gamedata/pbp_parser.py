@@ -24,8 +24,10 @@ class PBPParser():
 
 
     def parse_htm_file(self) -> list:
-        logger.info("Scraping of game PBP data from report" 
-                    f"{self.report_id} started")
+        logger.info(
+            "Scraping of game PBP data from report %s started", 
+            self.report_id
+            )
         parsed_data = []
         sel_tables = self.sel.xpath(PBPParser.XPATHS["table"])
         table_idx = 0
@@ -41,8 +43,10 @@ class PBPParser():
             )
             cf.log_and_raise(error_message, ValueError)
 
-        logger.info("Scraping of game PBP data from report" 
-                    f"{self.report_id} finished")
+        logger.info(
+            "Scraping of game PBP data from report %s finished", 
+            self.report_id
+            )
 
         return parsed_data
     
@@ -71,8 +75,9 @@ class PBPTableParser():
     def parse_table(self, table_idx: int) -> list:
         parsed_data = []
         row_sel = self.sel.xpath(PBPTableParser.XPATHS["play_row"])
-        logger.debug("Scraping of game PBP data from table: " 
-                    f"{table_idx} started")
+        logger.debug(
+            "Scraping of game PBP data from table: %s started", table_idx
+            )
         row_idx = 0
         for play_row_sel in row_sel:
             row_idx += 1
@@ -80,19 +85,23 @@ class PBPTableParser():
                                       row_idx=row_idx,
                                       table_idx=table_idx)
             parsed_data.append(row_dict)
-        logger.debug("Scraping of game PBP data from table: " 
-                    f"{table_idx} finished")
+        logger.debug(
+            "Scraping of game PBP data from table: %s finished", table_idx
+            )
+
         return parsed_data
     
 
     def parse_row(
             self, row_sel: scrapy.Selector, row_idx: int, table_idx: int) -> dict:
-        logger.debug(f"Scraping of game PBP data from row: {row_idx} table: " 
-                    f"{table_idx} started")
+        logger.debug(
+            "Scraping of game PBP data from row: %s table: %s started", row_idx, table_idx
+            )
         row_parser = PBPRowParser(row_sel=row_sel)
         row_dict = row_parser.parse_row()
-        logger.debug(f"Scraping of game PBP data from row: {row_idx} table: " 
-                    f"{table_idx} finished")
+        logger.debug(
+            "Scraping of game PBP data from row: %s table: %s finished", row_idx, table_idx
+            )
 
         return row_dict
 
@@ -143,8 +152,10 @@ class PBPDescriptionParser():
         try:
             play_dict = match.groupdict()
         except AttributeError:
-            logger.info(f"Broken Play Desc String {self.play_desc}"
-                        f" of type {self.play_type}")
+            logger.info(
+                "Broken Play Desc String %s of type %s", 
+                self.play_desc, self.play_type
+                )
             cf.log_and_raise(
                 None, WrongPlayDesc, play_desc=self.play_desc,
                 play_type=self.play_type)
@@ -543,7 +554,7 @@ class PBPRowParser():
             try:
                 row_dict['play_info'] = self.get_play_description(
                     play_type=row_dict['play_type'])
-                logger.debug(f"Parsed row: {row_dict}")
+                logger.debug("Parsed row: %s", row_dict)
             except WrongPlayDesc as e:
                 row_dict["play_type"] = e.play_type
                 row_dict["play_desc"] = e.play_desc

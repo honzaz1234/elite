@@ -203,7 +203,7 @@ class UpdateShifts():
             match = re.search(self.SHIFT_PATTERN, shift_string)
             shift = match.group("shift")
             shift_seconds = cf.convert_to_seconds(shift)
-            logger.debug(f"Pattern '{shift_string}' found")
+            logger.debug("Pattern '%s' found", shift_string)
 
             return shift_seconds
         except re.error as e:
@@ -288,7 +288,7 @@ class UpdatePBP():
                     )
                 cf.log_and_raise(error_message, TypeError)
             shift_seconds = cf.convert_to_seconds(time)
-            logger.debug(f"Pattern '{time}' found")
+            logger.debug("Pattern '%s' found", time)
 
             return shift_seconds
         except TypeError as e:
@@ -798,9 +798,12 @@ class  UpdateGameData():
                 team_away=game_data["VT"],
                 date=game_data["date"]
                 )
+        logger.info(
+            "Updating dict of game from date %s (%s) was successful",
+            updated_data['date'],
+            updated_data['match_id']
+        )
 
-        logger.info(f"Updating dict of game from date {updated_data['date']} "
-                    f"({updated_data['match_id']}) was succesfull")
         return updated_data
     
 
@@ -850,9 +853,11 @@ class  UpdateGameData():
         us_o = UpdateShifts()
         shift_dict["TH"] = us_o.update_players_shifts(game_data["HTS"])
         shift_dict["TV"] = us_o.update_players_shifts(game_data["VTS"])
-        logger.debug(f"Updating shift dict of game from date "
-                    f"{game_data['date']} ({game_data['id']}) "
-                    f"was succesfull")
+        logger.debug(
+            "Updating shift dict of game from date %s (%s) was successful",
+            game_data['date'],
+            game_data['id']
+        )
 
         return shift_dict
     
@@ -874,8 +879,11 @@ class  UpdateGameData():
         for player_info in team_shifts:
             self.match_player_to_db_id(
                 player_info, team_uid, team_id, team_abb)
-        logger.debug(f"Matching players from NHL data to DB data for team"
-                         f"{team_abb} ({team_id}) was succesfull")
+        logger.debug(
+            "Matching players from NHL data to DB data for team %s (%s) was successful",
+            team_abb,
+            team_id
+        )
 
     
     def match_player_to_db_id(
@@ -933,7 +941,7 @@ class  UpdateGameData():
             pbp_o = self.get_PBP_class(play["play_type"])
             updated_play = pbp_o.update_play(play)
             updated_pbp.append(updated_play)
-        logger.debug(f"Updating PBP list was succesfull")
+        logger.debug("Updating PBP list was succesfull")
 
         return updated_pbp
     
@@ -995,10 +1003,14 @@ class MatchFinder():
 
     def input_match_manually(self, player_info: dict, team_id: int, 
                              team_abb: str) -> dict:
-        logger.info(rf"No match was found for {player_info}"
-                    rf" from team {team_abb} (id: {team_id}) in db "
-                    "or NHL elite mapper."
-                    rf" Input the db name and player id manually.")
+        logger.info(
+            "No match was found for %s from team %s (id: %s) in db or NHL elite mapper. "
+            "Input the db name and player id manually.",
+            player_info,
+            team_abb,
+            team_id
+        )
+
         name = input("Input db player name: ")
         player_id = input("Input player id:" )
         self.elite_nhl_mapper_detail[player_info[0]] = {
@@ -1069,9 +1081,10 @@ class SingleMatchFinder(MatchFinder):
                     player_dict["player_id"])
                 self.player_id = player_dict["player_id"]
                 logger.info(
-                    f"Match for player {self.scraped_name}"
-                    f" was found with NHL to Elite mapper"
-                    f"(db_name: {self.player_info[0]})")
+                    "Match for player %s was found with NHL to Elite mapper (db_name: %s)",
+                    self.scraped_name,
+                    self.player_info[0]
+                    )
 
                 return True
         
@@ -1124,15 +1137,14 @@ class DuplicatesMatchFinder(MatchFinder):
                 updated_player_dict["player_name"])
             name_matched = self.try_to_find_match(updated_player_dict)
             if name_matched:
-                match_confirmed = logger.info(
-                    f"Match for player {self.player_info}"
-                    f" was found after normalisation of"
-                    f" name of db entry {player_dict}.")
-                if match_confirmed:
+                logger.info(
+                    "Match for player %s was found after normalisation of name"
+                    " of db entry %s.", self.player_info, player_dict
+                    )
 
-                    return True
+                return True
                 
-        return False
+            return False
     
 
         

@@ -1,6 +1,6 @@
 from constants import *
 from decorators import sql_executor
-from logger.logging_config import logger
+from database_insert import logger
 
 from sqlalchemy import update
 from sqlalchemy.orm import Session
@@ -39,9 +39,10 @@ class DatabaseMethods():
         self.db_session.add(query_insert)
         self.db_session.commit()
         id = query_insert.id
-        logger.debug(f"Index of the new data inserted in table"
-                     f" {table.__tablename__} with query {query_insert}"
-                     f" is {id}")
+        logger.debug(
+            "Index of the new data inserted in table %s with query %s is %s",
+            table.__tablename__, query_insert, id
+            )
         return id
     
 
@@ -64,12 +65,17 @@ class DatabaseMethods():
 
         id = self.query._find_id_in_table(table=table, **kwargs)
         if id is None:
-            logger.debug(f"Data is not in db in table {table.__tablename__}"
-                        f" yet, data insert will follow")
+            logger.debug(
+                "Data is not in db in table %s yet, data insert will follow",
+                table.__tablename__
+                )
             id = self._input_data(table=table, **kwargs)
         else:
-            logger.debug(f"Data is already in db in table"
-                        f" {table.__tablename__} at index {id}")
+            logger.debug(
+                "Data is already in db in table %s at index %s",
+                table.__tablename__, id
+                )
+            
         return id
     
 
@@ -89,8 +95,10 @@ class DatabaseMethods():
             table=table, where_col=where_col, where_val=where_val, **kwargs)
         self.db_session.execute(update_query)
         self.db_session.commit()
-        logger.debug(f"Update query for table {table.__tablename__}" 
-                     f" {update_query}  commited")
+        logger.debug(
+            "Update query for table %s %s committed", 
+                     table.__tablename__, update_query
+                     )
         
 
     @sql_executor
@@ -106,11 +114,17 @@ class DatabaseMethods():
         if id is None:
             id = self._input_unique_data_NA_excluded(
                 table=table, non_condition=uid_val, **kwargs)
-            logger.debug(f"UID {uid_val} not found in table"
-                         f" {table.__tablename__}, added at index {id}")
+            logger.debug(
+                "UID %s not found in table %s, added at index %s", 
+                uid_val, table.__tablename__, id
+                )
+
         else:
-            logger.debug(f"UID {uid_val} already found in table"
-                         f" {table.__tablename__}, at index {id}")
+            logger.debug(
+                "UID %s already found in table %s, at index %s", 
+                uid_val, table.__tablename__, id
+                )
+
         return id
     
     
