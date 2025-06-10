@@ -420,38 +420,8 @@ class GameDataDB():
               elite_name=elite_name
          )
          
-    
-    def _input_general_info(self, dict_: dict) -> int:
-         match_id = self.db_method._input_unique_data(
-              table=db.Match,
-              match_id=dict_["match_id"],
-              stadium_id = dict_["stadium_id"],
-              date=dict_["date"],
-              time=dict_["time"],
-              attendance=dict_["attendance"],
-              home_team_id=dict_["HT"],
-              away_team_id=dict_["VT"])
-         
-         return match_id
-    
 
-    def _input_shift(
-              self, shift: dict, player_id: int, team_id: int, 
-              play_id: int) -> int|None:
-         
-         shift_id = self.db_method._input_unique_data(
-              table=db.PlayerShift,
-              play_id=play_id,
-              player_id=player_id,
-              team_id=team_id,
-              period=shift["period"],
-              shift_start=shift["shift_start"],
-              shift_end=shift["shift_end"]
-         )
-
-         return shift_id
     
-
     def _input_play(self, play: dict, match_id: int) -> int:
 
           play_type_id = self.db_method._input_unique_data(

@@ -106,12 +106,6 @@ class InputGameInfo():
         self.db_session.commit()
 
 
-    def _input_general_info(self, game: dict) -> int:
-        match_id = self.input_gi._input_general_info(game)
-
-        return match_id
-    
-
 class InputGeneralInfo():
 
 
@@ -181,9 +175,9 @@ class InputShifts():
     def __init__(self, db_session: Session, player_mapper: dict):
         self.db_session = db_session
         self.player_mapper = player_mapper
-        self.input_o = insert_db.GameDataDB(db_session)
+        self.input_shift_dict = {}
 
-    
+
     @time_execution
     def _input_shifts(
             self, shifts: dict, HT_id: int, VT_id: int, match_id :int) -> None:
@@ -191,6 +185,7 @@ class InputShifts():
         for team_type in ids:
             self._input_team_shifts(
                 shifts[team_type], ids[team_type], match_id)
+        self.db_session.bulk_insert_mappings(self.input_shift_dict)
 
 
     def _input_team_shifts(
@@ -205,15 +200,22 @@ class InputShifts():
             match_id: int) -> None:
         player_id = self.player_mapper[team_id][player_info]
         for shift in shifts:
-            self._input_shift(shift, player_id, team_id, match_id)
+            shift_dict = self._get_shift_dict(
+                match_id, player_id, team_id, shift)
+            self.input_shift_dict.append(shift_dict)
 
+
+    def _get_shift_dict(
+            match_id: int, player_id: int, team_id: int, shift: dict) -> dict:
+        return {
+              "match_id": match_id,
+              "player_id": player_id,
+              "team_id": team_id,
+              "period": shift["period"],
+              "shift_start": shift["shift_start"],
+              "shift_end": shift["shift_end"]
+        }
     
-    def _input_shift(
-            self, shift: dict, player_id: int, team_id: int, 
-            match_id: int) -> None:
-        self.input_o._input_shift(shift, player_id, team_id, match_id)
-
-
 
 class InputPBP():
 
