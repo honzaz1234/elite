@@ -39,6 +39,7 @@ class InputPlayerDict():
                                player_id=player_id)
         self._input_achievement_dict(achiev_dict=player_dict[ACHIEVEMENTS],
                                      player_id=player_id)
+        self.db_session.commit()
         logger.info(f"Player dict ({player_dict[GENERAL_INFO][PLAYER_NAME]}, "
                     f" {player_dict[GENERAL_INFO][PLAYER_UID]}) succesfully" 
                     f" inputted into db")

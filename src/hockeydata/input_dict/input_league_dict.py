@@ -25,6 +25,7 @@ class InputLeagueDict():
         league_standings._input_league_standings_dict(
             stat_dict=league_dict[SEASON_STANDINGS],
             league_id=league_id)
+        self.db_session.commit()
         logger.info(f"League dict ({league_dict[LEAGUE_UID]})"
                     f" succesfully inputted into db")
         

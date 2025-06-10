@@ -37,7 +37,6 @@ class DatabaseMethods():
         query_insert = self.query._create_table_entry(table=table, 
                                                         **kwargs)
         self.db_session.add(query_insert)
-        self.db_session.commit()
         id = query_insert.id
         logger.debug(
             "Index of the new data inserted in table %s with query %s is %s",
@@ -94,7 +93,6 @@ class DatabaseMethods():
         update_query = self.query._update_entry(
             table=table, where_col=where_col, where_val=where_val, **kwargs)
         self.db_session.execute(update_query)
-        self.db_session.commit()
         logger.debug(
             "Update query for table %s %s committed", 
                      table.__tablename__, update_query

@@ -29,6 +29,7 @@ class InputTeamDict():
             ret_num_dict=team_dict[RETIRED_NUMBERS], team_id=team_id)
         self._input_team_titles_dict(
             titles_dict=team_dict[HISTORIC_NAMES], team_id=team_id)
+        self.db_session.commit()
         logger.info(f"Team dictionary ({team_dict[GENERAL_INFO][SHORT_NAME]})"
                     " succesfully inputted into db")
 

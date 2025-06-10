@@ -23,11 +23,12 @@ class InputEliteNHLmapper():
     @time_execution
     def input_all_mappers(
             self, elite_nhl_mapper: dict, stadium_mapper: dict) -> None:
-        self.input_elite_nhl_mapper_dict(elite_nhl_mapper)
-        self.input_stadium_mapper(stadium_mapper)
+        self._input_elite_nhl_mapper_dict(elite_nhl_mapper)
+        self._input_stadium_mapper(stadium_mapper)
+        self.db_session.commit()
 
 
-    def input_elite_nhl_mapper_dict(self, elite_nhl_mapper: dict) -> None:
+    def _input_elite_nhl_mapper_dict(self, elite_nhl_mapper: dict) -> None:
         """wrapper method for inputting  all scraped data from dict to DB"""
         db_nhl_elite_mapper = self.mappers_o.get_elite_nhl_mapper()
         elite_nhl_mapper = dict_diff_unique(
@@ -61,7 +62,7 @@ class InputEliteNHLmapper():
         self.input_o._input_nhl_elite_player_mapper(input_dict)
 
 
-    def input_stadium_mapper(self, stadium_mapper):
+    def _input_stadium_mapper(self, stadium_mapper):
         db_stadium_mapper = self.mappers_o.get_nhl_elite_stadium_mapper()
         stadium_mapper = dict_diff_unique(
             stadium_mapper, db_stadium_mapper)
@@ -100,6 +101,7 @@ class InputGameInfo():
         self.input_shifts._input_shifts(
             game["shifts"], game["HT"], game["VT"], match_id)
         self.input_PBP._input_PBP(game["PBP"], match_id)
+        self.db_session.commit()
 
 
     def _input_general_info(self, game: dict) -> int:
