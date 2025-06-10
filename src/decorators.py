@@ -60,7 +60,7 @@ def sql_executor(func):
             logger.error("Error in executing SQL code. Initiallizing DB "
                          "rollback")
             self.db_session.rollback()
-            logger.info("Rollback initialized. DB session closed")
+            logger.info("Rollback initialized")
             raise e
 
     return wrapper
