@@ -435,19 +435,6 @@ class GameDataDB():
          return match_id
     
 
-    def _get_stadium_id(self, stadium: str) -> int|None:
-         stadium_id = self.query._find_id_in_table(db.Stadium, stadium=stadium)
-
-         return stadium_id
-    
-    
-    def _get_stadium_name(self, stadium_id) -> str|None:
-         row_data = self.query._get_value_from_table(
-            [db.Stadium.stadium], id=stadium_id)
-         
-         return row_data.stadium
-    
-
     def _input_shift(
               self, shift: dict, player_id: int, team_id: int, 
               play_id: int) -> int|None:

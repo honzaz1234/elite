@@ -1,3 +1,5 @@
+import database_creator.database_creator as db
+import database_insert.db_insert as db_insert
 import gamedata.insert_db.insert_db_game_data as insert_db
 import mappers.db_mappers as db_mapper
 
@@ -117,7 +119,8 @@ class InputGeneralInfo():
                  input_o: insert_db.GameDataDB, 
                  stadium_mapper: dict):
         self.db_session = db_session
-        self.input_o = input_o
+        self.db_method =  db_insert.DatabaseMethods(self.db_session)
+        self.db_query = db_insert.Query(self.db_session)
         self.stadium_mapper = stadium_mapper
 
 
@@ -125,19 +128,30 @@ class InputGeneralInfo():
     def _input_general_info(self, game):
         stadium_id = self._get_stadium_id(game["stadium"])
         input_dict = self._get_general_info_input_dict(game, stadium_id)
-        match_id = self.input_o._input_general_info(input_dict)
+        match_id = self.db_method._input_unique_data(
+              table=db.Match,
+              match_id=input_dict["match_id"],
+              stadium_id = input_dict["stadium_id"],
+              date=input_dict["date"],
+              time=input_dict["time"],
+              attendance=input_dict["attendance"],
+              home_team_id=input_dict["HT"],
+              away_team_id=input_dict["VT"])
 
         return match_id
-
     
+
     def _get_stadium_id(self, stadium: str) -> int:
         if stadium in self.stadium_mapper:
             stadium = self.stadium_mapper[stadium]
-        stadium_id = self.input_o._get_stadium_id(stadium)
+        stadium_id = self.db_query._find_id_in_table(
+            db.Stadium, stadium=stadium)
         if stadium_id is None:
             stadium_id = input(f"Stadium under name {stadium} does not exist "
                                "in the DB. Input stadium ID manually: ")
-            stadium_elite = self.input_o._get_stadium_name(stadium_id)
+            row_data = self.db_query._get_value_from_table(
+                [db.Stadium.stadium], id=stadium_id)
+            stadium_elite = row_data.stadium
             if stadium_elite is None:
                 raise 
             self.stadium_mapper[stadium] = stadium_elite
@@ -146,8 +160,8 @@ class InputGeneralInfo():
                 )
 
         return stadium_id
-
     
+
     def _get_general_info_input_dict(self, game: dict, stadium_id: int):
         input_dict = {}
         input_dict["stadium_id"] = stadium_id
@@ -159,7 +173,7 @@ class InputGeneralInfo():
         input_dict["attendance"] = game["attendance"]
 
         return input_dict
-    
+
     
 class InputShifts():
 
