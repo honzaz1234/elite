@@ -609,7 +609,9 @@ Index('goalie_stats_league_id_season_id_index',
 
 
 class PlayType(Base):
+
     __tablename__ = 'play_types'
+
     id = Column(Integer, primary_key=True)
     play_type = Column(String, nullable=False, unique=True)
 
@@ -619,8 +621,11 @@ class PlayType(Base):
     def __repr__(self):
         return f"({self.id}, {self.play_type})"
 
+
 class ShotType(Base):
+
     __tablename__ = 'shot_types'
+
     id = Column(Integer, primary_key=True)
     shot_type = Column(String, nullable=False, unique=True)
 
@@ -629,6 +634,7 @@ class ShotType(Base):
 
     def __repr__(self):
         return f"({self.id}, {self.shot_type})"
+
 
 class Zone(Base):
 
@@ -643,6 +649,7 @@ class Zone(Base):
     def __repr__(self):
         return f"({self.id}, {self.zone})"
 
+
 class ShotResult(Base):
 
     __tablename__ = 'shot_results'
@@ -655,6 +662,7 @@ class ShotResult(Base):
 
     def __repr__(self):
         return f"({self.id}, {self.shot_result})"
+
 
 class PenaltyType(Base):
 
@@ -731,7 +739,7 @@ class GoalPlay(Base):
     own_goal = Column(Boolean, nullable=False)
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
-    shot_type_id = Column(Integer, ForeignKey('shot_types.id'), nullable=False)
+    shot_type_id = Column(Integer, ForeignKey('shot_types.id'))
     deflection_type_id = Column(Integer, ForeignKey('deflection_types.id'))
     zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
 
