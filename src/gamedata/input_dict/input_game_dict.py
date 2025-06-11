@@ -1,6 +1,5 @@
 import database_creator.database_creator as db
 import database_insert.db_insert as db_insert
-import gamedata.insert_db.insert_db_game_data as insert_db
 import mappers.db_mappers as db_mapper
 
 from common_functions import dict_diff_unique, log_and_raise
@@ -17,10 +16,9 @@ class InputEliteNHLmapper():
 
 
     def __init__(self, db_session: Session):
+        self.db_method =  db_insert.DatabaseMethods(db_session)
         self.db_session = db_session
         self.mappers_o = db_mapper.GetDBID(self.db_session)
-        self.input_o = insert_db.GameDataDB(
-            self.db_session)
 
 
     @time_execution
@@ -62,6 +60,15 @@ class InputEliteNHLmapper():
         input_dict[SEASON_NAME] = season
         input_dict["team_id"] = team_id
         input_dict["nhl_name"] = nhl_name
+        self.db_method._input_unique_data(
+            db.NHLEliteNameMapper, 
+            player_id=input_dict["player_id"],
+            nhl_name=input_dict["nhl_name"], 
+            elite_name=input_dict["elite_name"],
+            team_id=input_dict["team_id"], 
+            season_id=input_dict["season_id"],
+            player_number=input_dict["player_number"]
+            )
         self.input_o._input_nhl_elite_player_mapper(input_dict)
 
 
@@ -77,7 +84,8 @@ class InputEliteNHLmapper():
 
     def _input_mapped_stadium_into_db(
             self, nhl_name: str, elite_name: str) -> None:
-        self.input_o._input_stadium_mapper(nhl_name, elite_name)
+        self.db_method._input_unique_data(
+            db.StadiumMapper, nhl_name=nhl_name, elite_name=elite_name)
 
 
 class InputGameInfo():
@@ -87,8 +95,6 @@ class InputGameInfo():
             self,  db_session: Session, player_mapper: dict, 
             stadium_mapper: dict):
         self.db_session = db_session
-        self.input_o = insert_db.GameDataDB(
-            self.db_session)
         self.mappers_o = db_mapper.GetDBID(self.db_session)
         self.input_gi = InputGeneralInfo(
             self.db_session, stadium_mapper)
@@ -112,9 +118,8 @@ class InputGeneralInfo():
 
     def __init__(self, db_session: Session, 
                  stadium_mapper: dict):
-        self.db_session = db_session
-        self.db_method =  db_insert.DatabaseMethods(self.db_session)
-        self.db_query = db_insert.Query(self.db_session)
+        self.db_method =  db_insert.DatabaseMethods(db_session)
+        self.db_query = db_insert.Query(db_session)
         self.stadium_mapper = stadium_mapper
 
 
@@ -170,12 +175,10 @@ class InputGeneralInfo():
 
     
 class InputShifts():
-
-
     def __init__(self, db_session: Session, player_mapper: dict):
-        self.db_session = db_session
+        self.db_method =  db_insert.DatabaseMethods(db_session)
         self.player_mapper = player_mapper
-        self.input_shift_dict = {}
+        self.input_shift_list = []
 
 
     @time_execution
@@ -185,7 +188,8 @@ class InputShifts():
         for team_type in ids:
             self._input_team_shifts(
                 shifts[team_type], ids[team_type], match_id)
-        self.db_session.bulk_insert_mappings(self.input_shift_dict)
+        self.db_method.insert_ignore_on_constraint(
+            db.PlayerShift, self.input_shift_list)
 
 
     def _input_team_shifts(
@@ -202,11 +206,11 @@ class InputShifts():
         for shift in shifts:
             shift_dict = self._get_shift_dict(
                 match_id, player_id, team_id, shift)
-            self.input_shift_dict.append(shift_dict)
+            self.input_shift_list.append(shift_dict)
 
 
     def _get_shift_dict(
-            match_id: int, player_id: int, team_id: int, shift: dict) -> dict:
+            self, match_id: int, player_id: int, team_id: int, shift: dict) -> dict:
         return {
               "match_id": match_id,
               "player_id": player_id,
@@ -221,8 +225,7 @@ class PBPDB():
 
 
      def __init__(self, db_session: Session):
-        self.db_session = db_session
-        self.db_method = db_insert.DatabaseMethods(self.db_session)
+        self.db_method = db_insert.DatabaseMethods(db_session)
 
 
      def _input_broken_play_info(self, play_id: int, play_desc: str) -> None:
@@ -600,10 +603,10 @@ class InputPBP():
 
     def __init__(
             self, db_session: Session, player_mapper: dict):
+        self.db_method =  db_insert.DatabaseMethods(db_session)
         self.db_session = db_session
-        self.db_method =  db_insert.DatabaseMethods(self.db_session)
         self.input_pbp = PBPDB(db_session)
-        self.input_poi_dict = {}
+        self.input_poi_list = []
         self.player_mapper = player_mapper
 
 
@@ -617,7 +620,9 @@ class InputPBP():
                 print(e)
                 print(play)
                 raise e
-        self.db_session.bulk_insert_mappings(self.input_poi_dict)
+        self.db_method.insert_ignore_on_constraint(
+            db.PlayerOnIce, self.input_poi_list
+            )
             
 
     def _input_play(self, play: dict, match_id: int) -> int:
@@ -671,19 +676,7 @@ class InputPBP():
     def _input_team_poi(
             self, play_id: int, team_shifts: list, team_id: int) -> None:
         for player_id in team_shifts:
-            poi_dict = self._get_poi_dict(play_id, player_id, team_id)
-            self._input_team_poi.append(poi_dict)
-
-
-    def get_poi_dict(play_id: int, player_id: int, team_id: int) -> dict:
-
-        return {
-            "play_id": play_id,
-            "player_id": player_id,
-            "team_id": team_id
-            }
-          
-
+            self.input_pbp._input_poi(play_id, player_id, team_id)
 
 
 
