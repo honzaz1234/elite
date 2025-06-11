@@ -733,7 +733,9 @@ class GoalPlay(Base):
     __tablename__ = 'goal_plays'
 
     id = Column(Integer, primary_key=True)
-    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
+    play_id = Column(
+        Integer, ForeignKey('plays.id'), nullable=False, unique=True
+        )
     distance = Column(Integer, nullable=False)
     penalty_shot = Column(Boolean, nullable=False)
     own_goal = Column(Boolean, nullable=False)
@@ -744,7 +746,8 @@ class GoalPlay(Base):
     zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
 
 
-    def __init__(self, play_id, distance, penalty_shot, own_goal, team_id, player_id, shot_type_id, deflection_type_id, zone_id):
+    def __init__(self, play_id, distance, penalty_shot, own_goal, team_id,
+                  player_id, shot_type_id, deflection_type_id, zone_id):
         self.play_id = play_id
         self.distance = distance
         self.penalty_shot = penalty_shot
@@ -771,6 +774,13 @@ class AssistPlay(Base):
     player_id = Column(Integer, nullable=False)
     is_primary = Column(Boolean, nullable=False)
 
+    __table_args__ = (
+        UniqueConstraint(
+            'goal_id', 'player_id', 'is_primary', 
+            name='uq_assists_all_columns'
+        ),
+    )
+
     def __init__(self, goal_id, player_id, is_primary):
 
         self.goal_id = goal_id
@@ -787,7 +797,7 @@ class DeflectionType(Base):
     __tablename__ = 'deflection_types'
 
     id = Column(Integer, primary_key=True)
-    deflection_type = Column(String, nullable=False)
+    deflection_type = Column(String, nullable=False, unique=True)
 
     def __init__(self, deflection_type):
 
@@ -802,7 +812,9 @@ class ShotPlay(Base):
     __tablename__ = 'shot_plays'
 
     id = Column(Integer, primary_key=True)
-    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
+    play_id = Column(
+        Integer, ForeignKey('plays.id'), nullable=False, unique=True
+        )
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
@@ -839,7 +851,9 @@ class HitPlay(Base):
     __tablename__ = 'hit_plays'
 
     id = Column(Integer, primary_key=True)
-    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
+    play_id = Column(
+        Integer, ForeignKey('plays.id'), nullable=False, unqiue=True
+        )
     hitter_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     hitter_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     victim_id = Column(Integer, ForeignKey('players.id'), nullable=False)
@@ -866,7 +880,9 @@ class FaceoffPlay(Base):
     __tablename__ = 'faceoff_plays'
 
     id = Column(Integer, primary_key=True)
-    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
+    play_id = Column(
+        Integer, ForeignKey('plays.id'), nullable=False, unique=True
+        )
     winner_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     loser_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     winner_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
@@ -892,7 +908,9 @@ class GiveawayPlay(Base):
     __tablename__ = 'giveaway_plays'
 
     id = Column(Integer, primary_key=True)
-    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
+    play_id = Column(
+        Integer, ForeignKey('plays.id'), nullable=False, unique=True
+        )
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
@@ -913,7 +931,9 @@ class TakeawayPlay(Base):
     __tablename__ = 'takeaway_plays'
 
     id = Column(Integer, primary_key=True)
-    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
+    play_id = Column(
+        Integer, ForeignKey('plays.id'), nullable=False, unique=True
+        )
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
@@ -934,7 +954,9 @@ class MissedShotPlay(Base):
     __tablename__ = 'missed_shot_plays'
 
     id = Column(Integer, primary_key=True)
-    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
+    play_id = Column(
+        Integer, ForeignKey('plays.id'), nullable=False, unique=True
+        )
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     zone_id = Column(Integer, ForeignKey('zones.id'))
@@ -968,7 +990,9 @@ class BlockedShotPlay(Base):
     __tablename__ = 'blocked_shot_plays'
 
     id = Column(Integer, primary_key=True)
-    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
+    play_id = Column(
+        Integer, ForeignKey('plays.id'), nullable=False, unique=True
+        )
     shooter_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     shooter_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     blocker_type_id = Column(Integer, ForeignKey('blocker_types.id'))
@@ -1006,7 +1030,7 @@ class BlockerType(Base):
     __tablename__ = 'blocker_types'
 
     id = Column(Integer, primary_key=True)
-    blocker_type = Column(String, nullable=False)
+    blocker_type = Column(String, nullable=False, unique=True)
 
     def __init__(self, blocker_type):
         self.blocker_type = blocker_type
@@ -1020,6 +1044,9 @@ class PenaltyPlay(Base):
     __tablename__ = 'penalty_plays'
 
     id = Column(Integer, primary_key=True)
+    play_id = Column(
+        Integer, ForeignKey('plays.id'), nullable=False, unique=True
+        )
     major_penalty = Column(Boolean, nullable=False)
     offender_id = Column(Integer, ForeignKey('players.id'))
     offender_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
@@ -1031,7 +1058,6 @@ class PenaltyPlay(Base):
                              ForeignKey('penalty_types.id'), 
                              nullable=False)
     penalty_minutes = Column(Integer, nullable=False)
-    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
 
     def __init__(self, play_id, offender_id, 
                  offender_team_id, served_by_id, victim_id, victim_team_id, zone_id, penalty_type_id, penalty_minutes, major_penalty):
@@ -1061,7 +1087,9 @@ class ChallengeReason(Base):
     __tablename__ = 'challenge_reasons'
 
     id = Column(Integer, primary_key=True)
-    challenge_reason = Column("challenge_reason", String, nullable=False)
+    challenge_reason = Column(
+        "challenge_reason", String, nullable=False, unique=True
+        )
 
     def __init__(self, challenge_reason):
         self.challenge_reason = challenge_reason
@@ -1075,7 +1103,9 @@ class ChallengeResult(Base):
     __tablename__ = 'challenge_results'
 
     id = Column(Integer, primary_key=True)
-    challenge_result = Column("challenge_result", String, nullable=False)
+    challenge_result = Column(
+        "challenge_result", String, nullable=False, unique=True
+        )
 
     def __init__(self, challenge_result):
         self.challenge_result = challenge_result
@@ -1088,7 +1118,9 @@ class ChallengePlay(Base):
     __tablename__ = 'challenge_plays'
 
     id = Column(Integer, primary_key=True)
-    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
+    play_id = Column(
+        Integer, ForeignKey('plays.id'), nullable=False, unique=True
+     )
     team_id = Column(Integer, ForeignKey('teams.id'))
     reason_id = Column(Integer, 
                         ForeignKey('challenge_reasons.id'),  
@@ -1117,7 +1149,9 @@ class DelayedPenaltyPlay(Base):
     __tablename__ = 'delayed_penalty_plays'
 
     id = Column(Integer, primary_key=True)
-    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
+    play_id = Column(
+        Integer, ForeignKey('plays.id'), nullable=False, unique=True
+        )
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
 
     def __init__(self, play_id, team_id):
@@ -1133,7 +1167,7 @@ class TimeZone(Base):
     __tablename__ = 'time_zones'
 
     id = Column(Integer, primary_key=True)
-    time_zone = Column(String, nullable=False)
+    time_zone = Column(String, nullable=False, unique=True)
 
     def __init__(self, time_zone):
         self.time_zone = time_zone
@@ -1147,7 +1181,7 @@ class PeriodType(Base):
     __tablename__ = 'period_types'
 
     id = Column(Integer, primary_key=True)
-    period_type = Column(String, nullable=False)
+    period_type = Column(String, nullable=False, unique=True)
 
     def __init__(self, period_type):
         self.period_type = period_type
@@ -1161,7 +1195,9 @@ class PeriodPlay(Base):
     __tablename__ = 'period_plays'
 
     id = Column(Integer, primary_key=True)
-    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
+    play_id = Column(
+        Integer, ForeignKey('plays.id'), nullable=False, unique=True
+        )
     time = Column(String, nullable=False)
     time_zone_id = Column(Integer, ForeignKey('time_zones.id'), nullable=False)
     period_type_id = Column(Integer, 
@@ -1184,12 +1220,20 @@ class PlayerShift(Base):
     __tablename__ = "player_shifts"
 
     id = Column(Integer, primary_key=True)
-    match_id = Column(Integer, ForeignKey('matches.id'), nullable=False)
+    match_id = Column(
+        Integer, ForeignKey('matches.id'), nullable=False, index=True)
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     period = Column(Integer, nullable=False)
     shift_start = Column(Integer, nullable=False)
     shift_end = Column(Integer, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            'match_id', 'player_id', 'team_id', 'period', 'shift_start', 'shift_end',
+            name='uq_player_shifts_all_columns'
+        ),
+    )
 
     def __init__(
             self, match_id, player_id, team_id, period, shift_start, 
@@ -1214,7 +1258,9 @@ class PlayerOnIce(Base):
     __tablename__ = "on_ice_players"
 
     id = Column(Integer, primary_key=True)
-    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
+    play_id = Column(
+        Integer, ForeignKey('plays.id'), nullable=False,
+        )
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
 
@@ -1222,6 +1268,13 @@ class PlayerOnIce(Base):
         self.play_id = play_id
         self.player_id = player_id
         self.team_id = team_id
+
+    __table_args__ = (
+        UniqueConstraint(
+            'play_id', 'player_id', 'team_id',
+            name='uq_on_ice_players_all_columns'
+        ),
+    )
 
     def __repr__(self):
         return f"({self.id}, {self.play_id}, {self.player_id}, {self.team_id})"
@@ -1232,7 +1285,7 @@ class GameStopageType(Base):
     __tablename__ = "game_stopage_types"
 
     id = Column(Integer, primary_key=True)
-    stopage_type = Column(String, nullable=False)
+    stopage_type = Column(String, nullable=False, unique=True)
 
     def __init__(self, stopage_type):
         self.stopage_type = stopage_type
@@ -1246,9 +1299,12 @@ class GameStopagePlay(Base):
     __tablename__ = "game_stopages"
 
     id = Column(Integer, primary_key=True)
-    play_id = Column(Integer, ForeignKey('plays.id'), nullable=False)
+    play_id = Column(
+        Integer, ForeignKey('plays.id'), nullable=False, unique=True
+        )
     stopage_type_id = Column(
-        Integer, ForeignKey('game_stopage_types.id'), nullable=False)
+        Integer, ForeignKey('game_stopage_types.id'), nullable=False
+        )
     
 
     def __init__(self, play_id, stopage_type_id):
@@ -1284,7 +1340,7 @@ class NHLEliteNameMapper(Base):
 
         __table_args__ = (
             UniqueConstraint(
-                'player_id', 'elite_name', 'nhl_name', 'team_id', 'season_id', 'player_number', name='uq_all_columns'
+                'player_id', 'elite_name', 'nhl_name', 'team_id', 'season_id', 'player_number', name='uq_elite_nhl_name_mapper_all_columns'
                 ),
             )
 
@@ -1299,8 +1355,9 @@ class BrokenPBP(Base):
     __tablename__ = "broken_play"
 
     id = Column(Integer, primary_key=True)
-    play_id = Column(ForeignKey("plays.id"), 
-                     nullable=False)
+    play_id = Column(
+        ForeignKey("plays.id"), nullable=False, unique=True
+        )
     play_desc = Column(String, nullable=False)
 
 
@@ -1319,8 +1376,9 @@ class BrokenPOI(Base):
     __tablename__ = "broken_poi"
 
     id = Column(Integer, primary_key=True)
-    play_id = Column(ForeignKey("plays.id"), 
-                     nullable=False)
+    play_id = Column(
+        ForeignKey("plays.id"), nullable=False, unique=True
+        )
     team_id = Column("team_id", ForeignKey("teams.id"), nullable=False)
     poi = Column(String, nullable=False)
     error_type = Column(String, nullable=False)
@@ -1346,6 +1404,12 @@ class StadiumMapper(Base):
     id = Column(Integer, primary_key=True)
     nhl_name = Column(String, nullable=False)
     elite_name = Column(String, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            'nhl_name', 'elite_name', name='uq_stadium_mappers_all_columns'
+                ),
+            )
 
 
     def __init__(self, nhl_name, elite_name):
