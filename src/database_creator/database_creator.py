@@ -641,13 +641,13 @@ class ZoneType(Base):
     __tablename__ = 'zone_types'
 
     id = Column(Integer, primary_key=True)
-    zone = Column(String, nullable=False, unique=True)
+    zone_type = Column(String, nullable=False, unique=True)
 
-    def __init__(self, zone):
-        self.zone = zone
+    def __init__(self, zone_type):
+        self.zone_type = zone_type
 
     def __repr__(self):
-        return f"({self.id}, {self.zone})"
+        return f"({self.id}, {self.zone_type})"
 
 
 class ShotResult(Base):
