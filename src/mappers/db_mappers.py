@@ -9,6 +9,7 @@ class GetDBID():
 
 
     def __init__(self, session):
+        self.query = dq.DbDataGetter(session=session)
         self.session = session
 
 
@@ -22,16 +23,15 @@ class GetDBID():
 
     def get_all_player_season_data(
             self, selected_seasons: list) -> dict:
-        query_object = dq.DbDataGetter(session=self.session)
-        seasons_filter = [query_object.get_list_filter(
+        seasons_filter = [self.query.get_list_filter(
             table_column=db.Season.season,
             values=selected_seasons
             )]                                      
-        player_results = query_object.get_db_query_result(
+        player_results = self.query.get_db_query_result(
             query_name="nhl_season_players", 
             filters=seasons_filter,
             distinct=True)
-        goalkeeper_results = query_object.get_db_query_result(
+        goalkeeper_results = self.query.get_db_query_result(
             query_name="nhl_season_goalies", 
             filters=seasons_filter,
             distinct=True)
@@ -58,8 +58,7 @@ class GetDBID():
     
 
     def get_nhl_team_db_id_mapper(self) -> dict:
-        query_object = dq.DbDataGetter(session=self.session)
-        nhl_teams = query_object.get_db_query_result(
+        nhl_teams = self.query.get_db_query_result(
             query_name="nhl_season_players", distinct=True)
         team_team_id_mapper = self.create_team_team_id_dict(nhl_teams)
         abb_team_id_mapper = self.create_abb_team_id_mapper_dict(
@@ -114,15 +113,14 @@ class GetDBID():
 
     def get_elite_nhl_mapper(
             self, selected_seasons: list=None) -> dict:
-        query_object = dq.DbDataGetter(session=self.session)
         if selected_seasons:
-            seasons_filter = [query_object.get_list_filter(
+            seasons_filter = [self.query.get_list_filter(
                 table_column=db.Season.season,
                 values=selected_seasons
                 )]
         else:
               seasons_filter = None                                    
-        results = query_object.get_db_query_result(
+        results = self.query.get_db_query_result(
             query_name="name_mapper", 
             filters=seasons_filter,
             distinct=True)
@@ -149,9 +147,7 @@ class GetDBID():
         return season_team_players
     
     def get_elite_nhl_names(self) -> dict:
-
-        query_object = dq.DbDataGetter(session=self.session)
-        results = query_object.get_db_query_result(
+        results = self.query.get_db_query_result(
             query_name="nhl_elite_names", 
             distinct=True)
         name_mapper = {}
@@ -163,9 +159,7 @@ class GetDBID():
     
 
     def get_nhl_elite_stadium_mapper(self) -> dict:
-
-        query_object = dq.DbDataGetter(session=self.session)
-        results = query_object.get_db_query_result(
+        results = self.query.get_db_query_result(
             query_name="nhl_elite_names", 
             distinct=True)
         stadium_mapper = {}
