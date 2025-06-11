@@ -636,9 +636,9 @@ class ShotType(Base):
         return f"({self.id}, {self.shot_type})"
 
 
-class Zone(Base):
+class ZoneType(Base):
 
-    __tablename__ = 'zones'
+    __tablename__ = 'zone_types'
 
     id = Column(Integer, primary_key=True)
     zone = Column(String, nullable=False, unique=True)
@@ -743,7 +743,7 @@ class GoalPlay(Base):
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     shot_type_id = Column(Integer, ForeignKey('shot_types.id'))
     deflection_type_id = Column(Integer, ForeignKey('deflection_types.id'))
-    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+    zone_id = Column(Integer, ForeignKey('zone_types.id'), nullable=False)
 
 
     def __init__(self, play_id, distance, penalty_shot, own_goal, team_id,
@@ -817,7 +817,7 @@ class ShotPlay(Base):
         )
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
-    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+    zone_id = Column(Integer, ForeignKey('zone_types.id'), nullable=False)
     shot_type_id = Column(Integer, ForeignKey('shot_types.id'), nullable=False)
     distance = Column(Integer, nullable=False)
     penalty_shot = Column(Boolean, nullable=False)
@@ -858,7 +858,7 @@ class HitPlay(Base):
     hitter_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     victim_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     victim_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
-    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+    zone_id = Column(Integer, ForeignKey('zone_types.id'), nullable=False)
 
     def __init__(self, play_id, hitter_id, hitter_team_id, victim_id, 
                  victim_team_id, zone_id):
@@ -887,7 +887,7 @@ class FaceoffPlay(Base):
     loser_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     winner_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     loser_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
-    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+    zone_id = Column(Integer, ForeignKey('zone_types.id'), nullable=False)
 
     def __init__(self, play_id, winner_id, loser_id, winner_team_id, loser_team_id, zone_id):
         self.play_id = play_id
@@ -913,7 +913,7 @@ class GiveawayPlay(Base):
         )
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
-    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+    zone_id = Column(Integer, ForeignKey('zone_types.id'), nullable=False)
 
     def __init__(self, play_id, player_id, team_id, zone_id):
         self.play_id = play_id
@@ -936,7 +936,7 @@ class TakeawayPlay(Base):
         )
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
-    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+    zone_id = Column(Integer, ForeignKey('zone_types.id'), nullable=False)
 
     def __init__(self, play_id, player_id, team_id, zone_id):
         self.play_id = play_id
@@ -959,7 +959,7 @@ class MissedShotPlay(Base):
         )
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
-    zone_id = Column(Integer, ForeignKey('zones.id'))
+    zone_id = Column(Integer, ForeignKey('zone_types.id'))
     shot_type_id = Column(Integer, ForeignKey('shot_types.id'), nullable=False)
     shot_result_id = Column(Integer, 
                             ForeignKey('shot_results.id'))
@@ -998,7 +998,7 @@ class BlockedShotPlay(Base):
     blocker_type_id = Column(Integer, ForeignKey('blocker_types.id'))
     blocker_id = Column(Integer, ForeignKey('players.id'))
     blocker_team_id = Column(Integer, ForeignKey('teams.id'))
-    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+    zone_id = Column(Integer, ForeignKey('zone_types.id'), nullable=False)
     shot_type_id = Column(Integer, ForeignKey('shot_types.id'), nullable=False)
     broken_stick = Column(Boolean, nullable=False)
     over_board = Column(Boolean, nullable=False)
@@ -1053,7 +1053,7 @@ class PenaltyPlay(Base):
     served_by_id = Column(Integer, ForeignKey('players.id'))
     victim_id = Column(Integer, ForeignKey('players.id'))
     victim_team_id = Column(Integer, ForeignKey('teams.id'))
-    zone_id = Column(Integer, ForeignKey('zones.id'), nullable=False)
+    zone_id = Column(Integer, ForeignKey('zone_types.id'), nullable=False)
     penalty_type_id = Column(Integer, 
                              ForeignKey('penalty_types.id'), 
                              nullable=False)

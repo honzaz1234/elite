@@ -226,6 +226,7 @@ class PBPDB():
 
      def __init__(self, db_session: Session):
         self.db_method = db_insert.DatabaseMethods(db_session)
+        self.db_table_mapper =  None
 
 
      def _input_broken_play_info(self, play_id: int, play_desc: str) -> None:
@@ -271,7 +272,7 @@ class BlockedShotDB(PBPDB):
               table=db.ShotType, shot_type=play["shot_type"]
          )
          zone_id = self.db_method._input_unique_data(
-              table=db.Zone, zone=play["zone"]
+              table=db.ZoneType, zone=play["zone"]
          )
          
          play_id = self.db_method._input_unique_data(
@@ -319,7 +320,7 @@ class FaceOffDB(PBPDB):
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
           zone_id = self.db_method._input_unique_data(
-               db.Zone,
+               db.ZoneType,
                zone=play["zone"],
           )
           play_id = self.db_method._input_unique_data(
@@ -338,7 +339,7 @@ class GiveAwayDB(PBPDB):
 
      def _input_play_info(self, play: dict, play_id) -> int:
           zone_id = self.db_method._input_unique_data(
-               db.Zone,
+               db.ZoneType,
                zone=play["zone"],
           )
           play_id = self.db_method._input_unique_data(
@@ -357,7 +358,7 @@ class GoalDB(PBPDB):
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
           zone_id = self.db_method._input_unique_data(
-               db.Zone,
+               db.ZoneType,
                zone=play["zone"],
           )
           shot_type_id = self.db_method.get_compulsory_table_id(
@@ -401,7 +402,7 @@ class HitDB(PBPDB):
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
           zone_id = self.db_method._input_unique_data(
-               db.Zone,
+               db.ZoneType,
                zone=play["zone"],
           )
           play_id = self.db_method._input_unique_data(
@@ -427,7 +428,7 @@ class MissedShotDB(PBPDB):
               shot_result=play["shot_result"]
          )
          zone_id = self.db_method.get_compulsory_table_id(
-              db.Zone,
+              db.ZoneType,
               play["zone"],
               zone=play["zone"]
          )
@@ -481,7 +482,7 @@ class PenaltyDB(PBPDB):
               table=db.PenaltyType, penalty_type=play["penalty_type"]
          )
           zone_id = self.db_method._input_unique_data(
-              table=db.Zone, zone=play["zone"]
+              table=db.ZoneType, zone=play["zone"]
          )    
           play_id = self.db_method._input_unique_data(
                table=db.PenaltyPlay,
@@ -503,7 +504,7 @@ class ShotDB(PBPDB):
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
           zone_id = self.db_method._input_unique_data(
-              table=db.Zone, zone=play["zone"]
+              table=db.ZoneType, zone=play["zone"]
          )
           shot_type_id = self.db_method._input_unique_data(
               table=db.ShotType, shot_type=play["shot_type"]
@@ -535,7 +536,7 @@ class TakeAwayDB(PBPDB):
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
           zone_id = self.db_method._input_unique_data(
-               db.Zone,
+               db.ZoneType,
                zone=play["zone"],
           )
           play_id = self.db_method._input_unique_data(
