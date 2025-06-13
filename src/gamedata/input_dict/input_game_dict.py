@@ -3,7 +3,7 @@ import database_insert.db_insert as db_insert
 import mappers.db_mappers as db_mapper
 
 from common_functions import dict_diff_unique, log_and_raise
-from errors import InputPlayDBError
+from errors import InputPlayDBError, NoneReferenceValueError
 from decorators import time_execution
 import mappers.db_mappers as db_mapper
 from logger.logging_config import logger
@@ -13,7 +13,59 @@ from constants import *
 
 
 class InputEliteNHLmapper():
+    
 
+    REFERENCE_TABLE_MAPPER = {
+          "play_types": {
+               "col_name": "play_type", 
+               "table": db.PlayType
+          },
+          "shot_types": {
+               "col_name": "shot_type", 
+               "table": db.ShotType
+          },
+          "zone_types": {
+               "col_name": "zone_type", 
+               "table": db.ZoneType
+          },
+          "shot_results": {
+               "col_name": "shot_result", 
+               "table": db.ShotResult
+          },
+          "penalty_types": {
+               "col_name": "penalty_type", 
+               "table": db.PenaltyType
+          },
+          "deflection_types": {
+               "col_name": "deflection_type", 
+               "table": db.DeflectionType
+          },
+          "blocker_types": {
+               "col_name": "blocker_type", 
+               "table": db.BlockerType
+          },
+          "challenge_reasons": {
+               "col_name": "challenge_reason", 
+               "table": db.ChallengeReason
+          },
+          "challenge_results": {
+               "col_name": "challenge_result", 
+               "table": db.ChallengeResult
+          },
+          "time_zones": {
+               "col_name": "time_zone", 
+               "table": db.TimeZone
+          },
+          "period_types": {
+               "col_name": "period_type", 
+               "table": db.PeriodType
+          },
+          "game_stopage_types": {
+               "col_name": "stopage_type", 
+               "table": db.GameStopageType
+          }
+     }
+          
 
     def __init__(self, db_session: Session):
         self.db_method =  db_insert.DatabaseMethods(db_session)
@@ -23,9 +75,10 @@ class InputEliteNHLmapper():
 
     @time_execution
     def input_all_mappers(
-            self, elite_nhl_mapper: dict, stadium_mapper: dict) -> None:
+            self, elite_nhl_mapper: dict, stadium_mapper: dict, reference_mapper: dict) -> None:
         self._input_elite_nhl_mapper_dict(elite_nhl_mapper)
         self._input_stadium_mapper(stadium_mapper)
+        self._input_reference_tables(reference_mapper)
         self.db_session.commit()
 
 
@@ -69,7 +122,6 @@ class InputEliteNHLmapper():
             season_id=input_dict["season_id"],
             player_number=input_dict["player_number"]
             )
-        self.input_o._input_nhl_elite_player_mapper(input_dict)
 
 
     def _input_stadium_mapper(self, stadium_mapper):
@@ -86,14 +138,49 @@ class InputEliteNHLmapper():
             self, nhl_name: str, elite_name: str) -> None:
         self.db_method._input_unique_data(
             db.StadiumMapper, nhl_name=nhl_name, elite_name=elite_name)
+        
+
+    def _input_reference_tables(self, reference_table_mappers: dict) -> dict:
+        for table_name in reference_table_mappers:
+            self._input_table_mapper(
+                self.REFERENCE_TABLE_MAPPER[table_name]["col_name"],
+                reference_table_mappers[table_name],
+                self.REFERENCE_TABLE_MAPPER[table_name]["table"]
+                )         
 
 
+    def _input_table_mapper(
+            self, col_name: str, table_mapper: dict, table) -> None:
+         insert_dict = self.create_table_dict(col_name, table_mapper)
+         self.db_method.insert_ignore_on_constraint(
+                table, insert_dict)
+
+
+    def create_table_dict(self, col_name: str, table_mapper: dict) -> list:
+        inserts = []
+        for val in table_mapper:
+            insert_dict = self.create_value_dict(
+                table_mapper[val], col_name, val
+                )
+            inserts.append(insert_dict)
+
+        return inserts
+    
+    
+    def create_value_dict(
+            self, id: int, col_name: str, value: int|str) -> dict:
+        return {
+            "id": id, 
+            col_name: value
+        }
+        
+        
 class InputGameInfo():
 
 
     def __init__(
             self,  db_session: Session, player_mapper: dict, 
-            stadium_mapper: dict):
+            stadium_mapper: dict, reference_tables: dict):
         self.db_session = db_session
         self.mappers_o = db_mapper.GetDBID(self.db_session)
         self.input_gi = InputGeneralInfo(
@@ -101,7 +188,7 @@ class InputGameInfo():
         self.input_shifts = InputShifts(
             self.db_session, player_mapper)
         self.input_PBP = InputPBP(
-            self.db_session, player_mapper)
+            self.db_session, player_mapper, reference_tables)
 
     @time_execution
     def input_game_dict(self, game: dict) -> None:
@@ -124,7 +211,7 @@ class InputGeneralInfo():
 
 
     @time_execution
-    def _input_general_info(self, game):
+    def _input_general_info(self, game) -> int:
         stadium_id = self._get_stadium_id(game["stadium"])
         input_dict = self._get_general_info_input_dict(game, stadium_id)
         match_id = self.db_method._input_unique_data(
@@ -161,7 +248,8 @@ class InputGeneralInfo():
         return stadium_id
     
 
-    def _get_general_info_input_dict(self, game: dict, stadium_id: int):
+    def _get_general_info_input_dict(
+            self, game: dict, stadium_id: int) -> dict:
         input_dict = {}
         input_dict["stadium_id"] = stadium_id
         input_dict["match_id"] = game["match_id"]
@@ -175,6 +263,8 @@ class InputGeneralInfo():
 
     
 class InputShifts():
+
+
     def __init__(self, db_session: Session, player_mapper: dict):
         self.db_method =  db_insert.DatabaseMethods(db_session)
         self.player_mapper = player_mapper
@@ -224,9 +314,9 @@ class InputShifts():
 class PBPDB():
 
 
-     def __init__(self, db_session: Session):
+     def __init__(self, db_session: Session, reference_tables: dict):
         self.db_method = db_insert.DatabaseMethods(db_session)
-        self.db_table_mapper =  None
+        self.reference_tables = reference_tables
 
 
      def _input_broken_play_info(self, play_id: int, play_desc: str) -> None:
@@ -259,20 +349,37 @@ class PBPDB():
                                                        error_type=error_type)
           
           return shift_id
-          
-                                                            
+     
+
+     def _get_reference_table_value(
+             self, table_name: str, val: str, optional=False):
+         if val is None:
+             if optional:
+               return None
+             else:
+                 raise NoneReferenceValueError
+         if val not in self.reference_tables[table_name]:
+             max_value = max(
+                 self.reference_tables[table_name].values(), default=1
+                 )
+             self.reference_tables[table_name][val] = max_value + 1
+             logger.info("New value %s added to table %s", val, table_name)
+             
+         return self.reference_tables[table_name][val]
+     
+                                                          
 class BlockedShotDB(PBPDB):
 
 
     def _input_play_info(self, play: dict, play_id: int) -> int:
-         blocker_type_id = self.db_method._input_unique_data(
-              table=db.BlockerType, blocker_type=play["blocked_by"]
+         blocker_type_id = self._get_reference_table_value(
+             "blocker_types", play["blocked_by"]
          )
-         shot_type_id = self.db_method._input_unique_data(
-              table=db.ShotType, shot_type=play["shot_type"]
+         shot_type_id = self._get_reference_table_value(
+             "shot_types", play["shot_type"]
          )
-         zone_id = self.db_method._input_unique_data(
-              table=db.ZoneType, zone_type=play["zone"]
+         zone_id = self._get_reference_table_value(
+              "zone_types", play["zone"]
          )
          
          play_id = self.db_method._input_unique_data(
@@ -297,11 +404,11 @@ class ChallengeDB(PBPDB):
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
 
-          reason_id = self.db_method._input_unique_data(
-               db.ChallengeReason, challenge_reason=play["reason"]
+          reason_id = self._get_reference_table_value(
+               "challenge_reasons", play["reason"]
           )
-          result_id = self.db_method._input_unique_data(
-               db.ChallengeResult, challenge_result=play["result"]
+          result_id = self._get_reference_table_value(
+               "challenge_results", play["result"]
           )
           play_id = self.db_method._input_unique_data(
                table=db.ChallengePlay,
@@ -319,9 +426,8 @@ class FaceOffDB(PBPDB):
 
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
-          zone_id = self.db_method._input_unique_data(
-               db.ZoneType,
-               zone_type=play["zone"],
+          zone_id = self._get_reference_table_value(
+              "zone_types", play["zone"]
           )
           play_id = self.db_method._input_unique_data(
                db.FaceoffPlay,
@@ -338,9 +444,8 @@ class GiveAwayDB(PBPDB):
 
 
      def _input_play_info(self, play: dict, play_id) -> int:
-          zone_id = self.db_method._input_unique_data(
-               db.ZoneType,
-               zone_type=play["zone"],
+          zone_id = self._get_reference_table_value(
+              "zone_types", play["zone"]
           )
           play_id = self.db_method._input_unique_data(
                db.GiveawayPlay,
@@ -357,19 +462,15 @@ class GoalDB(PBPDB):
 
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
-          zone_id = self.db_method._input_unique_data(
-               db.ZoneType,
-               zone_type=play["zone"],
+          zone_id = self._get_reference_table_value(
+              "zone_types", play["zone"]
           )
-          shot_type_id = self.db_method.get_compulsory_table_id(
-               db.ShotType,
-               play["shot_type"],
-               shot_type=play["shot_type"],
+          shot_type_id = self._get_reference_table_value(
+              "shot_types", play["shot_type"], True
           )
-          deflection_type_id = self.db_method.get_compulsory_table_id(
-               db.DeflectionType, 
-               play["deflection_type"], 
-               deflection=play["deflection_type"])
+          deflection_type_id = self._get_reference_table_value(
+              "deflection_types", play["deflection_type"], True
+          )
           play_id = self.db_method._input_unique_data(
                db.GoalPlay,
                play_id=play_id,
@@ -401,10 +502,9 @@ class HitDB(PBPDB):
 
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
-          zone_id = self.db_method._input_unique_data(
-               db.ZoneType,
-               zone_type=play["zone"],
-          )
+          zone_id = self._get_reference_table_value(
+               "zone_types", play["zone"]
+               )
           play_id = self.db_method._input_unique_data(
                db.HitPlay,
                play_id=play_id,
@@ -422,21 +522,15 @@ class MissedShotDB(PBPDB):
 
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
-         shot_result_id = self.db_method.get_compulsory_table_id(
-              db.ShotResult,
-              play["shot_result"],
-              shot_result=play["shot_result"]
-         )
-         zone_id = self.db_method.get_compulsory_table_id(
-              db.ZoneType,
-              play["zone"],
-              zone_type=play["zone"]
-         )
-         shot_type_id = self.db_method.get_compulsory_table_id(
-              db.ShotType,
-              play["shot_type"],
-              shot_type=play["shot_type"]
-         )
+         shot_result_id = self._get_reference_table_value(
+               "shot_results", play["shot_result"], True
+               )
+         zone_id = self._get_reference_table_value(
+               "zone_types", play["zone"], True
+               )
+         shot_type_id = self._get_reference_table_value(
+               "shot_types", play["shot_type"], True
+               )
          play_id = self.db_method._input_unique_data(
               table=db.MissedShotPlay,
                    play_id=play_id,
@@ -457,12 +551,12 @@ class PeriodDB(PBPDB):
 
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
-          time_zone_id = self.db_method._input_unique_data(
-              table=db.TimeZone, time_zone=play["timezone"]
-         )
-          period_type_id = self.db_method._input_unique_data(
-              table=db.PeriodType, period_type=play["period_type"]
-         )    
+          time_zone_id = self._get_reference_table_value(
+               "time_zones", play["timezone"]
+               )
+          period_type_id = self._get_reference_table_value(
+               "period_types", play["period_type"]
+               )
           play_id = self.db_method._input_unique_data(
               table=db.PeriodPlay,
                    play_id=play_id,
@@ -478,12 +572,12 @@ class PenaltyDB(PBPDB):
 
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
-          penalty_type_id = self.db_method._input_unique_data(
-              table=db.PenaltyType, penalty_type=play["penalty_type"]
-         )
-          zone_id = self.db_method._input_unique_data(
-              table=db.ZoneType, zone_type=play["zone"]
-         )    
+          penalty_type_id = self._get_reference_table_value(
+               "penalty_types", play["penalty_type"]
+               )
+          zone_id = self._get_reference_table_value(
+               "zone_types", play["zone"]
+               )  
           play_id = self.db_method._input_unique_data(
                table=db.PenaltyPlay,
                     play_id=play_id,
@@ -503,17 +597,16 @@ class ShotDB(PBPDB):
 
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
-          zone_id = self.db_method._input_unique_data(
-              table=db.ZoneType, zone_type=play["zone"]
-         )
-          shot_type_id = self.db_method._input_unique_data(
-              table=db.ShotType, shot_type=play["shot_type"]
-         )
-          deflection_type_id = self.db_method.get_compulsory_table_id(
-               db.DeflectionType,
-               play["deflection_type"],
-               deflection_type=play["deflection_type"]
-          )
+          zone_id =self._get_reference_table_value(
+               "zone_types", play["zone"]
+               )  
+          shot_type_id = self._get_reference_table_value(
+               "shot_types", play["shot_type"]
+               )  
+          deflection_type_id = self._get_reference_table_value(
+               "deflection_types", play["deflection_type"], True
+               )
+
           play_id = self.db_method._input_unique_data(
               table=db.ShotPlay,
                    play_id=play_id,
@@ -535,10 +628,9 @@ class TakeAwayDB(PBPDB):
 
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
-          zone_id = self.db_method._input_unique_data(
-               db.ZoneType,
-               zone_type=play["zone"],
-          )
+          zone_id = self._get_reference_table_value(
+               "zone_types", play["zone"]
+               )  
           play_id = self.db_method._input_unique_data(
                db.GiveawayPlay,
                play_id=play_id,
@@ -567,10 +659,9 @@ class GameStopageDB(PBPDB):
 
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
-          stopage_type_id = self.db_method._input_unique_data(
-               db.GameStopageType,
-               stopage_type=play["stopage_type"]
-          )
+          stopage_type_id = self._get_reference_table_value(
+               "game_stopage_types", play["stopage_type"]
+               )  
           play_id = self.db_method._input_unique_data(
                db.GameStopagePlay,
                play_id=play_id,
@@ -603,12 +694,14 @@ class InputPBP():
 
 
     def __init__(
-            self, db_session: Session, player_mapper: dict):
+            self, db_session: Session, player_mapper: dict, 
+            reference_tables: dict):
         self.db_method =  db_insert.DatabaseMethods(db_session)
         self.db_session = db_session
-        self.input_pbp = PBPDB(db_session)
+        self.input_pbp = PBPDB(db_session, reference_tables)
         self.input_poi_list = []
         self.player_mapper = player_mapper
+        self.reference_tables = reference_tables
 
 
     @time_execution
@@ -658,7 +751,8 @@ class InputPBP():
 
     def _play_factory(self, play_type: str):
           
-          return self.INPUT_CLASSES[play_type](self.db_session)
+          return self.INPUT_CLASSES[play_type](
+              self.db_session, self.reference_tables)
 
 
     def _input_poi(self, play_id: int, shifts: dict) -> None:

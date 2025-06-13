@@ -168,3 +168,40 @@ class GetDBID():
             stadium_mapper[nhl_stadium] = elite_stadium
 
         return stadium_mapper
+    
+
+    def get_reference_table_mappers(self) -> dict:
+        table_mapper = {}
+        lookup_keys = [
+            "play_types",
+            "shot_types",
+            "zone_types",
+            "shot_results",
+            "penalty_types",
+            "deflection_types",
+            "blocker_types",
+            "challenge_reasons",
+            "challenge_results",
+            "time_zones",
+            "period_types",
+            "game_stopage_types"
+            ]
+        for table_name in lookup_keys:
+           table_mapper[table_name] =  self.dictionary_db_table_wrapper(
+            table_name
+            )
+
+        return table_mapper
+    
+
+    def dictionary_db_table_wrapper(self, table_name: str) -> dict:
+
+        results = self.query.get_db_query_result(
+            query_name=table_name
+            )
+        table_mapper = {}
+        for row in results:
+            id, type_name = row
+            table_mapper[type_name] = id
+
+        return table_mapper

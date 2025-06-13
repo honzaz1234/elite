@@ -136,5 +136,89 @@ QUERIES_INFO = {
             db.StadiumMapper.nhl_name,
             db.StadiumMapper.elite_name,
         ]
-    }
+    },
+    "play_types": {
+        "base_table": db.PlayType,
+        "selected_cols": [
+            db.PlayType.id,
+            db.PlayType.play_type,
+        ]
+    },
+    "shot_types": {
+        "base_table": db.ShotType,
+        "selected_cols": [
+            db.ShotType.id,
+            db.ShotType.shot_type,
+        ]
+    },
+    "zone_types": {
+        "base_table": db.ZoneType,
+        "selected_cols": [
+            db.ZoneType.id,
+            db.ZoneType.zone_type,
+        ]
+    },
+    "shot_results": {
+        "base_table": db.ShotResult,
+        "selected_cols": [
+            db.ShotResult.id,
+            db.ShotResult.shot_result,
+        ]
+    },
+    "penalty_types": {
+        "base_table": db.PenaltyType,
+        "selected_cols": [
+            db.PenaltyType.id,
+            db.PenaltyType.penalty_type,
+        ]
+    },
+    "deflection_types": {
+        "base_table": db.DeflectionType,
+        "selected_cols": [
+            db.DeflectionType.id,
+            db.DeflectionType.deflection_type,
+        ]
+    },
+    "blocker_types": {
+        "base_table": db.BlockerType,
+        "selected_cols": [
+            db.BlockerType.id,
+            db.BlockerType.blocker_type,
+        ]
+    },
+    "challenge_reasons": {
+        "base_table": db.ChallengeReason,
+        "selected_cols": [
+            db.BlockerType.id,
+            db.BlockerType.blocker_type,
+        ]
+    },
+    "challenge_results": {
+        "base_table": db.ChallengeResult,
+        "selected_cols": [
+            db.ChallengeResult.id,
+            db.ChallengeResult.challenge_result,
+        ]
+    },
+    "time_zones": {
+        "base_table": db.TimeZone,
+        "selected_cols": [
+            db.TimeZone.id,
+            db.TimeZone.time_zone,
+        ]
+    },
+    "period_types": {
+        "base_table": db.PeriodType,
+        "selected_cols": [
+            db.PeriodType.id,
+            db.PeriodType.period_type,
+        ]
+    },
+    "game_stopage_types": {
+        "base_table": db.GameStopageType,
+        "selected_cols": [
+            db.GameStopageType.id,
+            db.GameStopageType.stopage_type,
+        ]
+    },
 }

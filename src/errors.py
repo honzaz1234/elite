@@ -93,6 +93,16 @@ class InputPlayDBError(Exception):
         super().__init__(message)
 
 
+class NoneReferenceValueError(TypeError):
+    def __init__(self, table: str):
+        message = {
+            f"Mandatory value for column from table {table}"
+            f" is equal to None"
+        }
+        super().__init__(message)
+
+
+
 
 
 

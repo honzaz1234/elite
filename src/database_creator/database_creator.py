@@ -676,6 +676,109 @@ class PenaltyType(Base):
 
     def __repr__(self):
         return f"({self.id}, {self.penalty_type})"
+    
+
+class DeflectionType(Base):
+
+    __tablename__ = 'deflection_types'
+
+    id = Column(Integer, primary_key=True)
+    deflection_type = Column(String, nullable=False, unique=True)
+
+    def __init__(self, deflection_type):
+
+        self.deflection_type = deflection_type
+
+    def __repr__(self):
+        return (f"({self.id}, {self.deflection_type}")
+    
+
+class BlockerType(Base):
+
+    __tablename__ = 'blocker_types'
+
+    id = Column(Integer, primary_key=True)
+    blocker_type = Column(String, nullable=False, unique=True)
+
+    def __init__(self, blocker_type):
+        self.blocker_type = blocker_type
+
+    def __repr__(self):
+        return (f"({self.id}, {self.blocker_type}")
+    
+
+class ChallengeReason(Base):
+
+     __tablename__ = 'challenge_reasons'
+
+     id = Column(Integer, primary_key=True)
+     challenge_reason = Column(
+        "challenge_reason", String, nullable=False, unique=True
+        )
+
+     def __init__(self, challenge_reason):
+         self.challenge_reason = challenge_reason
+
+     def __repr__(self):
+        return f"({self.challenge_reason})"
+
+
+class ChallengeResult(Base):
+
+    __tablename__ = 'challenge_results'
+
+    id = Column(Integer, primary_key=True)
+    challenge_result = Column(
+        "challenge_result", String, nullable=False, unique=True
+        )
+
+    def __init__(self, challenge_result):
+        self.challenge_result = challenge_result
+
+    def __repr__(self):
+        return f"({self.challenge_result})"
+    
+
+class TimeZone(Base):
+
+     __tablename__ = 'time_zones'
+
+     id = Column(Integer, primary_key=True)
+     time_zone = Column(String, nullable=False, unique=True)
+
+     def __init__(self, time_zone):
+        self.time_zone = time_zone
+
+     def __repr__(self):
+        return (f"({self.id}, {self.time_zone}")
+    
+
+class PeriodType(Base):
+
+    __tablename__ = 'period_types'
+
+    id = Column(Integer, primary_key=True)
+    period_type = Column(String, nullable=False, unique=True)
+
+    def __init__(self, period_type):
+        self.period_type = period_type
+
+    def __repr__(self):
+        return (f"({self.id}, {self.period_type}")
+    
+
+class GameStopageType(Base):
+
+     __tablename__ = "game_stopage_types"
+
+     id = Column(Integer, primary_key=True)
+     stopage_type = Column(String, nullable=False, unique=True)
+
+     def __init__(self, stopage_type):
+         self.stopage_type = stopage_type
+
+     def __repr__(self):
+        return (f"({self.id}, {self.stopage_type}")
 
 
 class Match(Base):
@@ -792,21 +895,6 @@ class AssistPlay(Base):
                f"{self.is_primary})")
     
 
-class DeflectionType(Base):
-
-    __tablename__ = 'deflection_types'
-
-    id = Column(Integer, primary_key=True)
-    deflection_type = Column(String, nullable=False, unique=True)
-
-    def __init__(self, deflection_type):
-
-        self.deflection_type = deflection_type
-
-    def __repr__(self):
-        return (f"({self.id}, {self.deflection_type}")
-
-
 class ShotPlay(Base):
 
     __tablename__ = 'shot_plays'
@@ -852,7 +940,7 @@ class HitPlay(Base):
 
     id = Column(Integer, primary_key=True)
     play_id = Column(
-        Integer, ForeignKey('plays.id'), nullable=False, unqiue=True
+        Integer, ForeignKey('plays.id'), nullable=False, unique=True
         )
     hitter_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     hitter_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
@@ -1025,20 +1113,6 @@ class BlockedShotPlay(Base):
                f"{self.over_board})")
 
 
-class BlockerType(Base):
-
-    __tablename__ = 'blocker_types'
-
-    id = Column(Integer, primary_key=True)
-    blocker_type = Column(String, nullable=False, unique=True)
-
-    def __init__(self, blocker_type):
-        self.blocker_type = blocker_type
-
-    def __repr__(self):
-        return (f"({self.id}, {self.blocker_type}")
-    
-
 class PenaltyPlay(Base):
 
     __tablename__ = 'penalty_plays'
@@ -1081,38 +1155,6 @@ class PenaltyPlay(Base):
                 f"{self.penalty_type_id}, {self.penalty_minutes}, "  
                 f"{self.major_penalty})")
 
-
-class ChallengeReason(Base):
-
-    __tablename__ = 'challenge_reasons'
-
-    id = Column(Integer, primary_key=True)
-    challenge_reason = Column(
-        "challenge_reason", String, nullable=False, unique=True
-        )
-
-    def __init__(self, challenge_reason):
-        self.challenge_reason = challenge_reason
-
-    def __repr__(self):
-        return f"({self.challenge_reason})"
-
-
-class ChallengeResult(Base):
-
-    __tablename__ = 'challenge_results'
-
-    id = Column(Integer, primary_key=True)
-    challenge_result = Column(
-        "challenge_result", String, nullable=False, unique=True
-        )
-
-    def __init__(self, challenge_result):
-        self.challenge_result = challenge_result
-
-    def __repr__(self):
-        return f"({self.challenge_result})"
-    
 
 class ChallengePlay(Base):
     __tablename__ = 'challenge_plays'
@@ -1160,34 +1202,6 @@ class DelayedPenaltyPlay(Base):
 
     def __repr__(self):
         return (f"({self.id}, {self.play_id}, {self.team_id})")
-    
-    
-class TimeZone(Base):
-
-    __tablename__ = 'time_zones'
-
-    id = Column(Integer, primary_key=True)
-    time_zone = Column(String, nullable=False, unique=True)
-
-    def __init__(self, time_zone):
-        self.time_zone = time_zone
-
-    def __repr__(self):
-        return (f"({self.id}, {self.time_zone}")
-    
-
-class PeriodType(Base):
-
-    __tablename__ = 'period_types'
-
-    id = Column(Integer, primary_key=True)
-    period_type = Column(String, nullable=False, unique=True)
-
-    def __init__(self, period_type):
-        self.period_type = period_type
-
-    def __repr__(self):
-        return (f"({self.id}, {self.period_type}")
     
     
 class PeriodPlay(Base):
@@ -1278,20 +1292,6 @@ class PlayerOnIce(Base):
 
     def __repr__(self):
         return f"({self.id}, {self.play_id}, {self.player_id}, {self.team_id})"
-    
-
-class GameStopageType(Base):
-
-    __tablename__ = "game_stopage_types"
-
-    id = Column(Integer, primary_key=True)
-    stopage_type = Column(String, nullable=False, unique=True)
-
-    def __init__(self, stopage_type):
-        self.stopage_type = stopage_type
-
-    def __repr__(self):
-        return (f"({self.id}, {self.stopage_type}")
     
 
 class GameStopagePlay(Base):

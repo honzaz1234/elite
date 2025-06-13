@@ -17,6 +17,9 @@ class DbDataGetter():
             self, query_name: str, filters: list=None, distinct=False) -> list:
 
         query_info = QUERIES_INFO[query_name]
+        for type_ in ["joins", "filters"]:
+            if type_ not in query_info:
+                query_info[type_] = None
         query = self._get_db_query(base_table=query_info["base_table"],
                                  selected_cols=query_info["selected_cols"],
                                  joins=query_info["joins"],
