@@ -221,4 +221,11 @@ QUERIES_INFO = {
             db.GameStopageType.stopage_type,
         ]
     },
+    "seasons": {
+        "base_table": db.Season,
+        "selected_cols": [
+            db.Season.id,
+            db.Season.season,
+        ]
+    },
 }

@@ -1516,7 +1516,7 @@ class NHLEliteNameMapper(Base):
         self.season_id = season_id
         self.player_number = player_number
 
-        __table_args__ = (
+    __table_args__ = (
             UniqueConstraint(
                 'player_id', 'elite_name', 'nhl_name', 'team_id', 'season_id', 'player_number', name='uq_elite_nhl_name_mapper_all_columns'
                 ),

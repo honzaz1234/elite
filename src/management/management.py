@@ -587,7 +587,7 @@ class ManageGame():
             report_dict = self.scrape_game_data(
                 game_dict, season_long)
             updated_dict, player_mapper = self.update_game_data(
-                report_dict, team_players, elite_nhl_mapper_detail, elite_nhl_mapper)
+                report_dict, team_players, elite_nhl_mapper_detail, elite_nhl_mapper, reference_tables)
             self.input_game_data(
                 updated_dict, player_mapper, stadium_mapper, reference_tables
                 )
@@ -611,9 +611,11 @@ class ManageGame():
 
     def update_game_data(
             self, game_data: dict, team_players: dict, 
-            elite_nhl_mapper_detail: dict, elite_nhl_mapper: dict) -> dict:
+            elite_nhl_mapper_detail: dict, elite_nhl_mapper: dict,
+            reference_tables: str) -> dict:
         ugo = update_game.UpdateGameData(
-            team_players, elite_nhl_mapper_detail, elite_nhl_mapper)
+            team_players, elite_nhl_mapper_detail, elite_nhl_mapper, reference_tables
+            )
         updated_game_data = ugo.update_game_data(game_data)
 
         return updated_game_data, ugo.player_mapper

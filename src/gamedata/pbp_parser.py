@@ -192,7 +192,7 @@ class PBPGoalParser(PBPDescriptionParser):
         rf"(?:\(\d+\))?\s*,\s*"
         rf"(?:(?P<penalty_shot>{PBPDescriptionParser.PENALTY_SHOT_PATTERN})\s*"
         rf"\s*)?"
-        rf"(?P<play_type>{PBPDescriptionParser.SHOT_PATTERN})\s*"
+        rf"(?P<shot_type>{PBPDescriptionParser.SHOT_PATTERN})\s*"
         rf"(?:,\s*(?P<deflection_type>{PBPDescriptionParser.DEFLECTION}"
         rf"\sDeflection))?"
         rf"\s*,?\s*(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone\s*,?"
@@ -580,6 +580,8 @@ class PBPRowParser():
             play_desc = cf.get_list_xpath_values(
             sel=self.sel, xpath=self.XPATHS["play_desc"], optional=False)
             play_desc = " ".join(play_desc)
+            if 'eflection' in play_desc:
+                print(play_desc)
             row_desc_parser = self.row_desc_parser_factory(
                 play_type=play_type, play_desc=play_desc)
             play_desc_dict = row_desc_parser.parse_play_desc()

@@ -184,7 +184,8 @@ class GetDBID():
             db.ChallengeResult,
             db.TimeZone,
             db.PeriodType,
-            db.GameStopageType
+            db.GameStopageType,
+            db.Season
             ]
         for table in lookup_keys:
            table_mapper[table] =  self.dictionary_db_table_wrapper(

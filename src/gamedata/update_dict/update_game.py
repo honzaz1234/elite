@@ -2,9 +2,12 @@ import re
 import unicodedata
 
 from datetime import datetime
+from decorators import time_execution
+from sqlalchemy.sql.schema import Table
 
 import common_functions as cf
 import  mappers.team_mappers as team_map
+import  database_creator.database_creator as db
 
 from errors import MissingPlayerID, MissingPlayKeyError, TooManyPOIError, UpdateGameDataError, UpdatePlayError
 from logger.logging_config import logger
@@ -215,35 +218,6 @@ class UpdateShifts():
 class UpdatePBP():
 
 
-    UPDATE_CLASSES = {
-
-    }
-
-    SHOT_TYPES = [
-        "backhand",
-        "bat",
-        "between legs",
-        "cradle",
-        "deflected",
-        "failed attempt",
-        "poke",
-        "slap",
-        "snap",
-        "tip-in",
-        "wrap-around",
-        "wrist"
-    ]
-
-
-    ZONE_MAPPER = {
-        "Neu.": "neutral",
-        "Neu. Zone": "neutral",
-        "Off.": "offensive",
-        "Off. Zone": "offensive",
-        "Def.": "defensive",
-        "Def. Zone": "defensive",
-    }
-
     PLAYER_PATTERN = rf"[A-ZÀ-ÖØ-Þ']+(?:[-' ][A-ZÀ-ÖØ-Þ']+)*"
 
     MATCH_PATTERN = (
@@ -253,10 +227,11 @@ class UpdatePBP():
 
 
     def __init__(
-            self, player_mapper: dict, team_type_to_abb: dict, team_abb_to_db_id: dict):
+            self, player_mapper: dict, team_type_to_abb: dict, team_abb_to_db_id: dict, reference_tables: dict):
         self.player_mapper = player_mapper
         self.team_type_to_abb = team_type_to_abb
         self.team_abb_to_db_id = team_abb_to_db_id
+        self.reference_tables = reference_tables 
 
 
     def update_play(self, play: dict) -> dict:
@@ -362,16 +337,6 @@ class UpdatePBP():
         cf.log_and_raise(error_message, KeyError)
     
 
-    def update_zone(self, zone: str):
-        #try: - add after longer testing
-        updated_zone = self.ZONE_MAPPER[zone]
-        #except KeyError:
-        #    error_message = f"Unknown zone string: {zone}"
-        #    cf.log_and_raise(error_message, KeyError)
-
-        return updated_zone
-    
-
     def update_shot_type(self, shot_type):
         shot_type = shot_type.strip().lower()
         if shot_type not in self.SHOT_TYPES:
@@ -395,7 +360,25 @@ class UpdatePBP():
     def update_play_info(self, play: dict) -> dict:
         pass
 
-        
+
+    def map_value_from_reference_table(
+            self, value: str, mapper: dict, table: Table) -> str:
+        value = value.strip().lower()
+        if value not in mapper[table]:
+            logger.info(
+                "New value %s added to the table %s", 
+                value, table.__tablename__
+                )
+            new_index = max(mapper[table].values(), default=0) + 1
+            mapper[table][value] = new_index
+            logger.info(
+                "New value %s added to the mapper of table %s", 
+                value, table.__tablename__
+                )
+                
+        return value
+
+
 class FaceoffUpdater(UpdatePBP):
 
 
@@ -426,7 +409,7 @@ class FaceoffUpdater(UpdatePBP):
                 )
         updated_dict["winner_team_id"] = winner_team_id
         updated_dict["losing_team_id"] = losing_team_id
-        updated_dict["zone"] = play["zone"]
+        updated_dict["zone"] = ZONE_MAPPER[play["zone"].lower()]
 
         return updated_dict
     
@@ -451,8 +434,14 @@ class BlockedShotUpdater(UpdatePBP):
         updated_dict["blocker_team_id"] = blocker_team_id
         updated_dict["shooter_team_id"] = blocked_team_id
         updated_dict["zone"] = ZONE_MAPPER[play["zone"].lower()]
-        updated_dict["shot_type"] = SHOT_TYPE_MAPPER[play["shot_type"].lower().strip()]
-        updated_dict["blocked_by"] = BLOCKED_BY_MAPPER[play["blocked_by"].lower()]
+        updated_dict["shot_type"] = self.map_value_from_reference_table(
+            play["shot_type"], self.reference_tables, 
+            db.ShotType
+            )
+        updated_dict["blocked_by"] = self.map_value_from_reference_table(
+            play["blocked_by"], self.reference_tables, 
+            db.BlockerType
+            )
         updated_dict["broken_stick"] = play["broken_stick"] is not None
         updated_dict["over_board"] = play["over_board"] is not None
 
@@ -472,7 +461,10 @@ class GoalUpdater(UpdatePBP):
         )
         updated_dict["team_id"] = team_id
         updated_dict["shot_type"] = (
-            SHOT_TYPE_MAPPER[play["goal"]["play_type"].lower()]
+            self.map_value_from_reference_table(
+            play["goal"]["shot_type"], self.reference_tables, 
+            db.ShotType
+            )
             if "play_type" in play["goal"] else None
             )
         updated_dict["zone"] = ZONE_MAPPER[play["goal"]["zone"].lower()]
@@ -482,7 +474,10 @@ class GoalUpdater(UpdatePBP):
             )
         if "deflection_type" in play["goal"]:
             updated_dict["deflection_type"] = (
-            DEFLECTION_TYPE_MAPPER[play["goal"]["deflection_type"]] 
+            self.map_value_from_reference_table(
+           play["goal"]["deflection_type"], self.reference_tables,
+           db.DeflectionType
+            )
             if play["goal"]["deflection_type"] is not None else None)
         else:
             updated_dict["deflection_type"] = None
@@ -541,14 +536,20 @@ class ShotUpdater(UpdatePBP):
             play["team"]
         )
         updated_dict["team_id"] = team_id
-        updated_dict["shot_type"] = SHOT_TYPE_MAPPER[play["shot_type"].lower().strip()]
+        updated_dict["shot_type"] = self.map_value_from_reference_table(
+            play["shot_type"], self.reference_tables,
+            db.ShotType
+            )
         updated_dict["zone"] = ZONE_MAPPER[play["zone"].lower()]
         updated_dict["distance"] = (int(play["distance"])
                                     if "distance" in play else None)
         if play["deflection_type"] is not None:
             updated_dict["deflection_type"] = (
-                DEFLECTION_TYPE_MAPPER[play["deflection_type"].lower()]
-                )
+                self.map_value_from_reference_table(
+            play["deflection_type"], self.reference_tables,
+            db.DeflectionType
+            )
+            )
         else:
             updated_dict["deflection_type"] = None
         updated_dict["penalty_shot"] = play["penalty_shot"] is not None
@@ -638,9 +639,15 @@ class MissedShotUpdater(UpdatePBP):
             play["team"]
         )
         updated_dict["team_id"] = team_id
-        updated_dict["shot_type"] = SHOT_TYPE_MAPPER[play["shot_type"].lower().strip()]
+        updated_dict["shot_type"] = self.map_value_from_reference_table(
+            play["shot_type"], self.reference_tables,
+            db.ShotType
+            )
         if "shot_result" in play:
-            updated_dict["shot_result"] = SHOT_RESULT_MAPPER[play["shot_result"].lower()]
+            updated_dict["shot_result"] = self.map_value_from_reference_table(
+            play["shot_result"], self.reference_tables,
+            db.ShotResult
+            )
         else:
             updated_dict["shot_result"] = None
         updated_dict["zone"] = (ZONE_MAPPER[play["zone"].lower()]
@@ -669,7 +676,11 @@ class PenaltyUpdater(UpdatePBP):
         else:
              updated_dict["offender_id"] = None
         updated_dict["offender_team_id"] = team_id
-        updated_dict["penalty_type"] = PENALTY_MAPPER[play["penalty_type"].lower().strip()]
+        updated_dict["penalty_type"] = self.map_value_from_reference_table(
+            play["penalty_type"], self.reference_tables,
+            db.PenaltyType
+            )
+        updated_dict["penalty_type"] = play["penalty_type"].lower().strip()
         updated_dict["penalty_minutes"] = int(play["penalty_minutes"])
         updated_dict["zone"] = ZONE_MAPPER[play["zone"].lower()]
         if "penalty_modifier" in play:
@@ -719,7 +730,10 @@ class PeriodUpdater(UpdatePBP):
 
     def update_play_info(self, play: dict) -> dict:
         updated_dict = {}
-        updated_dict["period_type"] = PERIOD_TYPE_MAPPER[play["period_type"].lower()]
+        updated_dict["period_type"] = self.map_value_from_reference_table(
+            play["period_type"], self.reference_tables,
+            db.PeriodType
+        )
         updated_dict["time"] = cf.convert_to_seconds(
             play["time"])
         updated_dict["timezone"] = play["timezone"]
@@ -773,15 +787,17 @@ class  UpdateGameData():
 
 
     def __init__(self, team_players: dict, elite_nhl_mapper_detail: dict, 
-                 elite_nhl_mapper: dict):
+                 elite_nhl_mapper: dict, reference_tables: dict):
         self.team_players = team_players
         self.elite_nhl_mapper_detail = elite_nhl_mapper_detail
         self.elite_nhl_mapper = elite_nhl_mapper
         self.player_mapper = {}
+        self.reference_tables = reference_tables
         self.team_type_to_abb = {}
         self.team_abb_to_db_id = {}
 
 
+    @time_execution
     def update_game_data(self, game_data: dict) -> dict:
         updated_data = {}
         updated_data = self.get_general_info(updated_data, game_data)
@@ -938,7 +954,8 @@ class  UpdateGameData():
         for play in pbp_data:
             if play["play_type"] in self.SKIP_PLAY:
                 continue
-            pbp_o = self.get_PBP_class(play["play_type"])
+            pbp_o = self.get_PBP_class(
+                play["play_type"])
             updated_play = pbp_o.update_play(play)
             updated_pbp.append(updated_play)
         logger.debug("Updating PBP list was succesfull")
@@ -949,7 +966,8 @@ class  UpdateGameData():
     def get_PBP_class(self, play_type: str):
 
         return self.UPDATE_CLASSES[play_type](
-            self.player_mapper, self.team_type_to_abb, self.team_abb_to_db_id
+            self.player_mapper, self.team_type_to_abb, self.team_abb_to_db_id,
+            self.reference_tables
             )
     
 

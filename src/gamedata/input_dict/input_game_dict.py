@@ -21,61 +21,74 @@ class InputEliteNHLmapper():
         self.db_session = db_session
         self.mappers_o = db_mapper.GetDBID(self.db_session)
         self.update_on_conflict = False
+        self.input_player_mapper_list = []
+        self.input_stadium_mapper_list = []
 
 
     @time_execution
     def input_all_mappers(
             self, elite_nhl_mapper: dict, stadium_mapper: dict, reference_mapper: dict) -> None:
-        self._input_elite_nhl_mapper_dict(elite_nhl_mapper)
+        self._input_elite_nhl_mapper_dict(
+            elite_nhl_mapper, reference_mapper[db.Season]
+            )
         self._input_stadium_mapper(stadium_mapper)
         self._input_reference_tables(reference_mapper)
         self.db_session.commit()
 
 
-    def _input_elite_nhl_mapper_dict(self, elite_nhl_mapper: dict) -> None:
+    def _input_elite_nhl_mapper_dict(
+            self, elite_nhl_mapper: dict, season_mapper: dict) -> None:
         """wrapper method for inputting  all scraped data from dict to DB"""
         db_nhl_elite_mapper = self.mappers_o.get_elite_nhl_mapper()
         elite_nhl_mapper = dict_diff_unique(
             elite_nhl_mapper, db_nhl_elite_mapper)
         for season in elite_nhl_mapper:
-            self._input_nhl_elite_season_dict(elite_nhl_mapper[season], season)
+            self._input_nhl_elite_season_dict(
+                elite_nhl_mapper[season], season, season_mapper
+                )
+        self.db_method.insert_update_or_ignore_on_conflict_bulk(
+            db.NHLEliteNameMapper, self.input_player_mapper_list,
+            self.update_on_conflict,
+            TABLE_CONFIG["mappers"][db.NHLEliteNameMapper]["index_update"]
+            )
         logger.info("Elite NHL mapper succesfully inputted into db")
 
 
     def _input_nhl_elite_season_dict(
-            self, season_mapper: dict, season: str) -> None:
-        for team_id in season_mapper:
+            self, season_player_mapper: dict, season: str, 
+            season_mapper: dict) -> None:
+        for team_id in season_player_mapper:
             self._input_nhl_elite_team_mapper(
-                season_mapper[team_id], season, team_id)
+                season_player_mapper[team_id], season, team_id, season_mapper
+                )
 
 
     def _input_nhl_elite_team_mapper(
-            self, team_mapper: dict, season: str, team_id: int) -> None:
+            self, team_mapper: dict, season: str, team_id: int, 
+            season_mapper: dict) -> None:
+        
         for nhl_name in team_mapper:
             self._input_nhl_elite_player_mapper(
-                team_mapper[nhl_name], season, team_id, nhl_name)
-
+                team_mapper[nhl_name], season, team_id, nhl_name, season_mapper
+                )
+            
 
     def _input_nhl_elite_player_mapper(
             self, player_mapper: dict, season: str, team_id: int,
-              nhl_name: str) -> None:
+              nhl_name: str, season_mapper: dict) -> None:
         input_dict = player_mapper
-        input_dict[SEASON_NAME] = season
+        input_dict["season_id"] = season_mapper[season]
         input_dict["team_id"] = team_id
         input_dict["nhl_name"] = nhl_name
-        self.db_method.insert_update_or_ignore_on_conflict_bulk(
-            db.NHLEliteNameMapper, 
-            {
-                "player_id": input_dict["player_id"],
-                "nhl_name": input_dict["nhl_name"], 
-                "elite_name": input_dict["db_name"],
-                "team_id": input_dict["team_id"], 
-                "season_id": input_dict["season_id"],
-                "player_number": input_dict["player_number"]
-                },
-            self.update_on_conflict,
-
-            )
+        dict_ = {
+            "player_id": input_dict["player_id"],
+            "nhl_name": input_dict["nhl_name"], 
+            "elite_name": input_dict["db_name"],
+            "team_id": input_dict["team_id"], 
+            "season_id": input_dict["season_id"],
+            "player_number": input_dict["number"]
+            }
+        self.input_player_mapper_list.append(dict_)
 
 
     def _input_stadium_mapper(self, stadium_mapper):
@@ -86,25 +99,26 @@ class InputEliteNHLmapper():
             self._input_mapped_stadium_into_db(
                 stadium, stadium_mapper[stadium])
         logger.info("Stadium mapper succesfully inputted into db")
+        self.db_method.insert_update_or_ignore_on_conflict_bulk(
+            db.StadiumMapper, self.input_stadium_mapper_list,
+            self.update_on_conflict,
+            TABLE_CONFIG["mappers"][db.StadiumMapper]["index_update"]
+        )
 
 
     def _input_mapped_stadium_into_db(
             self, nhl_name: str, elite_name: str) -> None:
-        self.db_method.insert_update_or_ignore_on_conflict_bulk(
-            db.StadiumMapper, 
-            {
-                "nhl_name": nhl_name, 
-                "elite_name": elite_name
-                },
-            self.update_on_conflict,
-            TABLE_CONFIG[db.StadiumMapper]["index_update"],
-            )
+        dict_ = {
+            "nhl_name": nhl_name, 
+            "elite_name": elite_name
+                }
+        self.input_stadium_mapper_list.append(dict_)
         
 
     def _input_reference_tables(self, reference_table_mappers: dict) -> dict:
         for table in reference_table_mappers:
             self._input_table_mapper(
-                TABLE_CONFIG[table]["index_update"][0],
+                TABLE_CONFIG["reference"][table]["index_update"][0],
                 reference_table_mappers[table],
                 table
                 )         
@@ -117,7 +131,7 @@ class InputEliteNHLmapper():
              return
          self.db_method.insert_update_or_ignore_on_conflict_bulk(
                 table, inserts, self.update_on_conflict, 
-                TABLE_CONFIG[table]["index_update"]
+                TABLE_CONFIG["reference"][table]["index_update"]
                 )
 
 
@@ -194,7 +208,7 @@ class InputGeneralInfo():
                   "away_team_id": input_dict["VT"]
                   },
               self.update_on_conflict,
-              TABLE_CONFIG[db.Match]["index_update"],
+              TABLE_CONFIG["reference"][db.Match]["index_update"],
               True
               )
 
@@ -258,7 +272,7 @@ class InputShifts():
             db.PlayerShift, 
             self.input_shift_list, 
             self.update_on_conflict,
-            TABLE_CONFIG[db.PlayerShift]["index_update"]
+            TABLE_CONFIG["reference"][db.PlayerShift]["index_update"]
             )
 
 
@@ -309,7 +323,7 @@ class PBPDB():
                 "play_desc": play_desc
                 },
             self.update_on_conflict,
-            TABLE_CONFIG[db.BrokenPBP]["index_update"],
+            TABLE_CONFIG["reference"][db.BrokenPBP]["index_update"],
             )
           
 
@@ -329,7 +343,7 @@ class PBPDB():
                   "error_type": error_type 
                   },
                self.update_on_conflict,
-               TABLE_CONFIG[db.BrokenPOI]["index_update"]
+               TABLE_CONFIG["reference"][db.BrokenPOI]["index_update"]
                )
 
      
@@ -381,7 +395,7 @@ class BlockedShotDB(PBPDB):
                    "over_board": play["over_board"]
              },
              self.update_on_conflict,
-             TABLE_CONFIG[db.BlockedShotPlay]["index_update"]
+             TABLE_CONFIG["reference"][db.BlockedShotPlay]["index_update"]
          )
 
     
@@ -406,7 +420,7 @@ class ChallengeDB(PBPDB):
                     "league_challenge": play["league_challenge"]
                     },
                 self.update_on_conflict,
-                TABLE_CONFIG[db.ChallengePlay]["index_update"]
+                TABLE_CONFIG["reference"][db.ChallengePlay]["index_update"]
 
           )
 
@@ -429,7 +443,7 @@ class FaceOffDB(PBPDB):
                 "zone_id": zone_id
                },
                self.update_on_conflict,
-               TABLE_CONFIG[db.FaceoffPlay]["index_update"]
+               TABLE_CONFIG["reference"][db.FaceoffPlay]["index_update"]
           )
 
 
@@ -449,7 +463,7 @@ class GiveAwayDB(PBPDB):
                 "zone_id": zone_id
                },
                self.update_on_conflict,
-               TABLE_CONFIG[db.GiveawayPlay]["index_update"],
+               TABLE_CONFIG["reference"][db.GiveawayPlay]["index_update"],
           )
 
      
@@ -481,7 +495,7 @@ class GoalDB(PBPDB):
                     "zone_id": zone_id
                     },
                 self.update_on_conflict,
-                TABLE_CONFIG[db.GoalPlay]["index_update"],
+                TABLE_CONFIG["reference"][db.GoalPlay]["index_update"],
                 True
           )
 
@@ -497,7 +511,7 @@ class GoalDB(PBPDB):
                         "is_primary": assist["is_primary"]
                         },
                         self.update_on_conflict,
-                        TABLE_CONFIG[db.AssistPlay]["index_update"]
+                        TABLE_CONFIG["reference"][db.AssistPlay]["index_update"]
                )
 
      
@@ -519,7 +533,7 @@ class HitDB(PBPDB):
                    "zone_id": zone_id
                    },
                 self.update_on_conflict,
-                TABLE_CONFIG[db.HitPlay]["index_update"]
+                TABLE_CONFIG["reference"][db.HitPlay]["index_update"]
           )
 
 
@@ -550,7 +564,7 @@ class MissedShotDB(PBPDB):
                    "over_board": play["over_board"]
               },
               self.update_on_conflict,
-              TABLE_CONFIG[db.MissedShotPlay]["index_update"]
+              TABLE_CONFIG["reference"][db.MissedShotPlay]["index_update"]
          )
 
 
@@ -573,7 +587,7 @@ class PeriodDB(PBPDB):
                    "period_type_id": period_type_id
                     },
               self.update_on_conflict,
-              TABLE_CONFIG[db.PenaltyPlay]["index_update"]
+              TABLE_CONFIG["reference"][db.PenaltyPlay]["index_update"]
          )
 
 
@@ -602,7 +616,7 @@ class PenaltyDB(PBPDB):
                     "major_penalty": play["major_penalty"]
                     },
                 self.update_on_conflict,
-                TABLE_CONFIG[db.PenaltyPlay]["index_update"]
+                TABLE_CONFIG["reference"][db.PenaltyPlay]["index_update"]
                     )
           
 
@@ -635,7 +649,7 @@ class ShotDB(PBPDB):
                    "deflection_type_id": deflection_type_id
               },
               self.update_on_conflict,
-              TABLE_CONFIG[db.ShotPlay]["index_update"]
+              TABLE_CONFIG["reference"][db.ShotPlay]["index_update"]
          )
           
 
@@ -655,7 +669,7 @@ class TakeAwayDB(PBPDB):
                    "zone_id": zone_id
                    },
                 self.update_on_conflict,
-                TABLE_CONFIG[db.GiveawayPlay]["index_update"],
+                TABLE_CONFIG["reference"][db.GiveawayPlay]["index_update"],
           )
      
 
@@ -670,7 +684,7 @@ class DelayedPenaltyDB(PBPDB):
                    "team_id": play["team_id"]
                    },
                 self.update_on_conflict,
-                TABLE_CONFIG[db.DelayedPenaltyPlay]["index_update"],
+                TABLE_CONFIG["reference"][db.DelayedPenaltyPlay]["index_update"],
           )
 
 
@@ -688,7 +702,7 @@ class GameStopageDB(PBPDB):
                    "stopage_type_id": stopage_type_id
                    },
                 self.update_on_conflict,
-                TABLE_CONFIG[db.GameStopagePlay]["index_update"]
+                TABLE_CONFIG["reference"][db.GameStopagePlay]["index_update"]
           )
 
      
@@ -740,7 +754,7 @@ class InputPBP():
                 raise e
         self.db_method.insert_update_or_ignore_on_conflict_bulk(
             db.PlayerOnIce, self.input_poi_list, self.update_on_conflict,
-            TABLE_CONFIG[db.PlayerOnIce]["index_update"] 
+            TABLE_CONFIG["reference"][db.PlayerOnIce]["index_update"] 
             )
             
 
@@ -759,7 +773,7 @@ class InputPBP():
                     "time": play["time"]
                     },
                 self.update_on_conflict,
-                TABLE_CONFIG[db.Play]["index_update"],
+                TABLE_CONFIG["reference"][db.Play]["index_update"],
                 True
           )
           input_po = self._play_factory(play["play_type"])

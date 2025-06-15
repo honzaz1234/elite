@@ -153,6 +153,12 @@ class DatabaseMethods():
     def insert_update_or_ignore_on_conflict_bulk(
             self, table: Table, data: list, update=False, 
             index_cols=[]) -> None:
+        if data == []:
+            logger.info(
+                'No data to be updated in %s available.',
+                table.__tablename__
+                        )
+            return
         insert_query = self._get_insert_query(table, data, update, index_cols)
         self.db_session.execute(insert_query)
 
