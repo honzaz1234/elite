@@ -173,22 +173,22 @@ class GetDBID():
     def get_reference_table_mappers(self) -> dict:
         table_mapper = {}
         lookup_keys = [
-            "play_types",
-            "shot_types",
-            "zone_types",
-            "shot_results",
-            "penalty_types",
-            "deflection_types",
-            "blocker_types",
-            "challenge_reasons",
-            "challenge_results",
-            "time_zones",
-            "period_types",
-            "game_stopage_types"
+            db.PlayType,
+            db.ShotType,
+            db.ZoneType,
+            db.ShotResult,
+            db.PenaltyType,
+            db.DeflectionType,
+            db.BlockerType,
+            db.ChallengeReason,
+            db.ChallengeResult,
+            db.TimeZone,
+            db.PeriodType,
+            db.GameStopageType
             ]
-        for table_name in lookup_keys:
-           table_mapper[table_name] =  self.dictionary_db_table_wrapper(
-            table_name
+        for table in lookup_keys:
+           table_mapper[table] =  self.dictionary_db_table_wrapper(
+            table.__tablename__
             )
 
         return table_mapper

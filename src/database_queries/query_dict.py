@@ -189,8 +189,8 @@ QUERIES_INFO = {
     "challenge_reasons": {
         "base_table": db.ChallengeReason,
         "selected_cols": [
-            db.BlockerType.id,
-            db.BlockerType.blocker_type,
+            db.ChallengeReason.id,
+            db.ChallengeReason.challenge_reason,
         ]
     },
     "challenge_results": {

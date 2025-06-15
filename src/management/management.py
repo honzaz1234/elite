@@ -415,7 +415,7 @@ class ManageGame():
 
     def __init__(
             self, done_folder_path: str, links_folder_path: str, 
-            session: Session):
+            session: Session, update_on_conflict: bool):
         self.games_done_path = done_folder_path + "/done_games.json"
         self.games_done = None
         self.game_data_path = links_folder_path + "/games.json"
@@ -426,6 +426,7 @@ class ManageGame():
         self.report_id_getter_o = report_getter.ReportIDGetter()
         self.mapper_o = db_mapper.GetDBID(self.session)
         self.input_mapper_o = input_game.InputEliteNHLmapper(self.session)
+        self.update_on_conflict = update_on_conflict
 
 
     @time_execution
@@ -622,7 +623,7 @@ class ManageGame():
             self, updated_data: dict, player_mapper: dict, 
             stadium_mapper: dict, reference_tables: dict) -> None:
         input_o = input_game.InputGameInfo(
-            self.session, player_mapper, stadium_mapper, reference_tables)
+            self.session, player_mapper, stadium_mapper, reference_tables, self.update_on_conflict)
         input_o.input_game_dict(updated_data)
 
 

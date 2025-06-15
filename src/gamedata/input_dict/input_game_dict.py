@@ -4,10 +4,11 @@ import mappers.db_mappers as db_mapper
 
 from common_functions import dict_diff_unique, log_and_raise
 from errors import InputPlayDBError, NoneReferenceValueError
+from database_creator.database_config import TABLE_CONFIG
 from decorators import time_execution
-import mappers.db_mappers as db_mapper
 from logger.logging_config import logger
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.schema import Table
 
 from constants import * 
 
@@ -15,62 +16,11 @@ from constants import *
 class InputEliteNHLmapper():
     
 
-    REFERENCE_TABLE_MAPPER = {
-          "play_types": {
-               "col_name": "play_type", 
-               "table": db.PlayType
-          },
-          "shot_types": {
-               "col_name": "shot_type", 
-               "table": db.ShotType
-          },
-          "zone_types": {
-               "col_name": "zone_type", 
-               "table": db.ZoneType
-          },
-          "shot_results": {
-               "col_name": "shot_result", 
-               "table": db.ShotResult
-          },
-          "penalty_types": {
-               "col_name": "penalty_type", 
-               "table": db.PenaltyType
-          },
-          "deflection_types": {
-               "col_name": "deflection_type", 
-               "table": db.DeflectionType
-          },
-          "blocker_types": {
-               "col_name": "blocker_type", 
-               "table": db.BlockerType
-          },
-          "challenge_reasons": {
-               "col_name": "challenge_reason", 
-               "table": db.ChallengeReason
-          },
-          "challenge_results": {
-               "col_name": "challenge_result", 
-               "table": db.ChallengeResult
-          },
-          "time_zones": {
-               "col_name": "time_zone", 
-               "table": db.TimeZone
-          },
-          "period_types": {
-               "col_name": "period_type", 
-               "table": db.PeriodType
-          },
-          "game_stopage_types": {
-               "col_name": "stopage_type", 
-               "table": db.GameStopageType
-          }
-     }
-          
-
     def __init__(self, db_session: Session):
         self.db_method =  db_insert.DatabaseMethods(db_session)
         self.db_session = db_session
         self.mappers_o = db_mapper.GetDBID(self.db_session)
+        self.update_on_conflict = False
 
 
     @time_execution
@@ -113,14 +63,18 @@ class InputEliteNHLmapper():
         input_dict[SEASON_NAME] = season
         input_dict["team_id"] = team_id
         input_dict["nhl_name"] = nhl_name
-        self.db_method._input_unique_data(
+        self.db_method.insert_update_or_ignore_on_conflict_bulk(
             db.NHLEliteNameMapper, 
-            player_id=input_dict["player_id"],
-            nhl_name=input_dict["nhl_name"], 
-            elite_name=input_dict["elite_name"],
-            team_id=input_dict["team_id"], 
-            season_id=input_dict["season_id"],
-            player_number=input_dict["player_number"]
+            {
+                "player_id": input_dict["player_id"],
+                "nhl_name": input_dict["nhl_name"], 
+                "elite_name": input_dict["db_name"],
+                "team_id": input_dict["team_id"], 
+                "season_id": input_dict["season_id"],
+                "player_number": input_dict["player_number"]
+                },
+            self.update_on_conflict,
+
             )
 
 
@@ -136,24 +90,35 @@ class InputEliteNHLmapper():
 
     def _input_mapped_stadium_into_db(
             self, nhl_name: str, elite_name: str) -> None:
-        self.db_method._input_unique_data(
-            db.StadiumMapper, nhl_name=nhl_name, elite_name=elite_name)
+        self.db_method.insert_update_or_ignore_on_conflict_bulk(
+            db.StadiumMapper, 
+            {
+                "nhl_name": nhl_name, 
+                "elite_name": elite_name
+                },
+            self.update_on_conflict,
+            TABLE_CONFIG[db.StadiumMapper]["index_update"],
+            )
         
 
     def _input_reference_tables(self, reference_table_mappers: dict) -> dict:
-        for table_name in reference_table_mappers:
+        for table in reference_table_mappers:
             self._input_table_mapper(
-                self.REFERENCE_TABLE_MAPPER[table_name]["col_name"],
-                reference_table_mappers[table_name],
-                self.REFERENCE_TABLE_MAPPER[table_name]["table"]
+                TABLE_CONFIG[table]["index_update"][0],
+                reference_table_mappers[table],
+                table
                 )         
 
 
     def _input_table_mapper(
-            self, col_name: str, table_mapper: dict, table) -> None:
-         insert_dict = self.create_table_dict(col_name, table_mapper)
-         self.db_method.insert_ignore_on_constraint(
-                table, insert_dict)
+            self, col_name: str, table_mapper: dict, table: Table) -> None:
+         inserts = self.create_table_dict(col_name, table_mapper)
+         if inserts == []:
+             return
+         self.db_method.insert_update_or_ignore_on_conflict_bulk(
+                table, inserts, self.update_on_conflict, 
+                TABLE_CONFIG[table]["index_update"]
+                )
 
 
     def create_table_dict(self, col_name: str, table_mapper: dict) -> list:
@@ -180,15 +145,17 @@ class InputGameInfo():
 
     def __init__(
             self,  db_session: Session, player_mapper: dict, 
-            stadium_mapper: dict, reference_tables: dict):
+            stadium_mapper: dict, reference_tables: dict,
+            update_on_conflict: bool):
         self.db_session = db_session
         self.mappers_o = db_mapper.GetDBID(self.db_session)
         self.input_gi = InputGeneralInfo(
-            self.db_session, stadium_mapper)
+            self.db_session, stadium_mapper, update_on_conflict)
         self.input_shifts = InputShifts(
             self.db_session, player_mapper)
         self.input_PBP = InputPBP(
-            self.db_session, player_mapper, reference_tables)
+            self.db_session, player_mapper, reference_tables, update_on_conflict
+            )
 
     @time_execution
     def input_game_dict(self, game: dict) -> None:
@@ -204,25 +171,32 @@ class InputGeneralInfo():
 
 
     def __init__(self, db_session: Session, 
-                 stadium_mapper: dict):
+                 stadium_mapper: dict, update_on_conflict: bool):
         self.db_method =  db_insert.DatabaseMethods(db_session)
         self.db_query = db_insert.Query(db_session)
         self.stadium_mapper = stadium_mapper
+        self.update_on_conflict = update_on_conflict
 
 
     @time_execution
     def _input_general_info(self, game) -> int:
         stadium_id = self._get_stadium_id(game["stadium"])
         input_dict = self._get_general_info_input_dict(game, stadium_id)
-        match_id = self.db_method._input_unique_data(
-              table=db.Match,
-              match_id=input_dict["match_id"],
-              stadium_id = input_dict["stadium_id"],
-              date=input_dict["date"],
-              time=input_dict["time"],
-              attendance=input_dict["attendance"],
-              home_team_id=input_dict["HT"],
-              away_team_id=input_dict["VT"])
+        match_id = self.db_method.insert_update_or_ignore_on_conflict(
+              db.Match,
+              {
+                  "match_id": input_dict["match_id"],
+                  "stadium_id": input_dict["stadium_id"],
+                  "date": input_dict["date"],
+                  "time": input_dict["time"],
+                  "attendance": input_dict["attendance"],
+                  "home_team_id": input_dict["HT"],
+                  "away_team_id": input_dict["VT"]
+                  },
+              self.update_on_conflict,
+              TABLE_CONFIG[db.Match]["index_update"],
+              True
+              )
 
         return match_id
     
@@ -265,10 +239,12 @@ class InputGeneralInfo():
 class InputShifts():
 
 
-    def __init__(self, db_session: Session, player_mapper: dict):
+    def __init__(
+            self, db_session: Session, player_mapper: dict):
         self.db_method =  db_insert.DatabaseMethods(db_session)
         self.player_mapper = player_mapper
         self.input_shift_list = []
+        self.update_on_conflict = False
 
 
     @time_execution
@@ -278,8 +254,12 @@ class InputShifts():
         for team_type in ids:
             self._input_team_shifts(
                 shifts[team_type], ids[team_type], match_id)
-        self.db_method.insert_ignore_on_constraint(
-            db.PlayerShift, self.input_shift_list)
+        self.db_method.insert_update_or_ignore_on_conflict_bulk(
+            db.PlayerShift, 
+            self.input_shift_list, 
+            self.update_on_conflict,
+            TABLE_CONFIG[db.PlayerShift]["index_update"]
+            )
 
 
     def _input_team_shifts(
@@ -314,363 +294,404 @@ class InputShifts():
 class PBPDB():
 
 
-     def __init__(self, db_session: Session, reference_tables: dict):
+     def __init__(
+             self, db_session: Session, reference_tables: dict, update_on_conflict: bool):
         self.db_method = db_insert.DatabaseMethods(db_session)
         self.reference_tables = reference_tables
+        self.update_on_conflict = update_on_conflict
 
 
      def _input_broken_play_info(self, play_id: int, play_desc: str) -> None:
-         self.db_method._input_unique_data(db.BrokenPBP,
-                                           play_id=play_id,
-                                            play_desc=play_desc)
+         self.db_method.insert_update_or_ignore_on_conflict(
+             db.BrokenPBP,
+            {
+                "play_id": play_id,
+                "play_desc": play_desc
+                },
+            self.update_on_conflict,
+            TABLE_CONFIG[db.BrokenPBP]["index_update"],
+            )
           
 
      def _input_play_info(self, play: dict, play_id: int) -> int:
           pass
      
 
-     def _input_poi(
-               self, play_id: int, player_id: int, team_id: int) -> int:
-          shift_id = self.db_method._input_unique_data(db.PlayerOnIce,
-                                                       play_id=play_id,
-                                                       player_id=player_id,
-                                                       team_id=team_id)
-          
-          return shift_id
-     
-
      def _input_broken_poi(
                self, play_id: int, team_id: int, poi: str, 
-               error_type: str) -> int:
-          shift_id = self.db_method._input_unique_data(db.BrokenPOI,
-                                                       play_id=play_id,
-                                                       team_id=team_id,
-                                                       poi=poi,
-                                                       error_type=error_type)
-          
-          return shift_id
-     
+               error_type: str) -> None:
+          self.db_method.insert_update_or_ignore_on_conflict(
+              db.BrokenPOI,
+              {
+                  "play_id": play_id,
+                  "team_id": team_id,
+                  "poi": poi,
+                  "error_type": error_type 
+                  },
+               self.update_on_conflict,
+               TABLE_CONFIG[db.BrokenPOI]["index_update"]
+               )
 
+     
      def _get_reference_table_value(
-             self, table_name: str, val: str, optional=False):
+             self, table: Table, val: str, optional=False):
          if val is None:
              if optional:
                return None
              else:
                  raise NoneReferenceValueError
-         if val not in self.reference_tables[table_name]:
+         if val not in self.reference_tables[table]:
              max_value = max(
-                 self.reference_tables[table_name].values(), default=1
+                 self.reference_tables[table].values(), default=1
                  )
-             self.reference_tables[table_name][val] = max_value + 1
-             logger.info("New value %s added to table %s", val, table_name)
+             self.reference_tables[table][val] = max_value + 1
+             logger.info(
+                 "New value %s added to table %s", val, table.__tablename__
+                 )
              
-         return self.reference_tables[table_name][val]
+         return self.reference_tables[table][val]
      
                                                           
 class BlockedShotDB(PBPDB):
 
 
-    def _input_play_info(self, play: dict, play_id: int) -> int:
+    def _input_play_info(self, play: dict, play_id: int) -> None:
          blocker_type_id = self._get_reference_table_value(
-             "blocker_types", play["blocked_by"]
+            db.BlockerType, play["blocked_by"]
          )
          shot_type_id = self._get_reference_table_value(
-             "shot_types", play["shot_type"]
+             db.ShotType, play["shot_type"]
          )
          zone_id = self._get_reference_table_value(
-              "zone_types", play["zone"]
+              db.ZoneType, play["zone"]
          )
          
-         play_id = self.db_method._input_unique_data(
-              table=db.BlockedShotPlay,
-                   play_id=play_id,
-                   shooter_id=play["shooter_id"],
-                   shooter_team_id=play["shooter_team_id"],
-                   blocker_type_id=blocker_type_id,
-                   blocker_id=play["blocker_id"],
-                   blocker_team_id=play["blocker_team_id"],
-                   zone_id=zone_id,
-                   shot_type_id=shot_type_id,
-                   broken_stick=play["broken_stick"],
-                   over_board=play["over_board"]
+         self.db_method.insert_update_or_ignore_on_conflict(
+             db.BlockedShotPlay,
+             {
+                   "play_id": play_id,
+                   "shooter_id": play["shooter_id"],
+                   "shooter_team_id": play["shooter_team_id"],
+                   "blocker_type_id": blocker_type_id,
+                   "blocker_id": play["blocker_id"],
+                   "blocker_team_id": play["blocker_team_id"],
+                   "zone_id": zone_id,
+                   "shot_type_id": shot_type_id,
+                   "broken_stick": play["broken_stick"],
+                   "over_board": play["over_board"]
+             },
+             self.update_on_conflict,
+             TABLE_CONFIG[db.BlockedShotPlay]["index_update"]
          )
 
-         return play_id
     
-
 class ChallengeDB(PBPDB):
 
 
-     def _input_play_info(self, play: dict, play_id: int) -> int:
+     def _input_play_info(self, play: dict, play_id: int) -> None:
 
           reason_id = self._get_reference_table_value(
-               "challenge_reasons", play["reason"]
+               db.ChallengeReason, play["reason"]
           )
           result_id = self._get_reference_table_value(
-               "challenge_results", play["result"]
+               db.ChallengeResult, play["result"]
           )
-          play_id = self.db_method._input_unique_data(
-               table=db.ChallengePlay,
-                    play_id=play_id,
-                    team_id=play["team_id"],
-                    reason_id=reason_id,
-                    result_id=result_id,
-                    league_challenge=play["league_challenge"]
-          )
+          play_id = self.db_method.insert_update_or_ignore_on_conflict(
+               db.ChallengePlay,
+               {
+                    "play_id": play_id,
+                    "team_id": play["team_id"],
+                    "reason_id": reason_id,
+                    "result_id": result_id,
+                    "league_challenge": play["league_challenge"]
+                    },
+                self.update_on_conflict,
+                TABLE_CONFIG[db.ChallengePlay]["index_update"]
 
-          return play_id
+          )
 
 
 class FaceOffDB(PBPDB):
 
 
-     def _input_play_info(self, play: dict, play_id: int) -> int:
+     def _input_play_info(self, play: dict, play_id: int) -> None:
           zone_id = self._get_reference_table_value(
-              "zone_types", play["zone"]
+              db.ZoneType, play["zone"]
           )
-          play_id = self.db_method._input_unique_data(
+          self.db_method.insert_update_or_ignore_on_conflict(
                db.FaceoffPlay,
-               play_id=play_id,
-               winner_id=play["faceoff_winner_id"],
-               loser_id=play["faceoff_loser_id"],
-               winner_team_id=play["winner_team_id"],
-               loser_team_id=play["losing_team_id"],
-               zone_id=zone_id
+               {
+                "play_id": play_id,
+                "winner_id": play["faceoff_winner_id"],
+                "loser_id": play["faceoff_loser_id"],
+                "winner_team_id": play["winner_team_id"],
+                "loser_team_id": play["losing_team_id"],
+                "zone_id": zone_id
+               },
+               self.update_on_conflict,
+               TABLE_CONFIG[db.FaceoffPlay]["index_update"]
           )
 
 
 class GiveAwayDB(PBPDB):
 
 
-     def _input_play_info(self, play: dict, play_id) -> int:
+     def _input_play_info(self, play: dict, play_id) -> None:
           zone_id = self._get_reference_table_value(
-              "zone_types", play["zone"]
+              db.ZoneType, play["zone"]
           )
-          play_id = self.db_method._input_unique_data(
+          self.db_method.insert_update_or_ignore_on_conflict(
                db.GiveawayPlay,
-               play_id=play_id,
-               player_id=play["player_id"],
-               team_id=play["team_id"],
-               zone_id=zone_id
+               {
+                "play_id": play_id,
+                "player_id": play["player_id"],
+                "team_id": play["team_id"],
+                "zone_id": zone_id
+               },
+               self.update_on_conflict,
+               TABLE_CONFIG[db.GiveawayPlay]["index_update"],
           )
 
-          return play_id
      
 
 class GoalDB(PBPDB):
 
 
-     def _input_play_info(self, play: dict, play_id: int) -> int:
+     def _input_play_info(self, play: dict, play_id: int) -> None:
           zone_id = self._get_reference_table_value(
-              "zone_types", play["zone"]
+              db.ZoneType, play["zone"]
           )
           shot_type_id = self._get_reference_table_value(
-              "shot_types", play["shot_type"], True
+              db.ShotType, play["shot_type"], True
           )
           deflection_type_id = self._get_reference_table_value(
-              "deflection_types", play["deflection_type"], True
+              db.DeflectionType, play["deflection_type"], True
           )
-          play_id = self.db_method._input_unique_data(
+          goal_id = self.db_method.insert_update_or_ignore_on_conflict(
                db.GoalPlay,
-               play_id=play_id,
-               distance=play["distance"],
-               penalty_shot=play["penalty_shot"],
-               own_goal=play["own_goal"],
-               team_id=play["team_id"],
-               player_id=play["player_id"],
-               shot_type_id=shot_type_id,
-               deflection_type_id=deflection_type_id,
-               zone_id=zone_id
+               {
+                    "play_id": play_id,
+                    "distance": play["distance"],
+                    "penalty_shot": play["penalty_shot"],
+                    "own_goal": play["own_goal"],
+                    "team_id": play["team_id"],
+                    "player_id": play["player_id"],
+                    "shot_type_id": shot_type_id,
+                    "deflection_type_id": deflection_type_id,
+                    "zone_id": zone_id
+                    },
+                self.update_on_conflict,
+                TABLE_CONFIG[db.GoalPlay]["index_update"],
+                True
           )
 
           if "assists" not in play:
                return play_id
           
           for assist in play["assists"]:
-               self.db_method._input_unique_data(
+               self.db_method.insert_update_or_ignore_on_conflict(
                     db.AssistPlay,
-                    goal_id=play_id,
-                    player_id=assist["player_id"],
-                    is_primary=assist["is_primary"]
+                    {
+                        "goal_id": goal_id,
+                        "player_id": assist["player_id"],
+                        "is_primary": assist["is_primary"]
+                        },
+                        self.update_on_conflict,
+                        TABLE_CONFIG[db.AssistPlay]["index_update"]
                )
 
-          return play_id
      
-
 class HitDB(PBPDB):
 
 
-     def _input_play_info(self, play: dict, play_id: int) -> int:
+     def _input_play_info(self, play: dict, play_id: int) -> None:
           zone_id = self._get_reference_table_value(
-               "zone_types", play["zone"]
+               db.ZoneType, play["zone"]
                )
-          play_id = self.db_method._input_unique_data(
+          self.db_method.insert_update_or_ignore_on_conflict(
                db.HitPlay,
-               play_id=play_id,
-               hitter_id=play["hitter_id"],
-               hitter_team_id=play["hitter_team_id"],
-               victim_id=play["victim_id"],
-               victim_team_id=play["victim_team_id"],
-               zone_id=zone_id
+               {
+                   "play_id": play_id,
+                   "hitter_id": play["hitter_id"],
+                   "hitter_team_id": play["hitter_team_id"],
+                   "victim_id": play["victim_id"],
+                   "victim_team_id": play["victim_team_id"],
+                   "zone_id": zone_id
+                   },
+                self.update_on_conflict,
+                TABLE_CONFIG[db.HitPlay]["index_update"]
           )
 
-          return play_id
-     
 
 class MissedShotDB(PBPDB):
 
 
-     def _input_play_info(self, play: dict, play_id: int) -> int:
+     def _input_play_info(self, play: dict, play_id: int) -> None:
          shot_result_id = self._get_reference_table_value(
-               "shot_results", play["shot_result"], True
+               db.ShotResult, play["shot_result"], True
                )
          zone_id = self._get_reference_table_value(
-               "zone_types", play["zone"], True
+               db.ZoneType, play["zone"], True
                )
          shot_type_id = self._get_reference_table_value(
-               "shot_types", play["shot_type"], True
+               db.ShotType, play["shot_type"], True
                )
-         play_id = self.db_method._input_unique_data(
-              table=db.MissedShotPlay,
-                   play_id=play_id,
-                   player_id=play["player_id"],
-                   team_id=play["team_id"],
-                   zone_id=zone_id,
-                   shot_type_id=shot_type_id,
-                   shot_result_id=shot_result_id,
-                   distance=play["distance"],
-                   broken_stick=play["broken_stick"],
-                   over_board=play["over_board"],
+         self.db_method.insert_update_or_ignore_on_conflict(
+              db.MissedShotPlay,
+              {
+                   "play_id": play_id,
+                   "player_id": play["player_id"],
+                   "team_id": play["team_id"],
+                   "zone_id": zone_id,
+                   "shot_type_id": shot_type_id,
+                   "shot_result_id": shot_result_id,
+                   "distance": play["distance"],
+                   "broken_stick": play["broken_stick"],
+                   "over_board": play["over_board"]
+              },
+              self.update_on_conflict,
+              TABLE_CONFIG[db.MissedShotPlay]["index_update"]
          )
 
-         return play_id
-     
 
 class PeriodDB(PBPDB):
 
 
-     def _input_play_info(self, play: dict, play_id: int) -> int:
+     def _input_play_info(self, play: dict, play_id: int) -> None:
           time_zone_id = self._get_reference_table_value(
-               "time_zones", play["timezone"]
+               db.TimeZone, play["timezone"]
                )
           period_type_id = self._get_reference_table_value(
-               "period_types", play["period_type"]
+               db.PeriodType, play["period_type"]
                )
-          play_id = self.db_method._input_unique_data(
-              table=db.PeriodPlay,
-                   play_id=play_id,
-                   time=play["time"],
-                   time_zone_id=time_zone_id,
-                   period_type_id=period_type_id
+          play_id = self.db_method.insert_update_or_ignore_on_conflict(
+              db.PeriodPlay,
+              {
+                   "play_id": play_id,
+                   "time": play["time"],
+                   "time_zone_id": time_zone_id,
+                   "period_type_id": period_type_id
+                    },
+              self.update_on_conflict,
+              TABLE_CONFIG[db.PenaltyPlay]["index_update"]
          )
-          
-          return play_id
-     
+
 
 class PenaltyDB(PBPDB):
 
 
-     def _input_play_info(self, play: dict, play_id: int) -> int:
+     def _input_play_info(self, play: dict, play_id: int) -> None:
           penalty_type_id = self._get_reference_table_value(
-               "penalty_types", play["penalty_type"]
+               db.PenaltyType, play["penalty_type"]
                )
           zone_id = self._get_reference_table_value(
-               "zone_types", play["zone"]
+               db.ZoneType, play["zone"]
                )  
-          play_id = self.db_method._input_unique_data(
-               table=db.PenaltyPlay,
-                    play_id=play_id,
-                    offender_id=play["offender_id"],
-                    offender_team_id=play["offender_team_id"],
-                    served_by_id=play["served_player_id"],
-                    victim_id=play["victim_id"],
-                    victim_team_id=play["victim_team_id"],
-                    zone_id=zone_id,
-                    penalty_type_id=penalty_type_id,
-                    penalty_minutes=play["penalty_minutes"],
-                    major_penalty=play["major_penalty"]
+          play_id = self.db_method.insert_update_or_ignore_on_conflict(
+               db.PenaltyPlay,
+               {
+                    "play_id": play_id,
+                    "offender_id": play["offender_id"],
+                    "offender_team_id": play["offender_team_id"],
+                    "served_by_id": play["served_player_id"],
+                    "victim_id": play["victim_id"],
+                    "victim_team_id": play["victim_team_id"],
+                    "zone_id": zone_id,
+                    "penalty_type_id": penalty_type_id,
+                    "penalty_minutes": play["penalty_minutes"],
+                    "major_penalty": play["major_penalty"]
+                    },
+                self.update_on_conflict,
+                TABLE_CONFIG[db.PenaltyPlay]["index_update"]
                     )
           
 
 class ShotDB(PBPDB):
 
 
-     def _input_play_info(self, play: dict, play_id: int) -> int:
+     def _input_play_info(self, play: dict, play_id: int) -> None:
           zone_id =self._get_reference_table_value(
-               "zone_types", play["zone"]
+               db.ZoneType, play["zone"]
                )  
           shot_type_id = self._get_reference_table_value(
-               "shot_types", play["shot_type"]
+               db.ShotType, play["shot_type"]
                )  
           deflection_type_id = self._get_reference_table_value(
-               "deflection_types", play["deflection_type"], True
+               db.DeflectionType, play["deflection_type"], True
                )
 
-          play_id = self.db_method._input_unique_data(
-              table=db.ShotPlay,
-                   play_id=play_id,
-                   player_id=play["player_id"],
-                   team_id=play["team_id"],
-                   zone_id=zone_id,
-                   shot_type_id=shot_type_id,
-                   distance=play["distance"],
-                   penalty_shot=play["penalty_shot"],
-                   broken_stick=play["broken_stick"],
-                   over_board=play["over_board"],
-                   deflection_type_id=deflection_type_id
+          self.db_method.insert_update_or_ignore_on_conflict(
+              db.ShotPlay,
+              {
+                   "play_id": play_id,
+                   "player_id": play["player_id"],
+                   "team_id": play["team_id"],
+                   "zone_id": zone_id,
+                   "shot_type_id": shot_type_id,
+                   "distance": play["distance"],
+                   "penalty_shot": play["penalty_shot"],
+                   "broken_stick": play["broken_stick"],
+                   "over_board": play["over_board"],
+                   "deflection_type_id": deflection_type_id
+              },
+              self.update_on_conflict,
+              TABLE_CONFIG[db.ShotPlay]["index_update"]
          )
           
-          return play_id
-     
-     
+
 class TakeAwayDB(PBPDB):
 
 
-     def _input_play_info(self, play: dict, play_id: int) -> int:
+     def _input_play_info(self, play: dict, play_id: int) -> None:
           zone_id = self._get_reference_table_value(
-               "zone_types", play["zone"]
+               db.ZoneType, play["zone"]
                )  
-          play_id = self.db_method._input_unique_data(
+          self.db_method.insert_update_or_ignore_on_conflict(
                db.GiveawayPlay,
-               play_id=play_id,
-               player_id=play["player_id"],
-               team_id=play["team_id"],
-               zone_id=zone_id
+               {
+                   "play_id": play_id,
+                   "player_id": play["player_id"],
+                   "team_id": play["team_id"],
+                   "zone_id": zone_id
+                   },
+                self.update_on_conflict,
+                TABLE_CONFIG[db.GiveawayPlay]["index_update"],
           )
-
-          return play_id
      
 
 class DelayedPenaltyDB(PBPDB):
 
 
-     def _input_play_info(self, play: dict, play_id: int) -> int:
-          play_id = self.db_method._input_unique_data(
+     def _input_play_info(self, play: dict, play_id: int) -> None:
+          play_id = self.db_method.insert_update_or_ignore_on_conflict(
                db.DelayedPenaltyPlay,
-               play_id=play_id,
-               team_id=play["team_id"],
+               {
+                   "play_id": play_id,
+                   "team_id": play["team_id"]
+                   },
+                self.update_on_conflict,
+                TABLE_CONFIG[db.DelayedPenaltyPlay]["index_update"],
           )
 
-          return play_id
-     
 
 class GameStopageDB(PBPDB):
 
 
-     def _input_play_info(self, play: dict, play_id: int) -> int:
+     def _input_play_info(self, play: dict, play_id: int) -> None:
           stopage_type_id = self._get_reference_table_value(
-               "game_stopage_types", play["stopage_type"]
+               db.GameStopageType, play["stopage_type"]
                )  
-          play_id = self.db_method._input_unique_data(
+          play_id = self.db_method.insert_update_or_ignore_on_conflict(
                db.GameStopagePlay,
-               play_id=play_id,
-               stopage_type_id=stopage_type_id
+               {
+                   "play_id": play_id,
+                   "stopage_type_id": stopage_type_id
+                   },
+                self.update_on_conflict,
+                TABLE_CONFIG[db.GameStopagePlay]["index_update"]
           )
 
-          return play_id
      
-
 class InputPBP():
 
 
@@ -695,13 +716,16 @@ class InputPBP():
 
     def __init__(
             self, db_session: Session, player_mapper: dict, 
-            reference_tables: dict):
+            reference_tables: dict, update_on_conflict: bool):
         self.db_method =  db_insert.DatabaseMethods(db_session)
         self.db_session = db_session
-        self.input_pbp = PBPDB(db_session, reference_tables)
+        self.input_pbp = PBPDB(
+            db_session, reference_tables, update_on_conflict
+            )
         self.input_poi_list = []
         self.player_mapper = player_mapper
         self.reference_tables = reference_tables
+        self.update_on_conflict = update_on_conflict
 
 
     @time_execution
@@ -714,23 +738,29 @@ class InputPBP():
                 print(e)
                 print(play)
                 raise e
-        self.db_method.insert_ignore_on_constraint(
-            db.PlayerOnIce, self.input_poi_list
+        self.db_method.insert_update_or_ignore_on_conflict_bulk(
+            db.PlayerOnIce, self.input_poi_list, self.update_on_conflict,
+            TABLE_CONFIG[db.PlayerOnIce]["index_update"] 
             )
             
 
     def _input_play(self, play: dict, match_id: int) -> int:
 
-          play_type_id = self.db_method._input_unique_data(
-              table=db.PlayType, play_type=play["play_type"]
+          play_type_id = self.input_pbp._get_reference_table_value(
+              db.PlayType, play["play_type"]
          )
 
-          play_id = self.db_method._input_unique_data(
+          play_id = self.db_method.insert_update_or_ignore_on_conflict(
                db.Play,
-               play_type_id=play_type_id,
-               match_id=match_id,
-               period=play["period"],
-               time=play["time"]
+               {
+                    "play_type_id": play_type_id,
+                    "match_id": match_id,
+                    "period": play["period"],
+                    "time": play["time"]
+                    },
+                self.update_on_conflict,
+                TABLE_CONFIG[db.Play]["index_update"],
+                True
           )
           input_po = self._play_factory(play["play_type"])
           if "error" in play:
@@ -752,7 +782,7 @@ class InputPBP():
     def _play_factory(self, play_type: str):
           
           return self.INPUT_CLASSES[play_type](
-              self.db_session, self.reference_tables)
+              self.db_session, self.reference_tables, self.update_on_conflict)
 
 
     def _input_poi(self, play_id: int, shifts: dict) -> None:
@@ -762,16 +792,29 @@ class InputPBP():
                 error_type = error_data.get("error_type")
                 self.input_pbp._input_broken_poi(
                     play_id, team_id, poi, error_type)
-            for team_id in shifts:
-                if team_id == "error":
-                    continue
-                self._input_team_poi(play_id, shifts[team_id], team_id)
+        for team_id in shifts:
+            if team_id == "error":
+                continue
+            self._input_team_poi(play_id, shifts[team_id], team_id)
 
 
     def _input_team_poi(
             self, play_id: int, team_shifts: list, team_id: int) -> None:
         for player_id in team_shifts:
-            self.input_pbp._input_poi(play_id, player_id, team_id)
+            self._add_poi_dict(play_id, player_id, team_id)
+
+
+    def _add_poi_dict(
+            self, play_id: int, player_id: int, team_id: int) -> None:
+        
+        poi = {
+            "play_id": play_id,
+            "player_id": player_id,
+            "team_id": team_id
+        }
+        self.input_poi_list.append(poi)
+
+
 
 
 

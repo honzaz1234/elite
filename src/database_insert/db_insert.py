@@ -5,6 +5,7 @@ from database_insert import logger
 from sqlalchemy import update
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.dml import Insert
 from sqlalchemy.sql.schema import Table
 
 
@@ -129,12 +130,54 @@ class DatabaseMethods():
         return id
     
 
-    def insert_ignore_on_constraint(self, table: Table, data: dict) -> None:
-        insert_query = sqlite_insert(table).values(data)
-        insert_query = insert_query.prefix_with("OR IGNORE")
+    def insert_update_or_ignore_on_conflict(
+            self, table: Table, data: dict, update=False, 
+            index_cols=[], return_id=False) -> int|None:
+        insert_query = self._get_insert_query(table, data, update, index_cols)
+        if return_id:
+            insert_query = insert_query.returning(table.id)
+        result = self.db_session.execute(insert_query)
+        if return_id:
+            row = result.fetchone()
+            if row:
+                return row[0]
+            else:
+                # If row was NOT inserted/updated (e.g. "do nothing"), fetch manually
+                return self.query._find_id_in_table(
+                    table, **{col: data[col] for col in index_cols}
+                    )
+
+        return None
+    
+
+    def insert_update_or_ignore_on_conflict_bulk(
+            self, table: Table, data: list, update=False, 
+            index_cols=[]) -> None:
+        insert_query = self._get_insert_query(table, data, update, index_cols)
         self.db_session.execute(insert_query)
+
     
-    
+    def _get_insert_query(
+            self, table: Table, data: list|dict, update: bool, 
+            index_cols: list) -> Insert:
+        insert_query = sqlite_insert(table).values(data)
+        if update:
+            update_cols = {
+                col: insert_query.excluded[col] for col in data 
+                if col not in index_cols
+                }
+            insert_query = insert_query.on_conflict_do_update(
+                index_elements=index_cols,
+                set_=update_cols
+                )
+        else:
+            insert_query = insert_query.on_conflict_do_nothing(
+                index_elements=index_cols
+                )
+
+        return insert_query
+
+
 class Query():
     """class containing basic operations for the database"""
 

@@ -615,6 +615,12 @@ class PlayType(Base):
     id = Column(Integer, primary_key=True)
     play_type = Column(String, nullable=False, unique=True)
 
+    __table_args__ = (
+        UniqueConstraint(
+             'play_type', name='uq_play_types_play_type'
+         ),
+     )
+
     def __init__(self, play_type):
         self.play_type = play_type
 
@@ -628,6 +634,12 @@ class ShotType(Base):
 
     id = Column(Integer, primary_key=True)
     shot_type = Column(String, nullable=False, unique=True)
+
+    __table_args__ = (
+        UniqueConstraint(
+             'shot_type', name='uq_shot_types_shot_type'
+         ),
+     )
 
     def __init__(self, shot_type):
         self.shot_type = shot_type
@@ -643,6 +655,12 @@ class ZoneType(Base):
     id = Column(Integer, primary_key=True)
     zone_type = Column(String, nullable=False, unique=True)
 
+    __table_args__ = (
+        UniqueConstraint(
+             'zone_type', name='uq_zone_types_zone_type'
+         ),
+     )
+
     def __init__(self, zone_type):
         self.zone_type = zone_type
 
@@ -656,6 +674,12 @@ class ShotResult(Base):
 
     id = Column(Integer, primary_key=True)
     shot_result = Column(String, nullable=False, unique=True)
+
+    __table_args__ = (
+        UniqueConstraint(
+             'shot_result', name='uq_shot_results_shot_result'
+         ),
+     )
 
     def __init__(self, shot_result):
         self.shot_result = shot_result
@@ -671,6 +695,12 @@ class PenaltyType(Base):
     id = Column(Integer, primary_key=True)
     penalty_type = Column(String, nullable=False, unique=True)
 
+    __table_args__ = (
+        UniqueConstraint(
+             'penalty_type', name='uq_penalty_types_penalty_type'
+         ),
+     )
+
     def __init__(self, penalty_type):
         self.penalty_type = penalty_type
 
@@ -684,6 +714,12 @@ class DeflectionType(Base):
 
     id = Column(Integer, primary_key=True)
     deflection_type = Column(String, nullable=False, unique=True)
+
+    __table_args__ = (
+        UniqueConstraint(
+             'deflection_type', name='uq_deflection_types_deflection_type'
+         ),
+     )
 
     def __init__(self, deflection_type):
 
@@ -700,6 +736,12 @@ class BlockerType(Base):
     id = Column(Integer, primary_key=True)
     blocker_type = Column(String, nullable=False, unique=True)
 
+    __table_args__ = (
+        UniqueConstraint(
+             'blocker_type', name='uq_blocker_types_blocker_type'
+         ),
+     )
+
     def __init__(self, blocker_type):
         self.blocker_type = blocker_type
 
@@ -715,6 +757,12 @@ class ChallengeReason(Base):
      challenge_reason = Column(
         "challenge_reason", String, nullable=False, unique=True
         )
+     
+     __table_args__ = (
+        UniqueConstraint(
+             'challenge_reason', name='uq_challenge_reasons_challenge_reason'
+         ),
+     )
 
      def __init__(self, challenge_reason):
          self.challenge_reason = challenge_reason
@@ -731,6 +779,12 @@ class ChallengeResult(Base):
     challenge_result = Column(
         "challenge_result", String, nullable=False, unique=True
         )
+    
+    __table_args__ = (
+        UniqueConstraint(
+             'challenge_result', name='uq_time_zones_challenge_result'
+         ),
+     )
 
     def __init__(self, challenge_result):
         self.challenge_result = challenge_result
@@ -746,6 +800,12 @@ class TimeZone(Base):
      id = Column(Integer, primary_key=True)
      time_zone = Column(String, nullable=False, unique=True)
 
+     __table_args__ = (
+        UniqueConstraint(
+             'time_zone', name='uq_time_zones_time_zone'
+         ),
+     )
+
      def __init__(self, time_zone):
         self.time_zone = time_zone
 
@@ -760,6 +820,12 @@ class PeriodType(Base):
     id = Column(Integer, primary_key=True)
     period_type = Column(String, nullable=False, unique=True)
 
+    __table_args__ = (
+        UniqueConstraint(
+             'period_type', name='uq_period_types_period_type'
+         ),
+     )
+
     def __init__(self, period_type):
         self.period_type = period_type
 
@@ -773,6 +839,12 @@ class GameStopageType(Base):
 
      id = Column(Integer, primary_key=True)
      stopage_type = Column(String, nullable=False, unique=True)
+
+     __table_args__ = (
+        UniqueConstraint(
+             'stopage_type', name='uq_game_stopage_types_stopage_type'
+         ),
+     )
 
      def __init__(self, stopage_type):
          self.stopage_type = stopage_type
@@ -794,6 +866,13 @@ class Match(Base):
     home_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     away_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
 
+    __table_args__ = (
+        UniqueConstraint(
+            'match_id', 'date', 
+            name='uq_matches_match_id_date'
+        ),
+    )
+
     def __init__(self, match_id, stadium_id, date, time, 
                  attendance, home_team_id, away_team_id):
         self.match_id = match_id
@@ -803,6 +882,7 @@ class Match(Base):
         self.attendance = attendance
         self.home_team_id = home_team_id
         self.away_team_id = away_team_id
+
 
     def __repr__(self):
         return (f"({self.id}, {self.match_id}, {self.stadium_id}, "
@@ -819,6 +899,13 @@ class Play(Base):
     match_id = Column(Integer, ForeignKey('matches.id'), nullable=False)
     period = Column(Integer, nullable=False)
     time = Column(Integer)
+
+    __table_args__ = (
+        UniqueConstraint(
+            'play_type_id', 'match_id', 'period', 'time',
+            name='uq_plays_all_columns'
+        ),
+    )
 
     def __init__(self, play_type_id, match_id, period, time):
         self.play_type_id = play_type_id
@@ -848,6 +935,12 @@ class GoalPlay(Base):
     deflection_type_id = Column(Integer, ForeignKey('deflection_types.id'))
     zone_id = Column(Integer, ForeignKey('zone_types.id'), nullable=False)
 
+    __table_args__ = (
+        UniqueConstraint(
+            'play_id', 
+            name=f'uq_goal_plays_play_id'
+        ),
+    )
 
     def __init__(self, play_id, distance, penalty_shot, own_goal, team_id,
                   player_id, shot_type_id, deflection_type_id, zone_id):
@@ -880,7 +973,7 @@ class AssistPlay(Base):
     __table_args__ = (
         UniqueConstraint(
             'goal_id', 'player_id', 'is_primary', 
-            name='uq_assists_all_columns'
+            name='uq_assist_plays_all_columns'
         ),
     )
 
@@ -926,6 +1019,13 @@ class ShotPlay(Base):
         self.over_board = over_board
         self.deflection_type_id = deflection_type_id
 
+    __table_args__ = (
+        UniqueConstraint(
+            'play_id', 
+            name=f'uq_shot_plays_play_id'
+        ),
+    )
+
     def __repr__(self):
         return (f"({self.id}, {self.play_id}, {self.player_id},"
                 f" {self.team_id}, {self.zone_id}, {self.shot_type_id}, "
@@ -948,6 +1048,13 @@ class HitPlay(Base):
     victim_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     zone_id = Column(Integer, ForeignKey('zone_types.id'), nullable=False)
 
+    __table_args__ = (
+        UniqueConstraint(
+            'play_id', 
+            name=f'uq_hit_plays_play_id'
+        ),
+    )
+   
     def __init__(self, play_id, hitter_id, hitter_team_id, victim_id, 
                  victim_team_id, zone_id):
         self.play_id = play_id
@@ -977,6 +1084,13 @@ class FaceoffPlay(Base):
     loser_team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     zone_id = Column(Integer, ForeignKey('zone_types.id'), nullable=False)
 
+    __table_args__ = (
+        UniqueConstraint(
+            'play_id', 
+            name=f'uq_faceoff_plays_play_id'
+        ),
+    )
+    
     def __init__(self, play_id, winner_id, loser_id, winner_team_id, loser_team_id, zone_id):
         self.play_id = play_id
         self.winner_id = winner_id
@@ -1003,6 +1117,13 @@ class GiveawayPlay(Base):
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     zone_id = Column(Integer, ForeignKey('zone_types.id'), nullable=False)
 
+    __table_args__ = (
+        UniqueConstraint(
+            'play_id', 
+            name=f'uq_giveaway_plays_play_id'
+        ),
+    )
+
     def __init__(self, play_id, player_id, team_id, zone_id):
         self.play_id = play_id
         self.player_id = player_id
@@ -1026,6 +1147,13 @@ class TakeawayPlay(Base):
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
     zone_id = Column(Integer, ForeignKey('zone_types.id'), nullable=False)
 
+    __table_args__ = (
+        UniqueConstraint(
+            'play_id', 
+            name=f'uq_takeaway_plays_play_id'
+        ),
+    )
+    
     def __init__(self, play_id, player_id, team_id, zone_id):
         self.play_id = play_id
         self.player_id = player_id
@@ -1054,6 +1182,13 @@ class MissedShotPlay(Base):
     distance = Column(Integer)
     broken_stick = Column(Boolean, nullable=False)
     over_board = Column(Boolean, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            'play_id', 
+            name=f'uq_missed_shot_plays_play_id'
+        ),
+    )
 
     def __init__(self, play_id, player_id, team_id, zone_id, shot_type_id,
               shot_result_id, distance, broken_stick, over_board):
@@ -1090,6 +1225,13 @@ class BlockedShotPlay(Base):
     shot_type_id = Column(Integer, ForeignKey('shot_types.id'), nullable=False)
     broken_stick = Column(Boolean, nullable=False)
     over_board = Column(Boolean, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            'play_id', 
+            name=f'uq_block_shot_plays_play_id'
+        ),
+    )
 
     def __init__(self, play_id, shooter_id,
                 shooter_team_id, blocker_type_id, blocker_id, blocker_team_id, zone_id, shot_type_id, broken_stick, over_board):
@@ -1133,6 +1275,13 @@ class PenaltyPlay(Base):
                              nullable=False)
     penalty_minutes = Column(Integer, nullable=False)
 
+    __table_args__ = (
+        UniqueConstraint(
+            'play_id', 
+            name=f'uq_penalty_plays_play_id'
+        ),
+    )
+
     def __init__(self, play_id, offender_id, 
                  offender_team_id, served_by_id, victim_id, victim_team_id, zone_id, penalty_type_id, penalty_minutes, major_penalty):
         
@@ -1172,6 +1321,13 @@ class ChallengePlay(Base):
                         nullable=False)
     league_challenge = Column(Boolean)
 
+    __table_args__ = (
+        UniqueConstraint(
+            'play_id', 
+            name=f'uq_challenge_plays_play_id'
+        ),
+    )
+
     def __init__(
             self, play_id, team_id, reason_id, result_id,
             league_challenge):
@@ -1196,6 +1352,13 @@ class DelayedPenaltyPlay(Base):
         )
     team_id = Column(Integer, ForeignKey('teams.id'), nullable=False)
 
+    __table_args__ = (
+        UniqueConstraint(
+            'play_id', 
+            name=f'uq_delayed_penalty_plays_play_id'
+        ),
+    )
+
     def __init__(self, play_id, team_id):
         self.play_id = play_id
         self.team_id = team_id
@@ -1217,6 +1380,13 @@ class PeriodPlay(Base):
     period_type_id = Column(Integer, 
                             ForeignKey('period_types.id'),
                              nullable=False)
+    
+    __table_args__ = (
+        UniqueConstraint(
+            'play_id', 
+            name=f'uq_period_plays_play_id'
+        ),
+    )
 
     def __init__(self, play_id, time, time_zone_id, period_type_id):
         self.play_id = play_id
@@ -1296,7 +1466,7 @@ class PlayerOnIce(Base):
 
 class GameStopagePlay(Base):
 
-    __tablename__ = "game_stopages"
+    __tablename__ = "game_stopage_plays"
 
     id = Column(Integer, primary_key=True)
     play_id = Column(
@@ -1305,6 +1475,14 @@ class GameStopagePlay(Base):
     stopage_type_id = Column(
         Integer, ForeignKey('game_stopage_types.id'), nullable=False
         )
+    
+    __table_args__ = (
+        UniqueConstraint(
+            'play_id', 
+            name='uq_game_stopage_plays_play_id'
+        ),
+    )
+
     
 
     def __init__(self, play_id, stopage_type_id):
@@ -1352,7 +1530,7 @@ class NHLEliteNameMapper(Base):
 
 class BrokenPBP(Base):
 
-    __tablename__ = "broken_play"
+    __tablename__ = "broken_pbp"
 
     id = Column(Integer, primary_key=True)
     play_id = Column(
@@ -1360,6 +1538,11 @@ class BrokenPBP(Base):
         )
     play_desc = Column(String, nullable=False)
 
+    __table_args__ = (
+        UniqueConstraint(
+            'play_id', name='uq_broken_pbp_play_id'
+                ),
+            )
 
     def __init__(self, play_id, play_desc):
         self.play_id = play_id
@@ -1383,6 +1566,11 @@ class BrokenPOI(Base):
     poi = Column(String, nullable=False)
     error_type = Column(String, nullable=False)
 
+    __table_args__ = (
+        UniqueConstraint(
+            'play_id', name='uq_broken_poi_play_id'
+                ),
+            )
 
     def __init__(self, play_id, team_id, poi, error_type):
         self.play_id = play_id
@@ -1410,7 +1598,6 @@ class StadiumMapper(Base):
             'nhl_name', 'elite_name', name='uq_stadium_mappers_all_columns'
                 ),
             )
-
 
     def __init__(self, nhl_name, elite_name):
         self.nhl_name = nhl_name
