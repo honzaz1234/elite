@@ -104,7 +104,7 @@ class ManagePlayer():
     @repeat_request_until_success
     def scrape_player(self, url: str) -> dict:
         player_o = player_scraper.PlayerScraper(
-                url=url, page=self.playwright_session)
+                url=url, page=self.playwright_session.page)
         dict_player = player_o.get_info_all()
 
         return dict_player
@@ -156,13 +156,14 @@ class ManagePlayer():
                 self.add_one_season_in_db(
                     season_dict=season_dict, season=season,
                     league_uid=league_uid)
-            except:
+            except Exception as e:
                 logger.info(f"Process of obtaining data of players from"
                     f" league {league_uid} was disrupted")
                 with open(self.players_done_path, 'w') as f:
                     json.dump(self.players_done, f)
                 logger.info(f"List of uids of players already in the db was"
                             " written to a file")
+                raise e
             with open(self.players_done_path, 'w') as f:
                 json.dump(self.players_done, f)
         logger.info(f"Process of obtaining data of players from"
@@ -176,7 +177,7 @@ class ManagePlayer():
                     f" started")
         for type_ in season_dict:
             type_list = season_dict[type_]
-            self.add_one_type_in_db(type_list=type_list)
+            self.add_one_type_in_db(types_=type_list)
         logger.info(f"Process of obtaining data of players from"
                     f" league {league_uid} for season {season}"
                     f" finished")
@@ -285,9 +286,10 @@ class ManageTeam():
             return
         try:
             self.scrape_and_input_team_into_db(url=url)
-        except:
+        except Exception as e:
             with open(self.teams_done_path, 'w') as f:
                 json.dump(self.teams_done, f)
+            raise e
         self.teams_done["teams_done"].append(uid)
 
 
@@ -312,13 +314,14 @@ class ManageTeam():
         try:
             for url in url_list:
                 self.scrap_input_team_into_db_wrapper(url=url)
-        except:
+        except Exception as e:
             logger.info(f"Process of obtaining data of teams from"
                     f" league {league_uid} was disrupted")
             with open(self.teams_done_path, 'w') as f:
                 json.dump(self.teams_done, f)
             logger.info(f"List of uids of teams already in the db was"
                         f" written to a file")
+            raise e
         with open(self.teams_done_path, 'w') as f:
             json.dump(self.teams_done, f)
         logger.info(f"Process of obtaining data of teams from"
@@ -480,9 +483,10 @@ class ManageGame():
         try: 
             with open(self.season_ranges_path) as f:
                 self.season_ranges = json.load(f)
-        except:
+        except Exception as e:
             logger.error(f"Season ranges file not found in specified "
                         f"location ({self.season_ranges_path})")
+            raise e
 
 
     def create_game_dates_file(self) -> None:
@@ -521,6 +525,7 @@ class ManageGame():
             with open(self.game_data_path, "w") as f:
                 json.dump(self.game_data, f)
             logger.debug("Scraped report IDs saved to a file.")
+            raise e
         logger.info("Scraping of season report IDs finished.")
         with open(self.game_data_path, "w") as f:
                 json.dump(self.game_data, f)
