@@ -94,14 +94,13 @@ class LeagueUrlDownload():
     def get_list_of_seasons(self, url: str):
         
         block_check = True
-        while block_check != None:
+        while block_check is not None:
                 self.page.goto(url)
                 sel_league = scrapy.Selector(text=self.page.content())
-                block_check = cf.get_list_xpath_values(
-                                                sel=sel_league, 
-                                                xpath=BLOCK_SELECTOR,
-                                                optional=True)
-                if block_check != None:
+                block_check = cf.get_single_xpath_value(
+                    sel=sel_league, xpath=BLOCK_SELECTOR, optional=True
+                    )
+                if block_check is not None:
                     logger.info("Limit for pages scraped achieved. Timeout"
                                 " will follow...")
                     time.sleep(LeagueUrlDownload.SLEEP)
@@ -180,8 +179,7 @@ class SeasonUrlDownload():
                       "//td[@class='player']//a/@href",
         "goalie_ref": "//table[@id='export-goalie-stats-table']//td"
                       "[@class='player']//a/@href",
-        "last_page_players": "//span[@class = 'hidden-xs']/a/@href",
-        "last_page_goalies": "//span[@class = 'hidden-xs']/a/@href",
+        "last_page": "//a[contains(text(),'Last page')]/@href",
         "team_url": "//td[@class='team']//@href",
         "stats": "/stats",
         "page_goalie": "?sort-goalie-stats=svp&page-goalie="
@@ -208,11 +206,10 @@ class SeasonUrlDownload():
         dict_season = {}
         page_html = cf.get_valid_request(stats_path, return_type="content")
         selector_players = scrapy.Selector(text=page_html)
-        block_check = cf.get_list_xpath_values(
-                                                sel=selector_players, 
-                                                xpath=BLOCK_SELECTOR,
-                                                optional=True)
-        if block_check != None:
+        block_check = cf.get_single_xpath_value(
+            sel=selector_players, xpath=BLOCK_SELECTOR, optional=True
+            )
+        if block_check is not None:
             return False
         dict_season = self.get_player_season_refs(selector=selector_players,
                                                   stats_path=stats_path)
@@ -232,8 +229,8 @@ class SeasonUrlDownload():
             dict_season = {}
             ref_last_page = cf.get_list_xpath_values(
                                                 sel=selector, 
-                                                xpath=self.PATHS["last_page_players"],
-                                                optional=False)
+                                                xpath=self.PATHS["last_page"],
+                                                optional=True)
             dict_season["goalies"] = self.get_goalies_season_refs(
                 ref_last_page=ref_last_page,
                 stats_path=stats_path
@@ -292,11 +289,10 @@ class SeasonUrlDownload():
         subpage_path = path + "?page=" + str(index)
         subpage_html = cf.get_valid_request(subpage_path, return_type="content")
         selector_subpage = scrapy.Selector(text=subpage_html)
-        block_check = cf.get_list_xpath_values(
-                                                sel=selector_subpage, 
-                                                xpath=BLOCK_SELECTOR,
-                                                optional=True)
-        if block_check != None:
+        block_check = cf.get_single_xpath_value(
+            sel=selector_subpage, xpath=BLOCK_SELECTOR, optional=True
+            )
+        if block_check is not None:
             return False
         player_refs =  cf.get_list_xpath_values(
             sel=selector_subpage, 
@@ -312,11 +308,10 @@ class SeasonUrlDownload():
                         + str(index))
         subpage_html = cf.get_valid_request(subpage_path, return_type="content")
         selector_subpage = scrapy.Selector(text=subpage_html)
-        block_check = cf.get_list_xpath_values(
-                                                sel=selector_subpage, 
-                                                xpath=BLOCK_SELECTOR,
-                                                optional=True)
-        if block_check != None:
+        block_check = cf.get_single_xpath_value(
+            sel=selector_subpage, xpath=BLOCK_SELECTOR, optional=True
+            )
+        if block_check is not None:
             return False
         goalies_refs = cf.get_list_xpath_values(
             sel=selector_subpage, 

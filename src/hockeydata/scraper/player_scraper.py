@@ -164,8 +164,7 @@ class PlayerGeneralInfo():
         name = (self.selector
                 .xpath(PlayerGeneralInfo.PATHS["player_name"])
                 .getall())
-        name = [string.strip() for string in name]
-        name = [string for string in name if string != ""]
+        name = [string.strip() for string in name if string != ""]
         logger.debug(f"Name of player:" 
                     f" {name[0]}"
                     f" succesfully scraped")
@@ -193,13 +192,15 @@ class PlayerGeneralInfo():
                          + PlayerGeneralInfo.PATHS["gi_right"]
                          + PlayerGeneralInfo.PROJECT_MAPPING[info_name][1]
                          + "[not(self::comment())]")
-        info_val = cf.get_single_xpath_value(
+        info_val = cf.get_list_xpath_values(
             sel=self.selector,
             xpath=info_path_val,
             optional=True
         )
-        info_val = [string.strip() for string in info_val]
-        info_val = [string for string in info_val if string != ""]
+        info_val = (
+            [info.strip() for info in info_val if info != ""] 
+            if info_val is not None else None 
+            )
         if info_name == 'Drafted':
             info_val = self.get_drafts(info_val)
         if info_val == []:
@@ -334,27 +335,58 @@ class Stats():
         """
 
         dict_stats = {}
-        dict_stats["leagues"] = self._get_table_stats_wrapper(years=years,
-                                                         type_="leagues")
+        dict_stats["leagues"] = self._get_table_stats_wrapper(
+            years=years, type_="leagues"
+            )
         
-        dict_stats["tournaments"] = self._get_table_stats_wrapper(years=years,
-                                                    type_="tournaments")
+        dict_stats["tournaments"] = self._get_table_stats_wrapper(
+            years=years, type_="tournaments"
+            )
         logger.debug(f"Stats Dict: {dict_stats}")
         assert len(dict_stats["leagues"]) > 0, 'League dictionary is empty'
+
         return dict_stats
     
-    def _get_table_stats_wrapper(self, type_: str, years: list=None):
+
+    def _get_table_stats_wrapper(self, type_: str, years: list=None) -> dict:
+        path_type = self.get_path_type(type_=type_)
+        table_sel =  cf.get_single_xpath_value(
+            sel=self.selector, xpath=path_type, optional=True
+            )
+        if type_ == "tournaments":
+            print(table_sel)
+        if table_sel is None:
+            logger.info(
+                "Table for type: %s is not present on the page of the player",
+                type_
+                )
+            return {}
+        dict_type = self._get_table_stats_wrapper_type(
+            type_=type_, path_type=path_type, years=years
+            )
+
+        return dict_type
+    
+    
+    def _get_table_stats_wrapper_type(
+            type_: str, path_type: str, years: list=None) -> dict:
         pass
 
-    def get_path_type_and_years(self, type_: str):
+
+    def get_path_type(self, type_: str) -> str:
 
         if type_ == "leagues":
             path_type = Stats.PATHS["path_league"]
         elif type_ == "tournaments":
             path_type = Stats.PATHS["path_tournament"]
-        path_years = path_type + Stats.PATHS["stat_years"]
     
-        return path_type, path_years
+        return path_type
+    
+
+    def get_path_years(self, path_type: str) -> str:
+    
+        return path_type + Stats.PATHS["stat_years"]
+    
 
     def _merge_league_dict(self, old_dict: dict, new_dict: dict) -> dict:
         
@@ -381,7 +413,7 @@ class Stats():
         """
 
         list_seasons = []
-        n_rows = len(cf.get_single_xpath_value(
+        n_rows = len(cf.get_list_xpath_values(
             sel=self.selector,
             xpath=path_year,
             optional=False
@@ -391,11 +423,11 @@ class Stats():
                      + '[' 
                      + str(index) 
                      + ']/td[1]//text()')
-            season = len(cf.get_single_xpath_value(
+            season = cf.get_single_xpath_value(
                 sel=self.selector,
                 xpath=xpath,
                 optional=True
-        ))
+        )
             if season is not None:
                 current_season = season
             list_seasons.append(current_season)
@@ -470,13 +502,15 @@ class SkaterStats(Stats):
         super().__init__(type_player=type_player, selector=selector)
 
     
-    def _get_table_stats_wrapper(self, type_: str, years: list=None):
+    def _get_table_stats_wrapper_type(
+            self, type_: str, path_type: str, years: list=None) -> dict:
 
-        path_type, path_years = self.get_path_type_and_years(type_=type_)
+        path_years = self.get_path_years(path_type=path_type)
         list_years = self._get_years_list(path_years)
         dict_stats = self._get_table_stats(path_type, list_years, years)
         logger.debug(f"Dict with stats for all season for Type: {type_} "
                     f"succesfully scraped")
+        
         return dict_stats
     
         
@@ -502,13 +536,14 @@ class GoalieStats(Stats):
 
         super().__init__(page=page, type_player=type_player, selector=selector)
 
-    def _get_table_stats_wrapper(self, type_: str,  years: list=None):
+    def _get_table_stats_wrapper_type(
+            self, type_: str, path_type: str, years: list=None) -> dict:
         """wrapper for selecting different types of tables for stats - 
         regual season vs play off table, which is specific for the goalies
         """
 
         dict_stats = {}
-        path_type, path_years = self.get_path_type_and_years(type_=type_)
+        path_years = self.get_path_years(path_type=path_type)
         list_years = self._get_years_list(path_years)
         for season_type in GoalieStats.TYPE:
             self._select_season_type(path_type=path_type,
@@ -516,6 +551,8 @@ class GoalieStats(Stats):
             self.season_type = season_type
             dict_stats_type = self._get_table_stats(path_type, list_years, years)
             dict_stats = merge_dicts(dict_stats, dict_stats_type)
+
+
         return dict_stats
     
     def _select_season_type(self, path_type: str, season_type: str) -> None:
@@ -636,9 +673,8 @@ class OneRowStat():
         """
         
         path_url = self.path_to_row + OneRowStat.PATHS[key_path]
-        list_data = cf.get_list_xpath_values(
+        url = cf.get_single_xpath_value(
             sel=self.selector, xpath=path_url, optional=False)
-        url = list_data[0]
         logger.debug(f" General url for {key_regex}: {url}")
         return url
 

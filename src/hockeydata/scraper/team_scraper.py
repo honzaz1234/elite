@@ -172,8 +172,7 @@ class TeamScraper():
                          + info 
                          + TeamScraper.INFO_PATHS[key_right])
         info_val = self.selector.xpath(info_path_val).getall()
-        info_val = [string.strip() for string in info_val]
-        info_val = [string for string in info_val if string != ""]
+        info_val = [string.strip() for string in info_val if string != ""]
         if info_val == []:
             info_val = [None]
         return info_val[0]
