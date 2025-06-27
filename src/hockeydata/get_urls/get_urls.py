@@ -3,15 +3,20 @@ import scrapy
 import time
 
 import common_functions as cf 
+import hockeydata.playwright_setup.playwright_setup as ps
 
-from decorators import time_execution
 from constants import *
+from decorators import time_execution
 from logger.logging_config import logger
 
 
 class LeagueUrlDownload():
 
     SLEEP = 120
+    WAIT_LEAGUE_PAGE = (
+        "//ul[preceding-sibling::header[./h2[contains(text(),"
+        "'Champions')]]]/li[last()]/a[1]"
+    )
         
     PATHS = {
         "league": "/league",
@@ -77,25 +82,74 @@ class LeagueUrlDownload():
             list_seasons.append(season1)
          return list_seasons
     
-    def get_player_refs(self, league: str, years: list=None) -> dict:
+
+    def get_player_refs(
+            self, league_uid: str, url_dict: dict={}, seasons: list=[]) -> dict:
         """downloads player urls based on league and list of  years
             output: dictionary: season -> (players-goalies) -> urls
         """
+        if "season_range" not in url_dict[league_uid]:
+            self._add_season_range(
+                league_uid=league_uid, url_dict=url_dict
+                )
+        season_range = url_dict[league_uid]["season_range"]
+        all_years = range(season_range['start'], season_range['finish'])
+        seasons_to_get = self.create_list_of_seasons(years=all_years)
+        if seasons != []:
+            seasons_to_get = [
+                season for season in seasons_to_get if season in seasons
+                ]
+        seasons_to_download = [
+            season for season in seasons_to_get 
+            if season not in url_dict[league_uid]
+            ]
+        if seasons_to_download == []:
+            logger.info("All required seasons are already downloaded.")
 
-        if years == None:
-            url = ELITE_URL + LEAGUE_URLS[league]
-            list_seasons= self.get_list_of_seasons(url=url)
-        elif years == []:
-                return
-        dict_player_ref = self.get_player_urls(list_seasons=list_seasons,
-                                               league=league)
+            return
+        logger.info("Urls for players from league %s for seasons %s "
+                    "are not yet in the dict and will be downloaded now.",
+                        league_uid, seasons_to_download
+                        )
+        dict_player_ref = self.get_player_urls(
+            list_seasons=seasons_to_get, league=league_uid
+            )
+        logger.info("Urls for players from league %s for seasons %s "
+                    "were succesfully downloaded.",
+                        league_uid, seasons_to_get
+                        )
+        
         return dict_player_ref
     
-    def get_list_of_seasons(self, url: str):
+
+    def _add_season_range(self, league_uid: str, url_dict: dict) -> None:
+        url = ELITE_URL + LEAGUE_URLS[league_uid]
+        list_seasons = self.get_list_of_years(url=url)
+        season_range = {
+            'start': int(list_seasons[0]),
+            'finish': int(list_seasons[-1])
+            }
+        url_dict[league_uid]["season_range"] = season_range
+
+        
+    def create_list_of_seasons(self, years: list) -> list:
+        season_list = []
+        for year in years:
+            season_string = self.create_season_string(year)
+            season_list.append(season_string)
+
+        return season_list
+    
+    
+    def get_list_of_years(self, url: str) -> list:
         
         block_check = True
         while block_check is not None:
-                self.page.goto(url)
+                ps.go_to_page_wait_selector(
+                    page=self.page, 
+                    url=url, 
+                    sel_wait=self.WAIT_LEAGUE_PAGE
+                              )
                 sel_league = scrapy.Selector(text=self.page.content())
                 block_check = cf.get_single_xpath_value(
                     sel=sel_league, xpath=BLOCK_SELECTOR, optional=True
@@ -111,11 +165,9 @@ class LeagueUrlDownload():
             .xpath(LeagueUrlDownload.PATHS["last_year"])
             .getall()[0]))
         years = [year for year in range(first_year, last_year)]
-        list_seasons = []
-        for year in years:
-            season_string = self.create_season_string(year)
-            list_seasons.append(season_string)
-        return list_seasons
+
+        return years
+
 
     @time_execution
     def get_player_urls(self, list_seasons: list, league: str) -> dict:
@@ -218,6 +270,7 @@ class SeasonUrlDownload():
         logger.info(f" {len(dict_season['goalies'])} urls for"
                     f" goalies and {len(dict_season['players'])} urls for"
                     f" skaters were scrapped")
+        
         return dict_season
     
     def get_player_season_refs(

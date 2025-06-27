@@ -7,6 +7,7 @@ from database_creator.database_creator import *
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql.schema import Table
 
 
 class GetDatabaseSession():
@@ -69,7 +70,11 @@ class GetDatabaseSession():
     def add_data_to_season_table(self) -> None:
         self.add_seasons_to_seasons_table()
         self.add_years_to_seasons_table()
-        logger.debug("Season and year values added to the db")
+     #   self.add_data_to_stadium_mapper_table()
+      #  self.add_data_to_reference_tables()
+        self.session.commit()
+        logger.debug("Season, Year, Stadium Mapper and Reference Table values"
+                     "added to the db.")
 
 
     def add_seasons_to_seasons_table(self) -> None:
@@ -79,7 +84,6 @@ class GetDatabaseSession():
         for season in season_list:
             seasons_insert.append({"season": season})
         self.session.bulk_insert_mappings(Season, seasons_insert)
-        self.session.commit()
 
 
     def add_years_to_seasons_table(self) -> None:
@@ -88,7 +92,32 @@ class GetDatabaseSession():
         for year in years:
             years_insert.append({"season": year})
         self.session.bulk_insert_mappings(Season, years_insert)
-        self.session.commit()
+
+
+    def add_data_to_stadium_mapper_table(self, stadium_mapper: list) -> None:
+        stadium_mapper_insert = []
+        for row in stadium_mapper:
+            stadium_mapper_insert.append(row)
+        self.session.bulk_insert_mappings(StadiumMapper, stadium_mapper_insert)
+
+
+    def add_data_to_reference_tables(
+            self, reference_table_mapper: dict) -> None:
+        for table in reference_table_mapper:
+            self.add_data_to_reference_table(
+                reference_table_mapper[table], table
+                )
+
+
+    def add_data_to_reference_table(
+            self, reference_table_mapper: list, table: Table) -> None:
+        reference_table_insert = []
+        for row in reference_table_mapper:
+            reference_table_insert.append(row)
+        self.session.bulk_insert_mappings(
+            StadiumMapper, reference_table_insert)
+        
+
 
 
 

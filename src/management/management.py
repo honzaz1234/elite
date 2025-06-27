@@ -46,14 +46,18 @@ class ManagePlayer():
             page=self.playwright_session.page)
 
 
-    def add_players_from_leagues_to_db(self, league_uids: list) -> None:
+    def add_players_from_leagues_to_db(
+            self, seasons_to_get: dict={}) -> None:
         logger.info(f"Process of obtaining data of players from following"
-                    f" leagues: {league_uids} started")
+                    f" leagues: {seasons_to_get.keys()} started")
         self.set_up_manage_player()
-        for league_uid in league_uids:
-            self.add_players_from_league_to_db(league_uid=league_uid)
+        for league_uid in seasons_to_get.keys():
+            self.add_players_from_league_to_db(
+                league_uid=league_uid, 
+                seasons_to_get=seasons_to_get[league_uid]
+                )
         logger.info(f"Process of obtaining data of players from following"
-                    f" leagues: {league_uids} finished")
+                    f" leagues: {seasons_to_get.keys()} finished")
         
 
     def set_up_manage_player(self) -> None:
@@ -128,34 +132,58 @@ class ManagePlayer():
         self.players_done["players_done"].append(uid)
 
 
-    def get_player_urls_in_league(self, league_uid: str) -> None:
-        if league_uid in self.players_urls:
+    def get_player_urls_in_league(
+            self, league_uid: str, seasons_to_get: list=[]) -> dict:
+        self.add_league_to_player_url_dict(league_uid=league_uid)
+        self.update_player_url_dict(
+                league_uid=league_uid, seasons_to_get=seasons_to_get
+                    )
+        url_dict = {
+            season: self.players_urls[league_uid][season]
+            for season in self.players_urls[league_uid] 
+            if season in seasons_to_get
+            }
 
-            return self.players_urls[league_uid] 
-        url_list = self.get_urls.get_player_refs(league=league_uid,
-                                                 years=None)
-        if url_list != {}:
-            self.players_urls[league_uid] = url_list
+        return url_dict
+    
+    
+    def add_league_to_player_url_dict(self, league_uid: str) -> None:
+        if league_uid not in self.players_urls:
+            self.players_urls[league_uid] = {}
+
+    
+    def update_player_url_dict(
+            self, league_uid: str, seasons_to_get: list) -> None:
+            self.get_urls.get_player_refs(
+                league_uid=league_uid, 
+                url_dict=self.players_urls,
+                seasons=seasons_to_get
+                )
+            logger.info(
+                "Updated URL dict for league %s will be saved now.",
+                league_uid
+                )
             with open(self.url_list_path, 'w') as f:
                 json.dump(self.players_urls, f)
-
-        return url_list
+            logger.info(
+                "Data were saved as a JSON file at the following path: %s",
+                    self.url_list_path
+                    )
     
 
-    def add_players_from_league_to_db(self, league_uid: str) -> None:
+    def add_players_from_league_to_db(
+            self, league_uid: str, seasons_to_get: list) -> None:
         logger.info(f"Process of obtaining data of players from"
                     f" league {league_uid} started")
-        if league_uid not in self.players_urls:
-            url_dict = self.get_player_urls_in_league(
-                            league_uid=league_uid)
-        else:
-            url_dict =  self.players_urls[league_uid]
-        for season in url_dict:
+        self.get_player_urls_in_league(
+                league_uid=league_uid, 
+                seasons_to_get=seasons_to_get
+                )
+        for season in seasons_to_get:
             try:
-                season_dict = url_dict[season]
                 self.add_one_season_in_db(
-                    season_dict=season_dict, season=season,
-                    league_uid=league_uid)
+                    season=season, league_uid=league_uid
+                    )
             except Exception as e:
                 logger.info(f"Process of obtaining data of players from"
                     f" league {league_uid} was disrupted")
@@ -167,23 +195,26 @@ class ManagePlayer():
             with open(self.players_done_path, 'w') as f:
                 json.dump(self.players_done, f)
         logger.info(f"Process of obtaining data of players from"
-                    f" league {league_uid} finished")
+                    f" league {league_uid} finished and written to file.")
 
 
     def add_one_season_in_db(
-            self, season_dict: dict, season: str, league_uid: str) -> None:
+            self, season: str, league_uid: str) -> None:
         logger.info(f"Process of obtaining data of players from"
                     f" league {league_uid} for season {season}"
                     f" started")
-        for type_ in season_dict:
-            type_list = season_dict[type_]
-            self.add_one_type_in_db(types_=type_list)
+        for player_type in self.players_urls[league_uid][season]:
+            self.add_one_type_in_db(
+                league_uid=league_uid, season=season, player_type=player_type
+                )
         logger.info(f"Process of obtaining data of players from"
                     f" league {league_uid} for season {season}"
                     f" finished")
 
-    def add_one_type_in_db(self, types_: list) -> None:
-        for url in types_:
+
+    def add_one_type_in_db(
+            self, league_uid: str, season: str, player_type: str) -> None:
+        for url in self.players_urls[league_uid][season][player_type]:
             self.scrap_input_player_into_db_wrapper(url=url)
 
 
