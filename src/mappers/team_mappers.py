@@ -27,6 +27,7 @@ NHL_ABB_UID_MAPPER = {
         'STL': 74,
         'TBL': 75,
         'TOR': 76,
+        'UTA': 40261,
         'VAN': 77,
         'VGK': 22211,
         'WSH': 78,
@@ -94,7 +95,8 @@ NHL_FULL_NAME_UID_MAPPER = {
         'Hamilton Tigers': 3196,
         'Québec Athletic Club': 3194,
         'Toronto Hockey Club': 76,
-        'Montréal Wanderers': 3264
+        'Montréal Wanderers': 3264,
+        'Utah Mammoth': 40261
     }
 
 NHL_ABB_TEAM_NAME = {
@@ -126,6 +128,7 @@ NHL_ABB_TEAM_NAME = {
     "STL": "St. Louis Blues",
     "TBL": "Tampa Bay Lightning",
     "TOR": "Toronto Maple Leafs",
+    "UTA": "Utah Mammoth",
     "VAN": "Vancouver Canucks",
     "VGK": "Vegas Golden Knights",
     "WSH": "Washington Capitals",
