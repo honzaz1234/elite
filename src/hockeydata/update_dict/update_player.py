@@ -210,6 +210,8 @@ class UpdatePlayerInfo():
         if cap_hit == None:
             return None
         updated_cap_hit = re.sub(UpdatePlayerInfo.CAP_HIT_REGEX, "", cap_hit)
+        if not cap_hit.isdigit(): 
+            return None
         return int(updated_cap_hit)
 
     def _get_nhl_rights_uid(self, nhl_rights: str|None) -> int|None:
@@ -408,7 +410,7 @@ class UpdatePlayerStats:
         """method for updating dict for one competition
         (league/tournament)
         """
-
+        
         competition_dict_new = competition_dict.copy()
         for season_key in list(competition_dict_new.keys()):
             year_dict = competition_dict_new[season_key]
