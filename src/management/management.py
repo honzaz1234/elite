@@ -154,11 +154,13 @@ class ManagePlayer():
     
     def update_player_url_dict(
             self, league_uid: str, seasons_to_get: list) -> None:
-            self.get_urls.get_player_refs(
+            new_season_urls = self.get_urls.get_player_refs(
                 league_uid=league_uid, 
                 url_dict=self.players_urls,
                 seasons=seasons_to_get
                 )
+            self.update_league_player_url_dict(
+                league_uid=league_uid, new_data=new_season_urls)
             logger.info(
                 "Updated URL dict for league %s will be saved now.",
                 league_uid
@@ -169,6 +171,19 @@ class ManagePlayer():
                 "Data were saved as a JSON file at the following path: %s",
                     self.url_list_path
                     )
+            
+
+    def update_league_player_url_dict(
+            self, league_uid: str, new_data: dict) -> None:
+        logger.info(
+            "Player URLs for seasons %s from league %s will be added "
+            "to player URL dictionary", new_data.keys(), league_uid
+            )
+        self.players_urls[league_uid].update(new_data)
+        logger.info(
+            "Player URLs for seasons %s from league %s were be added "
+            "to player URL dictionary", new_data.keys(), league_uid
+            )
     
 
     def add_players_from_league_to_db(
