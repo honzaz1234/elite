@@ -355,8 +355,6 @@ class Stats():
         table_sel =  cf.get_single_xpath_value(
             sel=self.selector, xpath=path_type, optional=True
             )
-        if type_ == "tournaments":
-            print(table_sel)
         if table_sel is None:
             logger.info(
                 "Table for type: %s is not present on the page of the player",
