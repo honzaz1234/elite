@@ -309,8 +309,10 @@ class Stats():
     # xpaths to access statistics in league and tournament tables on player webpage
 
     PATHS = {
-        "path_league": "//section[@id='player-statistics']",
-        "path_tournament": "//section[@id='tournament-statistics']",
+        "path_league": "//section[@id='player-statistics' "
+                       "and not(contains(., 'No Data Found'))]",
+        "path_tournament": "//section[@id='tournament-statistics' "
+                           "and not(contains(., 'No Data Found'))]",
         "stats_table_l": "//tbody//tr[",
         "stats_table_r": "]/td",
         "stat_years": "//tbody/tr"
@@ -349,7 +351,7 @@ class Stats():
     
 
     def _get_table_stats_wrapper(self, type_: str, years: list=None) -> dict:
-        path_type = self.get_path_type(type_=type_)
+        path_type = self._get_path_type(type_=type_)
         table_sel =  cf.get_single_xpath_value(
             sel=self.selector, xpath=path_type, optional=True
             )
@@ -373,7 +375,7 @@ class Stats():
         pass
 
 
-    def get_path_type(self, type_: str) -> str:
+    def _get_path_type(self, type_: str) -> str:
 
         if type_ == "leagues":
             path_type = Stats.PATHS["path_league"]
