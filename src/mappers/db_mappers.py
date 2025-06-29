@@ -1,3 +1,5 @@
+import unicodedata
+
 from collections import Counter
 
 import database_creator.database_creator as db
@@ -13,12 +15,43 @@ class GetDBID():
         self.session = session
 
 
-    def get_player_id_team_season_mapper_dict(
+    def get_player_id_team_season_mapper_dicts(
             self, selected_seasons: list) -> dict:
         player_dict = self.get_all_player_season_data(selected_seasons)
         player_dict = self.solve_identical_names(player_dict)
+        normalized_player_dict = self.normalize_player_names(player_dict)
 
-        return player_dict
+        return player_dict, normalized_player_dict
+    
+
+    def normalize_player_names(self, player_dict: dict) -> dict:
+        normalized_dict = {}
+        for season in player_dict:
+            for team in player_dict[season]:
+                self.normalize_team_data(
+                    team_dict=player_dict[season][team])
+        
+        return normalized_dict
+
+
+    def normalize_team_data(
+            self, team_dict: dict, normalized_dict: dict) -> dict:
+        for type_ in team_dict:
+            normalized_dict[type_] = []
+            for player_dict in team_dict[type_]:
+                updated_player_dict = player_dict.copy()
+                updated_player_dict["player_name"] = self.normalize_name(
+                    updated_player_dict["player_name"])
+                normalized_dict[type_].append(updated_player_dict)  
+
+
+    def normalize_name(self, name: str) -> str:
+        normalized = unicodedata.normalize("NFD", name)
+        ascii_name = "".join(c for c in normalized if not unicodedata.combining(c))
+
+        return ascii_name
+
+
 
 
     def get_all_player_season_data(
@@ -111,7 +144,7 @@ class GetDBID():
         return new_team_dict     
 
 
-    def get_elite_nhl_mapper(
+    def get_nhl_elite_mapper(
             self, selected_seasons: list=None) -> dict:
         if selected_seasons:
             seasons_filter = [self.query.get_list_filter(
@@ -160,7 +193,7 @@ class GetDBID():
 
     def get_nhl_elite_stadium_mapper(self) -> dict:
         results = self.query.get_db_query_result(
-            query_name="nhl_elite_names", 
+            query_name="nhl_elite_stadium_mapper", 
             distinct=True)
         stadium_mapper = {}
         for row in results:
@@ -170,7 +203,19 @@ class GetDBID():
         return stadium_mapper
     
 
-    def get_reference_table_mappers(self) -> dict:
+    def get_firstname_mapper(self) -> dict:
+        results = self.query.get_db_query_result(
+            query_name="firstname_mapper", 
+            distinct=True)
+        firstname_mapper = {}
+        for row in results:
+            name, alternative_name = row
+            firstname_mapper[name] = alternative_name
+
+        return firstname_mapper
+    
+
+    def get_look_ups(self) -> dict:
         table_mapper = {}
         lookup_keys = [
             db.PlayType,

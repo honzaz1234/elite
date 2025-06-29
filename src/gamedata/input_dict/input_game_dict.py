@@ -27,24 +27,24 @@ class InputEliteNHLmapper():
 
     @time_execution
     def input_all_mappers(
-            self, elite_nhl_mapper: dict, stadium_mapper: dict, reference_mapper: dict) -> None:
-        self._input_elite_nhl_mapper_dict(
-            elite_nhl_mapper, reference_mapper[db.Season]
+            self, nhl_elite_mapper: dict, stadium_mapper: dict, reference_mapper: dict) -> None:
+        self._input_nhl_elite_mapper_dict(
+            nhl_elite_mapper, reference_mapper[db.Season]
             )
         self._input_stadium_mapper(stadium_mapper)
         self._input_reference_tables(reference_mapper)
         self.db_session.commit()
 
 
-    def _input_elite_nhl_mapper_dict(
-            self, elite_nhl_mapper: dict, season_mapper: dict) -> None:
+    def _input_nhl_elite_mapper_dict(
+            self, nhl_elite_mapper: dict, season_mapper: dict) -> None:
         """wrapper method for inputting  all scraped data from dict to DB"""
-        db_nhl_elite_mapper = self.mappers_o.get_elite_nhl_mapper()
-        elite_nhl_mapper = dict_diff_unique(
-            elite_nhl_mapper, db_nhl_elite_mapper)
-        for season in elite_nhl_mapper:
+        db_nhl_elite_mapper = self.mappers_o.get_nhl_elite_mapper()
+        nhl_elite_mapper = dict_diff_unique(
+            nhl_elite_mapper, db_nhl_elite_mapper)
+        for season in nhl_elite_mapper:
             self._input_nhl_elite_season_dict(
-                elite_nhl_mapper[season], season, season_mapper
+                nhl_elite_mapper[season], season, season_mapper
                 )
         self.db_method.insert_update_or_ignore_on_conflict_bulk(
             db.NHLEliteNameMapper, self.input_player_mapper_list,
@@ -162,13 +162,14 @@ class InputGameInfo():
             stadium_mapper: dict, reference_tables: dict,
             update_on_conflict: bool):
         self.db_session = db_session
-        self.mappers_o = db_mapper.GetDBID(self.db_session)
+        self.mappers_o = db_mapper.GetDBID(session=self.db_session)
         self.input_gi = InputGeneralInfo(
-            self.db_session, stadium_mapper, update_on_conflict)
+            db_session=self.db_session, stadium_mapper=stadium_mapper, update_on_conflict=update_on_conflict
+            )
         self.input_shifts = InputShifts(
-            self.db_session, player_mapper)
+            db_session=self.db_session, player_mapper=player_mapper)
         self.input_PBP = InputPBP(
-            self.db_session, player_mapper, reference_tables, update_on_conflict
+            db_session=self.db_session, player_mapper=player_mapper, reference_tables=reference_tables, update_on_conflict=update_on_conflict
             )
 
     @time_execution

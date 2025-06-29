@@ -858,7 +858,7 @@ class Match(Base):
     __tablename__ = 'matches'
 
     id = Column(Integer, primary_key=True)
-    match_id = Column(Integer, nullable=False, unique=True)
+    match_id = Column(Integer, nullable=False)
     stadium_id = Column(Integer, ForeignKey('stadiums.id'), nullable=False)
     date = Column(String, nullable=False)
     time = Column(Integer)
@@ -1607,6 +1607,32 @@ class StadiumMapper(Base):
         return (
             f"({self.id}, {self.nhl_name}, {self.elite_name})"
             )
+    
+
+class FirstNameMapper(Base):
+
+    __tablename__ = "first_name_mappers"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    alternative_name = Column(String, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            'name', 'alternative_name',
+             name='uq_first_name_mappers_all_columns'
+                ),
+            )
+
+    def __init__(self, name, alternative_name):
+        self.name = name
+        self.alternative_name = alternative_name
+
+    def __repr__(self):
+        return (
+            f"({self.id}, {self.name}, {self.alternative_name})"
+            )
+    
     
     
 

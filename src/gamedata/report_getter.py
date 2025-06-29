@@ -32,7 +32,7 @@ class ReportIDGetter():
 
 
     def __init__(self):
-        with open("./src/gamedata/season_ranges.json", "r") as f:
+        with open("./data/links/season_ranges.json", "r") as f:
             self.season_ranges = json.load(f)
 
     
@@ -50,10 +50,11 @@ class ReportIDGetter():
 
     def get_season_ids(
             self, season_ranges_dict: dict, season: str, 
-            scraped_data: dict=None) -> dict:
+            game_data: dict) -> dict:
+        scraped_data = game_data.get(season) or None
         if scraped_data == None:
             scraped_data = {}
-            scraped_data["season_long"] = convert_season_format(season)
+            scraped_data["season"] = season
             scraped_data["report_data"] = []
         logger.info("Scraping of Report IDs for season: %s started", season)
         season_dates = generate_dates_between(
@@ -74,9 +75,10 @@ class ReportIDGetter():
         scraped_dates = {game['date'] for game in report_data_all}
         dates_to_scrape = list(set(season_dates) - scraped_dates)
         for date in dates_to_scrape:
+            logger.info("Scraping report data for date %s...", date)
             report_data = self.get_daily_report_ids(date=date)
             report_data_all = report_data_all + report_data
-            logger.debug("Report data for date %s: %s", date, report_data)
+            logger.info("Report data for date %s succesfully scraped.", date)
 
         return report_data_all
 
@@ -123,7 +125,7 @@ class ReportIDGetter():
 class GetReportData():
 
 
-    def __init__(self, game_dict: dict, season_long: str):
+    def __init__(self, game_dict: dict, season: str):
         self.game_dict = game_dict
         self.report_id = game_dict["id"]
         self.PBP_id = "PL" + self.report_id
@@ -131,7 +133,9 @@ class GetReportData():
         self.VTS_id = "TV" + self.report_id
         # home team report id
         self.HTS_id = "TH" + self.report_id
-        self.season = season_long
+        self.season = season
+        self.season_url = season.replace("-", "")
+
 
     @time_execution
     def get_all_report_data(self) -> dict:
@@ -162,7 +166,7 @@ class GetReportData():
             )
         request_url = (
             f"https://www.nhl.com/scores/htmlreports"
-            f"/{self.season}/{self.PBP_id}.HTM"
+            f"/{self.season_url}/{self.PBP_id}.HTM"
         )
         htm = get_valid_request(request_url, 'content')
         pbp_o = pbp_parser.PBPParser(htm=htm,
@@ -187,7 +191,7 @@ class GetReportData():
             )
         request_url = (
             f"https://www.nhl.com/scores/htmlreports"
-            f"/{self.season}/{report_id}.HTM"
+            f"/{self.season_url}/{report_id}.HTM"
         )
         try:
             htm = get_valid_request(request_url, 'content')

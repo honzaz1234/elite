@@ -159,6 +159,8 @@ class ManagePlayer():
                 url_dict=self.players_urls,
                 seasons=seasons_to_get
                 )
+            if new_season_urls is None:
+                return
             self.update_league_player_url_dict(
                 league_uid=league_uid, new_data=new_season_urls)
             logger.info(
@@ -508,7 +510,7 @@ class ManageGame():
     def create_games_done_file(self) -> dict:
         logger.info(f"Creating and opening games_done file at path:" 
                     f"{self.games_done_path}")
-        games_done  = {'games_done': {}}
+        games_done  = {}
         with open(self.games_done_path, 'w') as f:
             json.dump(games_done, f)
         
@@ -529,9 +531,12 @@ class ManageGame():
         try: 
             with open(self.season_ranges_path) as f:
                 self.season_ranges = json.load(f)
-        except Exception as e:
-            logger.error(f"Season ranges file not found in specified "
-                        f"location ({self.season_ranges_path})")
+        except FileNotFoundError as e:
+            message = (
+                f"Season ranges file not found in specified "
+                f"location ({self.season_ranges_path})"
+            )
+            cf.log_and_raise(message, FileNotFoundError)
             raise e
 
 
@@ -552,8 +557,9 @@ class ManageGame():
             season_dict = self.get_season_report_ids(season=season)
         else:
             season_dict = self.game_data[season]
-        self.get_season_data(season_dict=season_dict,
-                             season=season)
+        self.get_season_data(
+            season_dict=season_dict, season=season
+            )
         logger.info(f"Process of obtaining data of games"
                     f" from season {season} finished")
         
@@ -562,7 +568,9 @@ class ManageGame():
         try:
             season_dict = self.report_id_getter_o.get_season_ids(
                 season_ranges_dict=self.season_ranges[season],
-                season=season, scraped_dates=self.game_data[season])
+                season=season, 
+                game_data=self.game_data
+                )
             self.game_data[season] = season_dict
         except Exception as e:
             logger.error(f"Downloading of game report ids failed: {e}")
@@ -604,70 +612,74 @@ class ManageGame():
     
     def scrape_and_input_season_games_into_db(
             self, season: str, season_dict: dict) -> None:
-        team_players = self.mapper_o.get_player_id_team_season_mapper_dict(
-                [season])
-        elite_nhl_mapper_detail = self.mapper_o.get_elite_nhl_mapper(
-            [season])
-        elite_nhl_mapper = self.mapper_o.get_elite_nhl_names()
-        stadium_mapper = self.mapper_o.get_nhl_elite_stadium_mapper()
-        reference_tables = self.mapper_o.get_reference_table_mappers()
+        mappers = self.get_dict_with_all_mappers(season=season)
         try:
             for game in season_dict["report_data"]:
                 if game['id'] in self.games_done[season]:
                     continue
                 report_id = self.scrape_and_input_game_into_db(
-                    game, season_dict["season_long"], team_players[season], 
-                    elite_nhl_mapper_detail[season], elite_nhl_mapper, stadium_mapper, reference_tables)
+                    game_dict=game, season=season_dict["season"], mappers=mappers
+                    )
                 self.games_done[season].append(report_id)
-            self.input_mapper_o.input_all_mappers(
-                elite_nhl_mapper_detail, stadium_mapper, reference_tables)
-            self.session.close()
+            self.input_mapper_o.input_all_mappers(mappers=mappers)
         except Exception as e:
-            self.input_mapper_o.input_all_mappers(
-                elite_nhl_mapper_detail, stadium_mapper, reference_tables)
+            self.input_mapper_o.input_all_mappers(mappers=mappers)
             self.session.close()
             raise e
         
+
+    def get_dict_with_all_mappers(self, season: str) -> dict:
+        logger.info("Getting mappers...")
+        mappers = {}
+        mappers["elite_nhl_detail"] = self.mapper_o.get_nhl_elite_mapper(
+            [season])
+        mappers["elite_nhl"] = self.mapper_o.get_elite_nhl_names()
+        mappers["stadium"] = self.mapper_o.get_firstname_mapper()
+        mappers["look_ups"] = self.mapper_o.get_look_ups()
+        mappers["first_name"] = self.mapper_o.get_firstname_mapper()
+        season_name_player_id, normalized_season_name_player_id = self.mapper_o.get_player_id_team_season_mapper_dicts([season])
+        mappers["season_name_player_id"] = season_name_player_id
+        mappers["normalized_season_name_player_id"] = normalized_season_name_player_id
+        logger.info("All mappers succesfully accessed.")
+
+        return mappers
+
             
     @time_execution
     def scrape_and_input_game_into_db(
-        self, game_dict: dict, season_long: str, team_players: dict, 
-        elite_nhl_mapper_detail: dict, elite_nhl_mapper: dict, 
-        stadium_mapper: dict, reference_tables: dict) -> int:
+        self, game_dict: dict, season: str, mappers: dict) -> int:
         try:
             report_dict = self.scrape_game_data(
-                game_dict, season_long)
+                game_dict, season)
             updated_dict, player_mapper = self.update_game_data(
-                report_dict, team_players, elite_nhl_mapper_detail, elite_nhl_mapper, reference_tables)
+                game_data=report_dict, mappers=mappers)
             self.input_game_data(
-                updated_dict, player_mapper, stadium_mapper, reference_tables
+                updated_data=updated_dict, 
+                player_mapper=player_mapper, 
+                mappers=mappers
                 )
         except:
             cf.log_and_raise(
-                None, GameDataError, game_id=game_dict["id"], season=season_long
+                None, GameDataError, game_id=game_dict["id"], season=season
                 )
 
         return report_dict['id']
 
 
     def scrape_game_data(
-            self, game_dict: dict, season_long: str) -> dict:
+            self, game_dict: dict, season: str) -> dict:
         get_report_data = report_getter.GetReportData(
             game_dict=game_dict,
-            season_long=season_long)
+            season=season)
         report_dict = get_report_data.get_all_report_data()
 
         return report_dict
     
 
     def update_game_data(
-            self, game_data: dict, team_players: dict, 
-            elite_nhl_mapper_detail: dict, elite_nhl_mapper: dict,
-            reference_tables: str) -> dict:
-        ugo = update_game.UpdateGameData(
-            team_players, elite_nhl_mapper_detail, elite_nhl_mapper, reference_tables
-            )
-        updated_game_data = ugo.update_game_data(game_data)
+            self, game_data: dict, mappers: dict) -> dict:
+        ugo = update_game.UpdateGameData(mappers=mappers)
+        updated_game_data = ugo.update_game_data(game_data=game_data)
 
         return updated_game_data, ugo.player_mapper
     
@@ -676,7 +688,7 @@ class ManageGame():
             self, updated_data: dict, player_mapper: dict, 
             stadium_mapper: dict, reference_tables: dict) -> None:
         input_o = input_game.InputGameInfo(
-            self.session, player_mapper, stadium_mapper, reference_tables, self.update_on_conflict)
+            db_session=self.session, player_mapper=player_mapper, stadium_mapper=stadium_mapper, reference_tables=reference_tables, update_on_conflict=self.update_on_conflict)
         input_o.input_game_dict(updated_data)
 
 

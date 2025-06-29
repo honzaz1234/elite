@@ -228,4 +228,11 @@ QUERIES_INFO = {
             db.Season.season,
         ]
     },
+    "firstname_mapper": {
+        "base_table": db.FirstNameMapper,
+        "selected_cols": [
+            db.FirstNameMapper.name,
+            db.FirstNameMapper.alternative_name,
+        ]
+    },
 }

@@ -1,5 +1,6 @@
 import database_creator.database_creator as db
 
+
 TABLE_CONFIG = {
     "reference": {
         db.Match: {

@@ -534,7 +534,7 @@ class PBPRowParser():
         "team_r": "./td[8]"
     }
 
-    SKIP_PLAY = ["PGSTR", "PGEND", "ANTHEM", "GEND", "GOFF"]
+    SKIP_PLAY = ["PGSTR", "PGEND", "ANTHEM", "GEND", "GOFF", "EGT", "EGPID"]
 
 
     def __init__(self, row_sel: scrapy.Selector):
