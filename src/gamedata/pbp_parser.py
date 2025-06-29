@@ -54,8 +54,12 @@ class PBPParser():
     def get_attendance(self) -> str:
         attendance_string = cf.get_single_xpath_value(
             sel=self.sel, xpath=self.XPATHS["attendance"], optional=False)
-        attendance = re.findall("Attendance\s*([0-9,]+)", attendance_string)[0]
-        attendance = attendance.replace(",", "")
+        match = re.search(r"Attendance\s*([0-9,]+)", attendance_string)
+        if match:
+            attendance = match.group(1).replace(',', '')
+            attendance = int(attendance.replace(",", ""))
+        else:
+            attendance = None 
 
         return attendance
             
