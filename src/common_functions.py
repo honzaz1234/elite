@@ -100,16 +100,11 @@ def convert_to_seconds(time_string: str) -> int:
 
 def log_and_raise(
         error_message: str, exception_class: type[Exception], **kwargs) -> None:
-    try:
+    if error_message is None:
         raise exception_class(**kwargs)
-    except TypeError:
-        # Fallback: maybe it expected a message positional arg
-        try:
-            logger.error(error_message)
-            raise exception_class(error_message)
-        except Exception as e:
-            logger.error("Couldn't raise exception: %s", e)
-            raise
+    else:
+        logger.error(error_message)
+        raise exception_class(error_message)
 
 
 def dict_diff_unique(d1: dict, d2: dict) -> dict:
