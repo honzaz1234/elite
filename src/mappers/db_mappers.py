@@ -27,9 +27,12 @@ class GetDBID():
     def normalize_player_names(self, player_dict: dict) -> dict:
         normalized_dict = {}
         for season in player_dict:
+            normalized_dict[season] = {}
             for team in player_dict[season]:
+                normalized_dict[season][team] = {}
                 self.normalize_team_data(
-                    team_dict=player_dict[season][team])
+                    team_dict=player_dict[season][team],
+                    normalized_dict=normalized_dict[season][team])
         
         return normalized_dict
 
@@ -203,14 +206,14 @@ class GetDBID():
         return stadium_mapper
     
 
-    def get_firstname_mapper(self) -> dict:
+    def get_firstname_mapper(self) -> list:
         results = self.query.get_db_query_result(
             query_name="firstname_mapper", 
             distinct=True)
-        firstname_mapper = {}
+        firstname_mapper = []
         for row in results:
             name, alternative_name = row
-            firstname_mapper[name] = alternative_name
+            firstname_mapper.append({name, alternative_name})
 
         return firstname_mapper
     
