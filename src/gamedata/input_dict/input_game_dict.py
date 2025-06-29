@@ -19,7 +19,7 @@ class InputEliteNHLmapper():
     def __init__(self, db_session: Session):
         self.db_method =  db_insert.DatabaseMethods(db_session)
         self.db_session = db_session
-        self.mappers_o = db_mapper.GetDBID(self.db_session)
+        self.mappers_o = db_mapper.GetDBID(db_session)
         self.update_on_conflict = False
         self.input_player_mapper_list = []
         self.input_stadium_mapper_list = []
@@ -27,13 +27,16 @@ class InputEliteNHLmapper():
 
     @time_execution
     def input_all_mappers(
-            self, nhl_elite_mapper: dict, stadium_mapper: dict, reference_mapper: dict) -> None:
+            self, mappers: dict) -> None:
+        logger.info("Inputing mappers into DB...")
         self._input_nhl_elite_mapper_dict(
-            nhl_elite_mapper, reference_mapper[db.Season]
+            nhl_elite_mapper=mappers["elite_nhl_detail"], 
+            season_mapper=mappers["look_ups"][db.Season]
             )
-        self._input_stadium_mapper(stadium_mapper)
-        self._input_reference_tables(reference_mapper)
+        self._input_stadium_mapper(stadium_mapper=mappers["stadium"])
+        self._input_look_ups(look_ups=mappers["look_ups"])
         self.db_session.commit()
+        logger.info("All mappers were inputed into DB.")
 
 
     def _input_nhl_elite_mapper_dict(
@@ -115,11 +118,11 @@ class InputEliteNHLmapper():
         self.input_stadium_mapper_list.append(dict_)
         
 
-    def _input_reference_tables(self, reference_table_mappers: dict) -> dict:
-        for table in reference_table_mappers:
+    def _input_look_ups(self, look_ups: dict) -> dict:
+        for table in look_ups:
             self._input_table_mapper(
                 TABLE_CONFIG["reference"][table]["index_update"][0],
-                reference_table_mappers[table],
+                look_ups[table],
                 table
                 )         
 
@@ -158,18 +161,21 @@ class InputGameInfo():
 
 
     def __init__(
-            self,  db_session: Session, player_mapper: dict, 
-            stadium_mapper: dict, reference_tables: dict,
-            update_on_conflict: bool):
+            self,  db_session: Session, match_player_mapper: dict, 
+            mappers: dict, update_on_conflict: bool
+            ):
         self.db_session = db_session
         self.mappers_o = db_mapper.GetDBID(session=self.db_session)
         self.input_gi = InputGeneralInfo(
-            db_session=self.db_session, stadium_mapper=stadium_mapper, update_on_conflict=update_on_conflict
+            db_session=self.db_session, 
+            stadium_mapper=mappers["stadium"], update_on_conflict=update_on_conflict
             )
         self.input_shifts = InputShifts(
-            db_session=self.db_session, player_mapper=player_mapper)
+            db_session=self.db_session, match_player_mapper=match_player_mapper
+            )
         self.input_PBP = InputPBP(
-            db_session=self.db_session, player_mapper=player_mapper, reference_tables=reference_tables, update_on_conflict=update_on_conflict
+            db_session=self.db_session, 
+            look_ups=mappers["look_ups"], update_on_conflict=update_on_conflict
             )
 
     @time_execution
@@ -255,9 +261,9 @@ class InputShifts():
 
 
     def __init__(
-            self, db_session: Session, player_mapper: dict):
+            self, db_session: Session, match_player_mapper: dict):
         self.db_method =  db_insert.DatabaseMethods(db_session)
-        self.player_mapper = player_mapper
+        self.match_player_mapper = match_player_mapper
         self.input_shift_list = []
         self.update_on_conflict = False
 
@@ -287,7 +293,7 @@ class InputShifts():
     def _input_player_shifts(
             self, player_info: tuple, shifts: list, team_id: int, 
             match_id: int) -> None:
-        player_id = self.player_mapper[team_id][player_info]
+        player_id = self.match_player_mapper[team_id][player_info]
         for shift in shifts:
             shift_dict = self._get_shift_dict(
                 match_id, player_id, team_id, shift)
@@ -310,9 +316,11 @@ class PBPDB():
 
 
      def __init__(
-             self, db_session: Session, reference_tables: dict, update_on_conflict: bool):
+             self, db_session: Session, look_ups: dict, 
+             update_on_conflict: bool
+             ):
         self.db_method = db_insert.DatabaseMethods(db_session)
-        self.reference_tables = reference_tables
+        self.look_ups = look_ups
         self.update_on_conflict = update_on_conflict
 
 
@@ -355,16 +363,16 @@ class PBPDB():
                return None
              else:
                  raise NoneReferenceValueError
-         if val not in self.reference_tables[table]:
+         if val not in self.look_ups[table]:
              max_value = max(
-                 self.reference_tables[table].values(), default=1
+                 self.look_ups[table].values(), default=1
                  )
-             self.reference_tables[table][val] = max_value + 1
+             self.look_ups[table][val] = max_value + 1
              logger.info(
                  "New value %s added to table %s", val, table.__tablename__
                  )
              
-         return self.reference_tables[table][val]
+         return self.look_ups[table][val]
      
                                                           
 class BlockedShotDB(PBPDB):
@@ -730,16 +738,16 @@ class InputPBP():
 
 
     def __init__(
-            self, db_session: Session, player_mapper: dict, 
-            reference_tables: dict, update_on_conflict: bool):
+            self, db_session: Session, look_ups: dict, 
+            update_on_conflict: bool
+            ):
         self.db_method =  db_insert.DatabaseMethods(db_session)
         self.db_session = db_session
         self.input_pbp = PBPDB(
-            db_session, reference_tables, update_on_conflict
+            db_session, look_ups, update_on_conflict
             )
         self.input_poi_list = []
-        self.player_mapper = player_mapper
-        self.reference_tables = reference_tables
+        self.look_ups = look_ups
         self.update_on_conflict = update_on_conflict
 
 
@@ -797,7 +805,7 @@ class InputPBP():
     def _play_factory(self, play_type: str):
           
           return self.INPUT_CLASSES[play_type](
-              self.db_session, self.reference_tables, self.update_on_conflict)
+              self.db_session, self.look_ups, self.update_on_conflict)
 
 
     def _input_poi(self, play_id: int, shifts: dict) -> None:
