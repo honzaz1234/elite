@@ -634,7 +634,7 @@ class ManageGame():
         mappers["elite_nhl_detail"] = self.mapper_o.get_nhl_elite_mapper(
             [season])
         mappers["elite_nhl"] = self.mapper_o.get_elite_nhl_names()
-        mappers["stadium"] = self.mapper_o.get_firstname_mapper()
+        mappers["stadium"] = self.mapper_o.get_nhl_elite_stadium_mapper()
         mappers["look_ups"] = self.mapper_o.get_look_ups()
         mappers["first_name"] = self.mapper_o.get_firstname_mapper()
         season_name_player_id, normalized_season_name_player_id = self.mapper_o.get_player_id_team_season_mapper_dicts([season])
@@ -651,11 +651,11 @@ class ManageGame():
         try:
             report_dict = self.scrape_game_data(
                 game_dict, season)
-            updated_dict, player_mapper = self.update_game_data(
-                game_data=report_dict, mappers=mappers)
+            updated_dict, match_player_mapper = self.update_game_data(
+                game_data=report_dict, mappers=mappers, season=season)
             self.input_game_data(
                 updated_data=updated_dict, 
-                player_mapper=player_mapper, 
+                match_player_mapper=match_player_mapper, 
                 mappers=mappers
                 )
         except:
@@ -677,18 +677,22 @@ class ManageGame():
     
 
     def update_game_data(
-            self, game_data: dict, mappers: dict) -> dict:
-        ugo = update_game.UpdateGameData(mappers=mappers)
+            self, game_data: dict, mappers: dict, season: str) -> dict:
+        ugo = update_game.UpdateGameData(mappers=mappers, season=season)
         updated_game_data = ugo.update_game_data(game_data=game_data)
 
-        return updated_game_data, ugo.player_mapper
+        return updated_game_data, ugo.match_player_mapper
     
 
     def input_game_data(
-            self, updated_data: dict, player_mapper: dict, 
-            stadium_mapper: dict, reference_tables: dict) -> None:
+            self, updated_data: dict, match_player_mapper: dict, 
+            mappers: dict) -> None:
         input_o = input_game.InputGameInfo(
-            db_session=self.session, player_mapper=player_mapper, stadium_mapper=stadium_mapper, reference_tables=reference_tables, update_on_conflict=self.update_on_conflict)
+            db_session=self.session, 
+            match_player_mapper=match_player_mapper, 
+            mappers=mappers, 
+            update_on_conflict=self.update_on_conflict
+            )
         input_o.input_game_dict(updated_data)
 
 
