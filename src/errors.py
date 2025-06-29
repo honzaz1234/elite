@@ -1,6 +1,6 @@
 class EmptyReturnXpathValueError(ValueError):
 
-    def __init__(self, xpath, value):
+    def __init__(self, xpath: str, value: str):
         message = (
             f"Extracted value from XPath ({xpath}) is {value}"
             f".Extraction failed"
@@ -10,7 +10,7 @@ class EmptyReturnXpathValueError(ValueError):
 
 class WrongPlayDesc(AttributeError):
 
-    def __init__(self, play_desc, play_type):
+    def __init__(self, play_desc: dict, play_type: str):
         message = (
             f"Play Description {play_desc} of type {play_type}"
             f" can not be scraped."
@@ -24,7 +24,7 @@ class WrongPlayDesc(AttributeError):
 class MissingPlayerID(KeyError):
 
 
-    def __init__(self, team_id, team_abb, player_number):
+    def __init__(self, team_id: int, team_abb: str, player_number: int):
         message = (
             f"No player id found in the db_mapper for player from team"
             f" {team_abb} ('team id': {team_id}) with number: {player_number}"
@@ -32,9 +32,23 @@ class MissingPlayerID(KeyError):
         super().__init__(message)
 
 
+class MissingPlayer(KeyError):
+
+
+    def __init__(self, player_id: int, team_abb: str, team_id: int):
+        message = (
+            "No player was found for player_id %s in the db_mapper for "
+            "team %s ('team id': %s)" % (
+            player_id, team_abb, team_id
+            )
+        )
+        super().__init__(message)
+
+
 class UpdateGameDataError(Exception):
 
-    def __init__(self, match_id, team_home, team_away, date):
+    def __init__(
+            self, match_id: int, team_home: str, team_away: str, date: str):
         message = (
             f"Error in updating game data of game {match_id} between "
             f"teams {team_home} and {team_away} "
