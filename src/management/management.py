@@ -79,8 +79,7 @@ class ManagePlayer():
         logger.info(f"Creating and opening players_done file at path:" 
                     f"{self.players_done_path}")
         players_done = {'players_done': []}
-        with open(self.players_done_path, 'w') as f:
-            json.dump(players_done, f)
+        self.save_players_done()
 
         return players_done
 
@@ -123,7 +122,7 @@ class ManagePlayer():
 
 
     def scrap_input_player_into_db_wrapper(self, url: str) -> None:
-        uid = re.findall('([0-9]+)', url)[0]
+        uid = int(re.findall('([0-9]+)', url)[0])
         if uid in self.players_done["players_done"]:
             logger.debug(f'Team with url {url} is already in the db')
 
@@ -204,13 +203,11 @@ class ManagePlayer():
             except Exception as e:
                 logger.info(f"Process of obtaining data of players from"
                     f" league {league_uid} was disrupted")
-                with open(self.players_done_path, 'w') as f:
-                    json.dump(self.players_done, f)
+                self.save_players_done()
                 logger.info(f"List of uids of players already in the db was"
                             " written to a file")
                 raise e
-            with open(self.players_done_path, 'w') as f:
-                json.dump(self.players_done, f)
+            self.save_players_done()
         logger.info(f"Process of obtaining data of players from"
                     f" league {league_uid} finished and written to file.")
 
@@ -233,6 +230,11 @@ class ManagePlayer():
             self, league_uid: str, season: str, player_type: str) -> None:
         for url in self.players_urls[league_uid][season][player_type]:
             self.scrap_input_player_into_db_wrapper(url=url)
+
+    def save_players_done(self):
+        if self.players_done is not None:
+            with open(self.players_done_path, 'w') as f:
+                json.dump(self.players_done, f)
 
 
 class ManageTeam():
