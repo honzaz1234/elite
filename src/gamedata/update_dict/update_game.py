@@ -37,88 +37,12 @@ ZONE_MAPPER = {
     "neu.": "neutral"
 }
 
-SHOT_TYPE_MAPPER = {
-    "backhand": "backhand",
-    "bat": "bat",
-    "between legs": "between legs",
-    "cradle": "cradle",
-    "deflected": "deflected",
-    "failed attempt": "failed attempt",
-    "poke": "poke",
-    "slap": "slapshot",
-    "snap": "snapshot",
-    "tip-in": "tip-in",
-    "wrap-around": "wrap-around",
-    "wrist": "wristshot"
-}
 
 BLOCKED_BY_MAPPER = {
     "blocked by teammate": "teammate",
     "opponent-blocked by": "opponent",
     "blocked by": "opponent",
     "blocked by other": "other"
-}
-
-DEFLECTION_TYPE_MAPPER = {
-
-}
-
-
-SHOT_RESULT_MAPPER = {
-    "goalpost": "goalpost", 
-    "hit crossbar": "hit crossbar", 
-    "over net": "over net", 
-    "wide of net": "wide of net"
-}
-
-PENALTY_MAPPER = {
-    'abuse of officials - bench': 'abuse of officials - bench',
-    'boarding': 'boarding',
-    'broken stick': 'broken stick',
-    'closing hand on puck': 'closing hand on puck',
-    'cross-checking': 'cross-checking',
-    'delay game': 'delay game',
-    'delay game - bench': 'delay game - bench',
-    'delay game - fo viol - hand': 'delay game - fo viol - hand',
-    'delay game - puck over glass': 'delay game - puck over glass',
-    'delay game - unsucc chlg': 'delay game - unsucc chlg',
-    'elbowing': 'elbowing',
-    'embellishment': 'embellishment',
-    'fighting': 'fighting',
-    'game misconduct': 'game misconduct',
-    'goalie leave crease': 'goalie leave crease',
-    'high-sticking': 'high-sticking',
-    'high-sticking - double minor': 'high-sticking - double minor',
-    'holding': 'holding',
-    'holding the stick': 'holding the stick',
-    'hooking': 'hooking',
-    'illegal check to head': 'illegal check to head',
-    'instigator': 'instigator',
-    'instigator - misconduct': 'instigator - misconduct',
-    'interference': 'interference',
-    'interference on goalkeeper': 'interference on goalkeeper',
-    'kneeing': 'kneeing',
-    'match penalty': 'match penalty',
-    'ps-goalkeeper displaced net': 'ps-goalkeeper displaced net',
-    'ps-holding on breakaway': 'ps-holding on breakaway',
-    'ps-hooking on breakaway': 'ps-hooking on breakaway',
-    'ps-slash on breakaway': 'ps-slash on breakaway',
-    'ps-tripping on breakaway': 'ps-tripping on breakaway',
-    'puck thrown fwd - goalkeeper': 'puck thrown fwd - goalkeeper',
-    'roughing': 'roughing',
-    'roughing - removing opp helmet': 'roughing - removing opp helmet',
-    'slashing': 'slashing',
-    'throwing equipment': 'throwing equipment',
-    'too many men/ice - bench': 'too many men/ice - bench',
-    'tripping': 'tripping',
-    'unsportsmanlike conduct': 'unsportsmanlike conduct',
-    'unsportsmanlike conduct-bench': 'unsportsmanlike conduct-bench',
-}
-
-PERIOD_TYPE_MAPPER = {
-    "period start": "period start",
-    "period end": "period end",
-    "shootout completed": "shootout completed"
 }
 
 
@@ -465,7 +389,7 @@ class GoalUpdater(UpdatePBP):
             play["goal"]["shot_type"], self.look_ups, 
             db.ShotType
             )
-            if "play_type" in play["goal"] else None
+            if "shot_type" in play["goal"] else None
             )
         updated_dict["zone"] = ZONE_MAPPER[play["goal"]["zone"].lower()]
         updated_dict["distance"] = (
