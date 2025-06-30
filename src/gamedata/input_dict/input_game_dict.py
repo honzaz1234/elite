@@ -670,7 +670,7 @@ class TakeAwayDB(PBPDB):
                db.ZoneType, play["zone"]
                )  
           self.db_method.insert_update_or_ignore_on_conflict(
-               db.GiveawayPlay,
+               db.TakeawayPlay,
                {
                    "play_id": play_id,
                    "player_id": play["player_id"],
@@ -678,7 +678,7 @@ class TakeAwayDB(PBPDB):
                    "zone_id": zone_id
                    },
                 self.update_on_conflict,
-                TABLE_CONFIG["reference"][db.GiveawayPlay]["index_update"],
+                TABLE_CONFIG["reference"][db.TakeawayPlay]["index_update"],
           )
      
 
