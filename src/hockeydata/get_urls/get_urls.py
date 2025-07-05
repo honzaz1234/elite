@@ -93,7 +93,7 @@ class LeagueUrlDownload():
                 league_uid=league_uid, url_dict=url_dict
                 )
         season_range = url_dict[league_uid]["season_range"]
-        all_years = range(season_range['start'], season_range['finish'])
+        all_years = range(season_range['start'], season_range['finish'] + 1)
         seasons_to_get = self.create_list_of_seasons(years=all_years)
         if seasons != []:
             seasons_to_get = [
@@ -112,11 +112,11 @@ class LeagueUrlDownload():
                         league_uid, seasons_to_download
                         )
         dict_player_ref = self.get_player_urls(
-            list_seasons=seasons_to_get, league=league_uid
+            list_seasons=seasons_to_download, league=league_uid
             )
         logger.info("Urls for players from league %s for seasons %s "
                     "were succesfully downloaded.",
-                        league_uid, seasons_to_get
+                        league_uid, seasons_to_download
                         )
         
         
@@ -229,9 +229,9 @@ class SeasonUrlDownload():
 
     PATHS = {
         "player_ref": "//table[@id='export-skater-stats-table']"
-                      "//td[@class='player']//a/@href",
+                      "//td[@class='player']/span[@class='txt-blue']/a/@href",
         "goalie_ref": "//table[@id='export-goalie-stats-table']//td"
-                      "[@class='player']//a/@href",
+                      "[@class='player']/span[@class='txt-blue']/a/@href",
         "last_page": "//a[contains(text(),'Last page')]/@href",
         "team_url": "//td[@class='team']//@href",
         "stats": "/stats",
@@ -282,9 +282,9 @@ class SeasonUrlDownload():
             
             dict_season = {}
             ref_last_page = cf.get_list_xpath_values(
-                                                sel=selector, 
-                                                xpath=self.PATHS["last_page"],
-                                                optional=True)
+                sel=selector, xpath=self.PATHS["last_page"],
+                optional=True
+                )
             dict_season["goalies"] = self.get_goalies_season_refs(
                 ref_last_page=ref_last_page,
                 stats_path=stats_path
