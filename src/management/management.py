@@ -89,11 +89,15 @@ class Manage():
             "Saving %s done file at path: %s...", 
             self.TYPE, self.done_path
             )
-        with open(self.done_path, 'w') as f:
-            json.dump(self.done_file, f)
-        logger.info(
-            "%s done file saved at path: %s.", self.TYPE, self.url_list_path
-            )
+        if self.done_file is not None:
+            with open(self.done_path, 'w') as f:
+                json.dump(self.done_file, f)
+            logger.info(
+                "%s done file saved at path: %s.", self.TYPE, self.url_list_path
+                )
+        else:
+            logger.info("Done file is equal to None, therefore data was not "
+                        "saved.")
 
 
     def _load_url_file(self) -> None:
@@ -108,7 +112,7 @@ class Manage():
                         self.TYPE, self.url_list_path
                         )
             with open(self.url_list_path) as f:
-                self.players_urls = json.load(f)
+                self.urls = json.load(f)
 
 
     def _create_url_file(self) -> None:
@@ -124,11 +128,15 @@ class Manage():
             "Saving %s URL file at path: %s ...", 
             self.TYPE, self.url_list_path
             )
-        with open(self.url_list_path, 'w') as f:
-            json.dump(self.urls, f)
-        logger.info("%s URL file saved at path: %s.", 
-                    self.TYPE, self.url_list_path
-                    )
+        if self.urls is not None:
+            with open(self.url_list_path, 'w') as f:
+                json.dump(self.urls, f)
+            logger.info("%s URL file saved at path: %s.", 
+                        self.TYPE, self.url_list_path
+                        )
+        else:
+            logger.info("URL file is equal to None, therefore data was not "
+                        "saved.")
 
 
     def scrape_input_into_db_wrapper(self, url: str) -> None:
@@ -225,7 +233,7 @@ class ManagePlayer(Manage):
         logger.info(f"Process of obtaining data of players from"
                     f" league {league_uid} for season {season}"
                     f" started")
-        for player_type in self.players_urls[league_uid][season]:
+        for player_type in self.urls[league_uid][season]:
             self.add_one_type_in_db(
                 league_uid=league_uid, season=season, player_type=player_type
                 )
@@ -236,7 +244,7 @@ class ManagePlayer(Manage):
 
     def add_one_type_in_db(
             self, league_uid: str, season: str, player_type: str) -> None:
-        for url in self.players_urls[league_uid][season][player_type]:
+        for url in self.urls[league_uid][season][player_type]:
             self.scrape_input_into_db_wrapper(url=url)
 
 
@@ -257,8 +265,8 @@ class ManagePlayer(Manage):
                 league_uid=league_uid, seasons_to_get=seasons_to_get
                     )
         url_dict = {
-            season: self.players_urls[league_uid][season]
-            for season in self.players_urls[league_uid] 
+            season:self.urls[league_uid][season]
+            for season in self.urls[league_uid] 
             if season in seasons_to_get
             }
 
@@ -266,15 +274,15 @@ class ManagePlayer(Manage):
     
     
     def add_league_to_player_url_dict(self, league_uid: str) -> None:
-        if league_uid not in self.players_urls:
-            self.players_urls[league_uid] = {}
+        if league_uid not in self.urls:
+            self.urls[league_uid] = {}
 
     
     def update_player_url_dict(
             self, league_uid: str, seasons_to_get: list) -> None:
             new_season_urls = self.get_urls.get_player_refs(
                 league_uid=league_uid, 
-                url_dict=self.players_urls,
+                url_dict=self.urls,
                 seasons=seasons_to_get
                 )
             if new_season_urls is None:
@@ -286,7 +294,7 @@ class ManagePlayer(Manage):
                 league_uid
                 )
             with open(self.url_list_path, 'w') as f:
-                json.dump(self.players_urls, f)
+                json.dump(self.urls, f)
             logger.info(
                 "Data were saved as a JSON file at the following path: %s",
                     self.url_list_path
@@ -299,7 +307,7 @@ class ManagePlayer(Manage):
             "Player URLs for seasons %s from league %s will be added "
             "to player URL dictionary", new_data.keys(), league_uid
             )
-        self.players_urls[league_uid].update(new_data)
+        self.urls[league_uid].update(new_data)
         logger.info(
             "Player URLs for seasons %s from league %s were be added "
             "to player URL dictionary", new_data.keys(), league_uid
