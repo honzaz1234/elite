@@ -30,7 +30,7 @@ class UpdatePlayer:
             self.is_goalie = False
 
     @time_execution
-    def update_player_dict(self, dict: dict) -> dict:
+    def update_dict(self, dict: dict) -> dict:
         """wrapper method for updating whole player dict"""
 
         new_dict = dict.copy()

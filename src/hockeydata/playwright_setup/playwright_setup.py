@@ -16,7 +16,7 @@ class PlaywrightSetUp():
         'reddit', 'linkedin', 'ad.doubleclick'
         'chrome', 'Endorsements', 'PlayerStatsAllTime',
         'PlayerTransactions', 'SubscriptionOffer', 'PlayerMedia',
-        'PlayerGameLogs', 'DraftCoverage'
+        'PlayerGameLogs', 'DraftCoverage',
     ]
 
 
@@ -77,7 +77,6 @@ def wait_click_wait(
         page: sync_api.Page, sel_click: str, sel_wait: str, wait=300, max_retries=3) -> None:
     for attempt in range(max_retries):
         try:
-            # Wait for the selector with a timeout of 10 seconds
             page.wait_for_selector(sel_wait, timeout=wait)
             logger.info("Target selector appeared!")
             break
@@ -112,3 +111,14 @@ def go_to_page_wait_click_wait(
         wait=wait,
         max_retries=max_retires
         )
+
+
+def click_optional_button(
+        page: sync_api.Page, sel_click: str, button_type: str, 
+        wait_time: int=2000):
+    sel_click = get_xpath(sel_click)
+    try:
+        page.wait_for_selector(sel_click, timeout=wait_time, state="visible")
+        page.click(sel_click)
+    except:
+        print("Optional button (%s) never became visible.", button_type)

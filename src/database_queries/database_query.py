@@ -9,8 +9,8 @@ from database_queries.query_dict import QUERIES_INFO
 class DbDataGetter():
     
     
-    def __init__(self, session: Session):
-        self.session = session
+    def __init__(self, db_session: Session):
+        self.db_session = db_session
 
 
     def get_db_query_result(
@@ -41,7 +41,7 @@ class DbDataGetter():
             joins: list[tuple[Table, object]]=None,
             filters: list[object]=None
         ) -> Query:
-            query = self.session.query(*selected_cols).select_from(base_table)
+            query = self.db_session.query(*selected_cols).select_from(base_table)
 
             if joins:
                 for join_table, condition in joins:

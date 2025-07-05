@@ -10,9 +10,8 @@ import mappers.team_mappers as team_map
 class GetDBID():
 
 
-    def __init__(self, session):
-        self.query = dq.DbDataGetter(session=session)
-        self.session = session
+    def __init__(self, db_session):
+        self.query = dq.DbDataGetter(db_session=db_session)
 
 
     def get_player_id_team_season_mapper_dicts(

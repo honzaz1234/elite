@@ -1,10 +1,7 @@
-import hockeydata.get_urls.get_urls as league_url
-
-from sqlalchemy import Boolean, Column, Date, Index, Integer, ForeignKey, Float, String, UniqueConstraint
+from sqlalchemy import Boolean, Column, Date, DateTime, Index, Integer, ForeignKey, Float, String, UniqueConstraint
 from sqlalchemy.orm import declarative_base
 
 
-leauge_getter = league_url.LeagueUrlDownload()
 Base = declarative_base()
 
 
@@ -1562,7 +1559,7 @@ class BrokenPOI(Base):
     play_id = Column(
         ForeignKey("plays.id"), nullable=False, unique=True
         )
-    team_id = Column("team_id", ForeignKey("teams.id"), nullable=False)
+    team_id = Column(ForeignKey("teams.id"), nullable=False)
     poi = Column(String, nullable=False)
     error_type = Column(String, nullable=False)
 
@@ -1632,6 +1629,100 @@ class FirstNameMapper(Base):
         return (
             f"({self.id}, {self.name}, {self.alternative_name})"
             )
+    
+
+class ScrapeLog(Base):
+
+    __tablename__ = "scrapes"
+
+    id = Column(Integer, primary_key=True)
+    time_start = Column(DateTime, nullable=False)
+    type = Column(String, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            'time_start', "type",
+             name='uq_scrapes_all_columns'
+                ),
+            )
+
+
+    def __init__(self, time_start, type):
+        self.time_start = time_start
+        self.type = type
+
+
+    def __repr__(self):
+        return (
+            f"({self.id}, {self.time_start}, {self.type})"
+            )    
+
+
+class PlayerMissingDataLog(Base):
+
+
+    __tablename__ = "player_missing_data_logs"
+
+    id = Column(Integer, primary_key=True)
+    player_id = Column(Integer, ForeignKey("players.id"), nullable=False)
+    data_type = Column(String, nullable=False)
+    scrape_id = Column(ForeignKey("scrapes.id"), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            'player_id', 'data_type', 'scrape_id',
+             name='uq_player_missing_data_logs_all_columns'
+                ),
+            )
+
+
+    def __init__(self, player_id, data_type, scrape_id):
+        self.player_id = player_id
+        self.data_type = data_type
+        self.scrape_id = scrape_id
+
+
+    def __repr__(self):
+        return (
+            f"({self.id}, {self.player_id}, {self.data_type}, "
+            f"{self.scrape_id})"
+            )
+    
+
+class PlayerScrapeLoger(Base):
+
+
+    __tablename__ = "player_scrape_logs"
+
+    id = Column(Integer, primary_key=True)
+    scrape_id = Column(ForeignKey("scrapes.id"), nullable=False)
+    player_id = Column(Integer, ForeignKey("players.id"), nullable=False)
+
+
+    __table_args__ = (
+        UniqueConstraint(
+           'scrape_id', 'player_id',
+            name='uq_player_scrape_logs_all_columns'
+                ),
+            )
+
+
+    def __init__(self, scrape_id, player_id):
+        self.scrape_id = scrape_id
+        self.player_id = player_id
+
+
+    def __repr__(self):
+        return f"({self.id}, {self.scrape_id}, {self.player_id})"
+
+    
+
+
+    
+
+    
+
+
     
     
     

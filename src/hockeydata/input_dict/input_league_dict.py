@@ -14,19 +14,20 @@ class InputLeagueDict():
         self.db_session = db_session
 
     @time_execution
-    def input_league_dict(self, league_dict: dict):
+    def input_dict(self, dict: dict):
         """wrapper method for inputting  all scraped data from dict to DB"""
 
         league_id = self._input_league_info_dict(
-            info_dict=league_dict)
+            info_dict=dict
+            )
         self._input_league_achievements(
-            achiev_dict=league_dict[LEAGUE_ACHIEVEMENTS], league_id=league_id)
+            achiev_dict=dict[LEAGUE_ACHIEVEMENTS], league_id=league_id)
         league_standings = InputLeagueStandings(db_session=self.db_session)
         league_standings._input_league_standings_dict(
-            stat_dict=league_dict[SEASON_STANDINGS],
+            stat_dict=dict[SEASON_STANDINGS],
             league_id=league_id)
         self.db_session.commit()
-        logger.info(f"League dict ({league_dict[LEAGUE_UID]})"
+        logger.info(f"League dict ({dict[LEAGUE_UID]})"
                     f" succesfully inputted into db")
         
     def _input_league_info_dict(self, info_dict: dict) -> int:

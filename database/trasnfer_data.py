@@ -1,10 +1,13 @@
+from database_session import database_session
+
 from sqlalchemy import create_engine, MetaData, Table, text
 from sqlalchemy.orm import sessionmaker
 import pandas as pd
 
+
 # Define database URLs
-OLD_DB_URL = "sqlite:///./database/hockey_v11.db"
-NEW_DB_URL = "sqlite:///./database/hockey_v12.db"
+OLD_DB_URL = "sqlite:///./database/hockey_v15_test.db"
+NEW_DB_URL = "sqlite:///./database/hockey_v16_test.db"
 
 # Create engines and sessions
 old_engine = create_engine(OLD_DB_URL)
@@ -32,11 +35,15 @@ new_session.commit()
 # Transfer data for common tables
 for table_name in common_tables:
     old_table = Table(table_name, old_metadata, autoload_with=old_engine)
-    new_table = Table(table_name, new_metadata, autoload_with=new_engine)
+    if table_name == 'scrapes':
+        continue
     
+    new_table = Table(table_name, new_metadata, autoload_with=new_engine)
     # Fetch data from the old table
     query = old_session.query(old_table)
-    data = pd.read_sql(query.statement, old_engine)
+    data = pd.read_sql(
+        query.statement, old_engine, parse_dates=['event_time']
+        )
     
     if data.empty:
         print(f"Skipping {table_name}: No data found")

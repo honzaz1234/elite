@@ -235,4 +235,13 @@ QUERIES_INFO = {
             db.FirstNameMapper.alternative_name,
         ]
     },
+    "player_uid": {
+        "base_table": db.Player,
+        "selected_cols": [
+            db.Player.uid,
+        ],
+        "filters": [
+            (db.Player.name.isnot(None))
+        ]
+    }
 }

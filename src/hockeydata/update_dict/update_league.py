@@ -14,15 +14,16 @@ class UpdateLeagueDict():
     def __init__(self):
         pass
     
-    def update_league_dict(self, league_dict: dict) -> dict:
+    def update_dict(self, dict: dict) -> dict:
         """wrapper method for updating all info in league dict"""
 
-        new_league_dict = league_dict.copy()
+        new_league_dict = dict.copy()
         new_league_dict[SEASON_STANDINGS] = self._update_standing_dict(
             standing_dict=new_league_dict[SEASON_STANDINGS])
         logger.debug(f"League dict updated: {new_league_dict}")
         logger.info(f"League dict ({new_league_dict[LEAGUE_UID]})"
                      " succesfully updated")
+        
         return new_league_dict
 
     def _update_standing_dict(self, standing_dict: dict) -> dict:

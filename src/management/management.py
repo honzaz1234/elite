@@ -1,4 +1,5 @@
 import common_functions as cf
+import database_insert.db_insert as db_insert
 import gamedata.input_dict.input_game_dict as input_game
 import gamedata.report_getter as report_getter
 import gamedata.update_dict.update_game as update_game
@@ -23,112 +24,230 @@ from decorators import repeat_request_until_success, time_execution
 from errors import GameDataError
 from logger.logging_config import logger
 from database_creator.database_creator import *
+from database_session.database_session import GetDatabaseSession
 
 from sqlalchemy.orm import  Session
 
 
-class ManagePlayer():
+class Manage():
+
+
+    REGEX_UID = None
+    TYPE = None
 
 
     def __init__(
-            self, done_folder_path: str, links_folder_path: str, 
-            session: Session):
-        self.players_done_path = done_folder_path + "/done_players.json"
-        self.url_list_path = links_folder_path + "/players.json"
-        self.players_done = None
-        self.players_urls = None
-        self.session = session
-        self.playwright_session = ps.PlaywrightSetUp()
-        self.update_dict = update_player.UpdatePlayer()
-        self.input_dict = input_player_dict.InputPlayerDict(
-            db_session=self.session)
-        self.get_urls = get_url.LeagueUrlDownload(
-            page=self.playwright_session.page)
+            self, session_o: GetDatabaseSession, done_folder_path: str, 
+            links_folder_path: str):
+        self.db_session = session_o.session
+        self.done_path = done_folder_path
+        self.url_list_path = links_folder_path
+        self.done_file = None
+        self.url_file = None
+        self.urls = None
+        self.update_dict = None
+        self.input_dict = None
+        self.scrape_id = session_o.create_scrape_table_entry(type_=self.TYPE)
 
 
-    def add_players_from_leagues_to_db(
-            self, seasons_to_get: dict={}) -> None:
-        logger.info(f"Process of obtaining data of players from following"
-                    f" leagues: {seasons_to_get.keys()} started")
-        self.set_up_manage_player()
-        for league_uid in seasons_to_get.keys():
-            self.add_players_from_league_to_db(
-                league_uid=league_uid, 
-                seasons_to_get=seasons_to_get[league_uid]
-                )
-        logger.info(f"Process of obtaining data of players from following"
-                    f" leagues: {seasons_to_get.keys()} finished")
+    def set_up_management(self):
+        self._load_done_file()
+        self._load_url_file()
         
 
-    def set_up_manage_player(self) -> None:
-        self.load_players_done_file()
-        self.load_players_url_file()
-
-
-    def load_players_done_file(self) -> None:
-        if os.path.exists(self.players_done_path)==False:
-            logger.info(f"Opening players_done file at path:" 
-                        f"{self.players_done_path}")
-            self.players_done = self.create_players_done_file()
+    def _load_done_file(self) -> None:
+        if not os.path.exists(self.done_path):
+            logger.info(
+                "Creating %s done file at path: %s", 
+                self.TYPE, self.done_path
+                )
+            self.done_file = self._create_done_file()
         else:
-            with open(self.players_done_path) as f:
-                self.players_done = json.load(f)
+            logger.info(
+                "Opening %s  done file at path: %s", 
+                self.TYPE, self.done_path
+                )
+            with open(self.done_path) as f:
+                self.done_file = json.load(f)
 
 
-    def create_players_done_file(self) -> list:
-        logger.info(f"Creating and opening players_done file at path:" 
-                    f"{self.players_done_path}")
-        players_done = {'players_done': []}
-        self.save_players_done()
+    def _create_done_file(self) -> None:
+        logger.info(
+            "Creating %s done file at path: %s", 
+            self.TYPE, self.done_path
+            )
+        self.done_file = []
+        self._save_done_file()
+        logger.info(
+            "%s done file at path: %s created.", 
+            self.TYPE, self.done_path
+            )
 
-        return players_done
+
+    def _save_done_file(self) -> None:
+        logger.info(
+            "Saving %s done file at path: %s...", 
+            self.TYPE, self.done_path
+            )
+        with open(self.done_path, 'w') as f:
+            json.dump(self.done_file, f)
+        logger.info(
+            "%s done file saved at path: %s.", self.TYPE, self.url_list_path
+            )
 
 
-    def load_players_url_file(self) -> None:
-        if os.path.exists(self.url_list_path)==False:
-            logger.info(f"Opening players_urls file at path:" 
-                        f"{self.url_list_path}")
-            self.players_urls = self.create_player_url_file()
+    def _load_url_file(self) -> None:
+        if not os.path.exists(self.url_list_path):
+            logger.info(
+                "%s creating URL file at path: %s...", 
+                self.TYPE, self.url_list_path
+                )
+            self._create_url_file()
         else:
+            logger.info("Opening %s URL file at path: %s", 
+                        self.TYPE, self.url_list_path
+                        )
             with open(self.url_list_path) as f:
                 self.players_urls = json.load(f)
 
 
-    def create_player_url_file(self) -> None:
-        players_urls = {}
-        logger.info(f"Creating players_urls file at path:" 
-                        f"{self.url_list_path}")
+    def _create_url_file(self) -> None:
+        self.urls = {}
+        self._save_url_file()
+        logger.info(
+            "%s URL file at path: %s created.", self.TYPE, self.url_list_path
+            )
+
+
+    def _save_url_file(self) -> None:
+        logger.info(
+            "Saving %s URL file at path: %s ...", 
+            self.TYPE, self.url_list_path
+            )
         with open(self.url_list_path, 'w') as f:
-            json.dump(players_urls, f)
+            json.dump(self.urls, f)
+        logger.info("%s URL file saved at path: %s.", 
+                    self.TYPE, self.url_list_path
+                    )
 
-        return players_urls
 
-
-    @repeat_request_until_success
-    def scrape_player(self, url: str) -> dict:
-        player_o = player_scraper.PlayerScraper(
-                url=url, page=self.playwright_session.page)
-        dict_player = player_o.get_info_all()
-
-        return dict_player
+    def scrape_input_into_db_wrapper(self, url: str) -> None:
+        uid = int(re.findall(self.REGEX_UID, url)[0])
+        if uid in self.done_file:
+            
+            return
+        try:
+            self.scrape_and_input_into_db(url=url)
+        except Exception as e:
+            with open(self.done_path, 'w') as f:
+                json.dump(self.done_file, f)
+            raise e
+        self.done_file.append(uid)
 
 
     @time_execution
-    def scrape_and_input_player_into_db(self, url: str) -> None:
-            dict_player = self.scrape_player(url)
-            dict_player_updated = (self.update_dict
-                                   .update_player_dict(dict_player))
-            self.input_dict.input_player_dict(player_dict=dict_player_updated)
+    def scrape_and_input_into_db(self, url: str) -> None:
+            scraped_dict = self.scrape(url)
+            updated_dict = (
+                self.update_dict
+                .update_dict(scraped_dict)
+                )
+            self.input_dict.input_dict(dict=updated_dict)
 
 
-    def scrap_input_player_into_db_wrapper(self, url: str) -> None:
-        uid = int(re.findall('([0-9]+)', url)[0])
-        if uid in self.players_done["players_done"]:
-            logger.debug(f'Team with url {url} is already in the db')
+class ManagePlayer(Manage):
 
-            return
-        self.scrape_and_input_player_into_db(url=url)
-        self.players_done["players_done"].append(uid)
+    REGEX_UID = "([0-9]+)"
+    TYPE = "Player"
+
+
+    def __init__(
+            self, session_o: GetDatabaseSession, done_folder_path: str, 
+            links_folder_path: str):
+        done_folder_path = done_folder_path + "/done_players.json"
+        links_folder_path = links_folder_path + "/players.json"
+        super().__init__(
+            session_o=session_o, 
+            done_folder_path=done_folder_path, links_folder_path=links_folder_path
+            )
+        self.playwright_session = ps.PlaywrightSetUp()
+        self.update_dict = update_player.UpdatePlayer()
+        self.input_dict = input_player_dict.InputPlayerDict(
+            db_session=self.db_session, scrape_id=self.scrape_id
+            )
+        self.get_urls = get_url.LeagueUrlDownload(
+            page=self.playwright_session.page
+            )
+            
+        
+    def add_from_leagues_to_db(self, seasons_to_get: dict={}) -> None:
+         logger.info(
+            "Process of obtaining data of players from following "
+            "leagues: %s started", seasons_to_get.keys()
+            )
+         self.set_up_management()
+         for league_uid in seasons_to_get.keys():
+            self.add_from_league_to_db_wrapper(
+                league_uid=league_uid, 
+                seasons_to_get=seasons_to_get[league_uid]
+                )
+         logger.info(f"Process of obtaining data of players from following"
+                    f" leagues: {seasons_to_get.keys()} finished")
+         
+
+    def add_from_league_to_db_wrapper(
+            self, league_uid: str, seasons_to_get: list) -> None:
+        logger.info(f"Process of obtaining data of players from"
+                    f" league {league_uid} started")
+        self.get_player_urls_in_league(
+                league_uid=league_uid, 
+                seasons_to_get=seasons_to_get
+                )
+        for season in seasons_to_get:
+            try:
+                self.add_one_season_in_db(
+                    season=season, league_uid=league_uid
+                    )
+            except Exception as e:
+                logger.info(f"Process of obtaining data of players from"
+                    f" league {league_uid} was disrupted")
+                self._save_done_file()
+                logger.info(f"List of uids of players already in the db was"
+                            " written to a file")
+                raise e
+            self._save_done_file()
+        logger.info(f"Process of obtaining data of players from"
+                    f" league {league_uid} finished and written to file.")
+         
+
+    def add_one_season_in_db(
+            self, season: str, league_uid: str) -> None:
+        logger.info(f"Process of obtaining data of players from"
+                    f" league {league_uid} for season {season}"
+                    f" started")
+        for player_type in self.players_urls[league_uid][season]:
+            self.add_one_type_in_db(
+                league_uid=league_uid, season=season, player_type=player_type
+                )
+        logger.info(f"Process of obtaining data of players from"
+                    f" league {league_uid} for season {season}"
+                    f" finished")
+
+
+    def add_one_type_in_db(
+            self, league_uid: str, season: str, player_type: str) -> None:
+        for url in self.players_urls[league_uid][season][player_type]:
+            self.scrape_input_into_db_wrapper(url=url)
+
+
+    @repeat_request_until_success
+    def scrape(self, url: str) -> dict:
+        player_o = player_scraper.PlayerScraper(
+                url=url, page=self.playwright_session.page,
+                )
+        dict_player = player_o.get_info_all()
+
+        return dict_player
 
 
     def get_player_urls_in_league(
@@ -187,140 +306,65 @@ class ManagePlayer():
             )
     
 
-    def add_players_from_league_to_db(
-            self, league_uid: str, seasons_to_get: list) -> None:
-        logger.info(f"Process of obtaining data of players from"
-                    f" league {league_uid} started")
-        self.get_player_urls_in_league(
-                league_uid=league_uid, 
-                seasons_to_get=seasons_to_get
-                )
-        for season in seasons_to_get:
-            try:
-                self.add_one_season_in_db(
-                    season=season, league_uid=league_uid
-                    )
-            except Exception as e:
-                logger.info(f"Process of obtaining data of players from"
-                    f" league {league_uid} was disrupted")
-                self.save_players_done()
-                logger.info(f"List of uids of players already in the db was"
-                            " written to a file")
-                raise e
-            self.save_players_done()
-        logger.info(f"Process of obtaining data of players from"
-                    f" league {league_uid} finished and written to file.")
+class ManageTeam(Manage):
 
 
-    def add_one_season_in_db(
-            self, season: str, league_uid: str) -> None:
-        logger.info(f"Process of obtaining data of players from"
-                    f" league {league_uid} for season {season}"
-                    f" started")
-        for player_type in self.players_urls[league_uid][season]:
-            self.add_one_type_in_db(
-                league_uid=league_uid, season=season, player_type=player_type
-                )
-        logger.info(f"Process of obtaining data of players from"
-                    f" league {league_uid} for season {season}"
-                    f" finished")
-
-
-    def add_one_type_in_db(
-            self, league_uid: str, season: str, player_type: str) -> None:
-        for url in self.players_urls[league_uid][season][player_type]:
-            self.scrap_input_player_into_db_wrapper(url=url)
-
-    def save_players_done(self):
-        if self.players_done is not None:
-            with open(self.players_done_path, 'w') as f:
-                json.dump(self.players_done, f)
-
-
-class ManageTeam():
+    REGEX_UID = "team\/([0-9]+)\/"
+    TYPE = "Team"
 
 
     def __init__(
-            self, done_folder_path: str, links_folder_path: str, 
-            session: Session):
-        self.teams_done_path = done_folder_path + "/done_teams.json"
-        self.url_list_path = links_folder_path + "/teams.json"
-        self.teams_done = None
-        self.teams_urls = None
-        self.session = session
+            self, session_o: GetDatabaseSession, done_folder_path: str, 
+            links_folder_path: str):
+        done_folder_path = done_folder_path + "/done_teams.json"
+        links_folder_path = links_folder_path + "/teams.json"
+        super().__init__(
+            session_o=session_o, 
+            done_folder_path=done_folder_path, links_folder_path=links_folder_path
+            )
         self.playwright_session = ps.PlaywrightSetUp()
         self.update_dict = update_team.UpdateTeamDict()
         self.input_dict = input_team_dict.InputTeamDict(
-            db_session=self.session)
-        self.get_urls = get_url.LeagueUrlDownload()
+            db_session=self.db_session)
+        self.get_urls = get_url.LeagueUrlDownload(
+            page=self.playwright_session.page)
 
 
     @time_execution
-    def add_teams_from_leagues_to_db(self, league_uids: list) -> None:
+    def add_from_leagues_to_db(self, league_uids: list) -> None:
         logger.info(f"Process of obtaining data of teams from following"
                     f" leagues: {league_uids} started")
-        self.set_up_manage_team()
+        self.set_up_management()
         for league_uid in league_uids:
-            self.add_teams_from_league_to_db(league_uid=league_uid)
+            self.add_from_league_to_db_wrapper(league_uid=league_uid)
         logger.info(f"Process of obtaining data of teams from following"
                     f" leagues: {league_uids} finished")
         
 
-    def set_up_manage_team(self) -> None:
-        self.load_teams_done_file()
-        self.load_teams_url_file()
-
-
-    def load_teams_done_file(self) -> None:
-        if os.path.exists(self.teams_done_path)==False:
-            logger.info(f"Opening teams_done file at path:" 
-                        f"{self.teams_done_path}")
-            self.teams_done = self.create_teams_done_file()
-        else:
-            with open(self.teams_done_path) as f:
-                self.teams_done = json.load(f)
-
-
-    def create_teams_done_file(self) -> dict:
-        logger.info(f"Creating teams_done file at path:" 
-                    f"{self.teams_done_path}")
-        teams_done = {'teams_done': []}
-        with open(self.teams_done_path, 'w') as f:
-            json.dump(teams_done, f)
-
-        return teams_done
-    
-
-    def load_teams_url_file(self) -> None:
-        if os.path.exists(self.url_list_path)==False:
-            logger.info(f"Opening teams_url file at path:" 
-                        f"{self.url_list_path}")
-            self.teams_urls = self.create_team_url_file()
-        else:
-            with open(self.url_list_path) as f:
-                self.teams_urls = json.load(f)
-
-
-    def create_team_url_file(self) -> list:
-        teams_urls = {}
-        logger.info(f"Creating teams_url file at path:" 
-                    f"{self.url_list_path}")
-        with open(self.url_list_path, 'w') as f:
-            json.dump(teams_urls, f)
-            
-        return teams_urls
-
-
-    @time_execution
-    def scrape_and_input_team_into_db(self, url: str) -> None:
-            dict_team = self.scrape_team(url=url)
-            dict_team_updated = (self.update_dict
-                                .update_team_dict(dict_team))
-            self.input_dict.input_team_dict(team_dict=dict_team_updated)
+    def add_from_league_to_db_wrapper(self, league_uid: str) -> None:
+        logger.info(f"Process of obtaining data of teams from"
+                    f" league {league_uid} started")
+        url_list = self.get_team_urls_in_league(
+            league_uid=league_uid)
+        try:
+            for url in url_list:
+                self.scrape_input_into_db_wrapper(url=url)
+        except Exception as e:
+            logger.info(f"Process of obtaining data of teams from"
+                    f" league {league_uid} was disrupted")
+            with open(self.done_file, 'w') as f:
+                json.dump(self.done_file, f)
+            logger.info(f"List of uids of teams already in the db was"
+                        f" written to a file")
+            raise e
+        with open(self.done_path, 'w') as f:
+            json.dump(self.done_file, f)
+        logger.info(f"Process of obtaining data of teams from"
+                    f" league {league_uid} finished")
     
 
     @repeat_request_until_success
-    def scrape_team(self, url: str) -> dict:
+    def scrape(self, url: str) -> dict:
         team_o = team_scraper.TeamScraper(
             url=url, page=self.playwright_session.page)
         dict_team = team_o.get_info()
@@ -328,134 +372,68 @@ class ManageTeam():
         return dict_team
 
 
-    def scrap_input_team_into_db_wrapper(self, url: str) -> None:
-        uid = re.findall("team\/([0-9]+)\/", url)[0]
-        if uid in self.teams_done["teams_done"]:
-            logger.debug(f'Team with url: {url} is already in the db')
-
-            return
-        try:
-            self.scrape_and_input_team_into_db(url=url)
-        except Exception as e:
-            with open(self.teams_done_path, 'w') as f:
-                json.dump(self.teams_done, f)
-            raise e
-        self.teams_done["teams_done"].append(uid)
-
-
     def get_team_urls_in_league(self, league_uid: str) -> list:
-        if league_uid in self.teams_urls:
-
-            return  self.teams_urls[league_uid] 
+        if league_uid in self.urls:
+            return  self.urls[league_uid] 
         url_list = self.get_urls.get_team_refs(league=league_uid)
         if url_list != []:
-            self.teams_urls[league_uid] = url_list
+            self.urls[league_uid] = url_list
             with open(self.url_list_path, 'w') as f:
-                json.dump(self.teams_urls, f)
+                json.dump(self.urls, f)
 
         return url_list
     
 
-    def add_teams_from_league_to_db(self, league_uid: str) -> None:
-        logger.info(f"Process of obtaining data of teams from"
-                    f" league {league_uid} started")
-        url_list = self.get_team_urls_in_league(
-            league_uid=league_uid)
-        try:
-            for url in url_list:
-                self.scrap_input_team_into_db_wrapper(url=url)
-        except Exception as e:
-            logger.info(f"Process of obtaining data of teams from"
-                    f" league {league_uid} was disrupted")
-            with open(self.teams_done_path, 'w') as f:
-                json.dump(self.teams_done, f)
-            logger.info(f"List of uids of teams already in the db was"
-                        f" written to a file")
-            raise e
-        with open(self.teams_done_path, 'w') as f:
-            json.dump(self.teams_done, f)
-        logger.info(f"Process of obtaining data of teams from"
-                    f" league {league_uid} finished")
-       
-
-class ManageLeague():
+class ManageLeague(Manage):
 
 
-    def __init__(self, done_folder_path: str, session: Session):
-        self.leagues_done_path = done_folder_path + "/done_leagues.json"
-        self.leagues_done = None
-        self.session = session
+    REGEX_UID = "(.+)"
+    TYPE = "League"
+
+
+    def __init__(
+            self, session_o: GetDatabaseSession, done_folder_path: str):
+        done_folder_path = done_folder_path + "/done_leagues.json"
+        super().__init__(
+            session_o=session_o, 
+            done_folder_path=done_folder_path, 
+            links_folder_path=None
+            )
         self.playwright_session = ps.PlaywrightSetUp()
         self.update_dict = update_league.UpdateLeagueDict()
         self.input_dict = input_league_dict.InputLeagueDict(
-            db_session=self.session)
+            db_session=self.db_session
+            )
 
 
     @time_execution
     def add_leagues_to_db(self, league_uids: list) -> None:
         logger.info(f"Process of obtaining data of leagues from following"
                     f" list: {league_uids} started")
-        self.set_up_manage_league()
+        self.set_up_management()
         for league_uid in league_uids:
             self.add_league_to_db(league_uid=league_uid)
         logger.info(f"Process of obtaining data of leagues from following"
                     f" list: {league_uids} finished")
         
 
-    def set_up_manage_league(self) -> None:
-        self.load_leagues_done_file()
-
-
-    def load_leagues_done_file(self) -> None:
-        if os.path.exists(self.leagues_done_path)==False:
-            self.leagues_done = self.create_leagues_done_file()
-        else:
-            logger.info(f"Opening leagues_done file at path:" 
-                        f"{self.leagues_done_path}")
-            with open(self.leagues_done_path) as f:
-                self.leagues_done = json.load(f)
-
-
-    def create_leagues_done_file(self) -> dict:
-        logger.info(f"Creating and opening leagues_done file at path:" 
-                    f"{self.leagues_done_path}")
-        leagues_done = {'leagues_done': []}
-        with open(self.leagues_done_path, 'w') as f:
-            json.dump(leagues_done, f)
-
-        return leagues_done
-    
+    def set_up_management(self) -> None:
+        self._load_done_file()
         
+
     def add_league_to_db(self, league_uid: str) -> None:
         logger.info(f"Process of adding league with uid {league_uid} "
                     f"to db started")
-        self.scrape_input_league_into_db_wrapper(league_uid=league_uid)
-        with open(self.leagues_done_path, 'w') as f:
-            json.dump(self.leagues_done, f)
-        logger.info(f"Process of adding league with uid {league_uid} "
-                    f"to db finished")
-        
-
-    def scrape_input_league_into_db_wrapper(self, league_uid: str) -> None:
-        if league_uid in self.leagues_done["leagues_done"]:
-            logger.info(f'League ({league_uid}) is already in the db')
-
-            return
         url = ELITE_URL + LEAGUE_URLS[league_uid]
-        self.scrape_and_input_league_into_db(url=url)
-        self.leagues_done["leagues_done"].append(league_uid)
-        
-
-    @time_execution
-    def scrape_and_input_league_into_db(self, url: str) -> None:
-            dict_league = self.scrape_league(url=url)
-            dict_league_updated = (self.update_dict
-                                   .update_league_dict(dict_league))
-            self.input_dict.input_league_dict(league_dict=dict_league_updated)
+        self.scrape_input_into_db_wrapper(url=url)
+        with open(self.done_file, 'w') as f:
+            json.dump(self.done_file, f)
+        logger.info(f"Process of adding league with uid {league_uid} "
+                    f"to db finished")    
 
 
     @repeat_request_until_success
-    def scrape_league(self, url: str) -> None:
+    def scrape(self, url: str) -> None:
             league_o = league_scraper.LeagueScrapper(
                 url=url, page=self.playwright_session.page)
             dict_league = league_o.get_info()
@@ -463,22 +441,24 @@ class ManageLeague():
             return dict_league
 
 
-class ManageGame():
+class ManageGame(Manage):
+
+
+    TYPE = "Game"
 
 
     def __init__(
-            self, done_folder_path: str, links_folder_path: str, 
-            session: Session, update_on_conflict: bool):
-        self.games_done_path = done_folder_path + "/done_games.json"
-        self.games_done = None
-        self.game_data_path = links_folder_path + "/games.json"
-        self.game_data = None
+            self, session_o: GetDatabaseSession, done_folder_path: str, links_folder_path: str, update_on_conflict: bool):
+        done_folder_path = done_folder_path + "/done_games.json"
+        links_folder_path = links_folder_path + "/games.json"
+        super().__init__(
+            session_o=session_o, done_folder_path=done_folder_path,
+            links_folder_path=links_folder_path)
         self.season_ranges_path = links_folder_path + "/season_ranges.json"
         self.season_ranges = None
-        self.session = session
         self.report_id_getter_o = report_getter.ReportIDGetter()
-        self.mapper_o = db_mapper.GetDBID(self.session)
-        self.input_mapper_o = input_game.InputEliteNHLmapper(self.session)
+        self.mapper_o = db_mapper.GetDBID(self.db_session)
+        self.input_mapper_o = input_game.InputEliteNHLmapper(self.db_session)
         self.update_on_conflict = update_on_conflict
 
 
@@ -488,48 +468,31 @@ class ManageGame():
                     f" list: {seasons} started")
         self.set_up_manage_game()
         for season in seasons:
-            self.add_one_season_in_db(season=season)
+            self._add_one_season_in_db(season=season)
         logger.info(f"Process of obtaining data of games from following"
                     f" list: {seasons} finished")
         
 
     def set_up_manage_game(self) -> None:
-        self.load_games_done_file()
-        self.load_games_url_file()
-        self.load_season_ranges()
+        self._load_done_file()
+        self._load_url_file()
+        self._load_season_ranges()
 
 
-    def load_games_done_file(self) -> None:
-        if os.path.exists(self.games_done_path)==False:
-            self.games_done = self.create_games_done_file()
-        else:
-            logger.info(f"Opening games_done file at path:" 
-                        f"{self.games_done_path}")
-            with open(self.games_done_path) as f:
-                self.games_done = json.load(f)
+    def _create_done_file(self) -> None:
+        logger.info(
+            "Creating %s done file at path: %s", 
+            self.TYPE, self.done_path
+            )
+        self.done_file = {}
+        self._save_done_file()
+        logger.info(
+            "%s done file at path: %s created.", 
+            self.TYPE, self.done_path
+            )
 
 
-    def create_games_done_file(self) -> dict:
-        logger.info(f"Creating and opening games_done file at path:" 
-                    f"{self.games_done_path}")
-        games_done  = {}
-        with open(self.games_done_path, 'w') as f:
-            json.dump(games_done, f)
-        
-        return games_done
-    
-
-    def load_games_url_file(self) -> None:
-        if os.path.exists(self.game_data_path)==False:
-            self.game_data = self.create_game_dates_file()
-        else:
-            logger.info(f"Opening game_dates file at path:" 
-                        f"{self.game_data_path}")
-            with open(self.game_data_path) as f:
-                self.game_data = json.load(f)
-
-
-    def load_season_ranges(self) -> None:
+    def _load_season_ranges(self) -> None:
         try: 
             with open(self.season_ranges_path) as f:
                 self.season_ranges = json.load(f)
@@ -540,25 +503,15 @@ class ManageGame():
             )
             cf.log_and_raise(message, FileNotFoundError)
             raise e
-
-
-    def create_game_dates_file(self) -> None:
-        game_dates = {}
-        logger.info(f"Creating game_dates file at path:" 
-                        f"{self.game_data_path}")
-        with open(self.game_data_path, 'w') as f:
-            json.dump(game_dates, f)
         
-        return game_dates
-    
 
-    def add_one_season_in_db(self, season: str) -> None:
+    def _add_one_season_in_db(self, season: str) -> None:
         logger.info(f"Process of obtaining data of NHL games from"
                     f" season {season} started")
-        if season not in self.game_data:
+        if season not in self.done_file:
             season_dict = self.get_season_report_ids(season=season)
         else:
-            season_dict = self.game_data[season]
+            season_dict = self.done_file[season]
         self.get_season_data(
             season_dict=season_dict, season=season
             )
@@ -571,20 +524,20 @@ class ManageGame():
             season_dict = self.report_id_getter_o.get_season_ids(
                 season_ranges_dict=self.season_ranges[season],
                 season=season, 
-                game_data=self.game_data
+                game_data=self.done_file
                 )
-            self.game_data[season] = season_dict
+            self.done_file[season] = season_dict
         except Exception as e:
             logger.error(f"Downloading of game report ids failed: {e}")
             logger.info("Downloading of game report ids failed..."
                         "Saving scraped IDs to file...")
-            with open(self.game_data_path, "w") as f:
-                json.dump(self.game_data, f)
+            with open(self.done_path, "w") as f:
+                json.dump(self.done_file, f)
             logger.debug("Scraped report IDs saved to a file.")
             raise e
         logger.info("Scraping of season report IDs finished.")
-        with open(self.game_data_path, "w") as f:
-                json.dump(self.game_data, f)
+        with open(self.done_path, "w") as f:
+                json.dump(self.done_file, f)
         logger.debug("Dates from which IDs of reports were already scraped"
                     " saved to a file")
 
@@ -592,23 +545,23 @@ class ManageGame():
     
     
     def get_season_data(self, season: str, season_dict: dict) -> None:
-        if season not in self.games_done:
-            self.games_done[season] = []
+        if season not in self.done_file:
+            self.done_file[season] = []
         try:
             self.scrape_and_input_season_games_into_db(season, season_dict)
         except Exception as e:
             logger.info(f"Scraping of game report data for "
                         f"season {season} failed."
                         f"Saving scraped IDs to file...")
-            with open(self.games_done_path, "w") as f:
-                json.dump(self.games_done, f)
+            with open(self.done_path, "w") as f:
+                json.dump(self.done_file, f)
             logger.info(f"IDs of reports already in the database saved to"
                          f" a file")
             raise e
         logger.info(f"Scraping and inputting game data for season {season} "
                     "finished.")
-        with open(self.games_done_path, "w") as f:
-                json.dump(self.games_done, f)
+        with open(self.done_path, "w") as f:
+                json.dump(self.done_file, f)
         logger.debug("IDs of scraped report saved to a file.")
     
     
@@ -617,12 +570,12 @@ class ManageGame():
         mappers = self.get_dict_with_all_mappers(season=season)
         try:
             for game in season_dict["report_data"]:
-                if game['id'] in self.games_done[season]:
+                if game['id'] in self.done_file[season]:
                     continue
                 report_id = self.scrape_and_input_game_into_db(
                     game_dict=game, season=season_dict["season"], mappers=mappers
                     )
-                self.games_done[season].append(report_id)
+                self.done_file[season].append(report_id)
             self.input_mapper_o.input_all_mappers(mappers=mappers)
         except Exception as e:
             self.input_mapper_o.input_all_mappers(mappers=mappers)

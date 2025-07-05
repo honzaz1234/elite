@@ -16,21 +16,21 @@ class InputTeamDict():
         pass
 
     @time_execution
-    def input_team_dict(self, team_dict: dict):
+    def input_dict(self, dict: dict):
         """wrapper method for putting  team data from dictionary into DB"""
 
         stadium_id = self._input_stadium_dict(
-            stadium_dict=team_dict[STADIUM_INFO])
+            stadium_dict=dict[STADIUM_INFO])
         team_id = self._input_team_info_dict(
-            info_dict=team_dict[GENERAL_INFO], stadium_id=stadium_id)
+            info_dict=dict[GENERAL_INFO], stadium_id=stadium_id)
         self._input_affiliated_teams_list(
-            team_list=team_dict[AFFILIATED_TEAMS], team_id=team_id)
+            team_list=dict[AFFILIATED_TEAMS], team_id=team_id)
         self._input_retired_number_dict(
-            ret_num_dict=team_dict[RETIRED_NUMBERS], team_id=team_id)
+            ret_num_dict=dict[RETIRED_NUMBERS], team_id=team_id)
         self._input_team_titles_dict(
-            titles_dict=team_dict[HISTORIC_NAMES], team_id=team_id)
+            titles_dict=dict[HISTORIC_NAMES], team_id=team_id)
         self.db_session.commit()
-        logger.info(f"Team dictionary ({team_dict[GENERAL_INFO][SHORT_NAME]})"
+        logger.info(f"Team dictionary ({dict[GENERAL_INFO][SHORT_NAME]})"
                     " succesfully inputted into db")
 
     def _input_stadium_dict(self, stadium_dict: dict) -> int:

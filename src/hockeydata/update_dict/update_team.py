@@ -17,7 +17,7 @@ class UpdateTeamDict():
         pass
 
     @time_execution
-    def update_team_dict(self, dict: dict) -> dict:
+    def update_dict(self, dict: dict) -> dict:
         """wrapper method for updating team dict in order to prepared it for insertion into the database
         """
 

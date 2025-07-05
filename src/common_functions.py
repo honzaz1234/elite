@@ -1,6 +1,8 @@
 import requests
 import scrapy
 
+from playwright.sync_api import Page
+
 from errors import EmptyReturnXpathValueError
 from decorators import repeat_request_until_success
 from logger.logging_config import logger
@@ -116,4 +118,33 @@ def dict_diff_unique(d1: dict, d2: dict) -> dict:
             nested = dict_diff_unique(d1[key], d2[key])
             if nested:  # Only include non-empty nested differences
                 result[key] = nested
+
     return result
+
+
+def merge_dicts(dict_a: dict, dict_b: dict):
+    """method for merging two nested dicts with the same keys"""
+
+    for key, value in dict_b.items():
+        if key in dict_a:
+            # If both values are dictionaries, merge them recursively
+            if isinstance(dict_a[key], dict) and isinstance(value, dict):
+                merge_dicts(dict_a[key], value)
+            # If they are not dictionaries, overwrite the value in dict_a
+            else:
+                dict_a[key] = value
+        else:
+            # If the key does not exist in dict_a, add it from dict_b
+            dict_a[key] = value
+            
+    return dict_a
+
+
+def check_data_presence(
+        page: Page, selector: str, data_type: str,
+        logger_dict: dict) -> None:
+    try: 
+        page.wait_for_selector(selector=selector, timeout=2000)
+    except:
+        logger.info("Data type %s not found for player.", data_type)
+        logger_dict.append(data_type)     
