@@ -24,7 +24,9 @@ class GoogleManager():
             self.files = json.load(f)
         self.credentials = Credentials.from_authorized_user_info(
             info=self.token_info, scopes=self.SCOPES)
-        self.drive_service = build('drive', 'v3', credentials=self.credentials)
+        self.drive_service = build(
+            'drive', 'v3', credentials=self.credentials, cache_discovery=False
+            )
         self.folder_id = "1S2ldK5YLDyzxGKHM0VN267FtirpZPUc4"
     
 
