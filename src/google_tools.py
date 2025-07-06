@@ -4,6 +4,8 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.oauth2.credentials import Credentials
 
+from logger.logging_config import logger
+
 
 class GoogleManager():
 
@@ -35,6 +37,7 @@ class GoogleManager():
 
 
     def upload_file_to_drive(self, file_name: str):
+        logger.info("Uploading file %s to drive.", file_name)
         file_path = self._get_file_path(file_name=file_name)
         file_body = MediaFileUpload(
             file_path, mimetype=self.files[file_name]["mime_type"],
@@ -59,6 +62,7 @@ class GoogleManager():
             )
 
         resp = upload_file.execute()
+        logger.info("File %s uploaded to drive.", file_name)
         self._set_field_value(file_name=file_name, field_id=resp["id"])
 
 

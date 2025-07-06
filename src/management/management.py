@@ -2,6 +2,7 @@ import common_functions as cf
 import gamedata.input_dict.input_game_dict as input_game
 import gamedata.report_getter as report_getter
 import gamedata.update_dict.update_game as update_game
+import google_tools as google
 import hockeydata.scraper.league_scraper as league_scraper
 import hockeydata.scraper.player_scraper as player_scraper
 import hockeydata.scraper.team_scraper as team_scraper
@@ -25,12 +26,13 @@ from logger.logging_config import logger
 from database_creator.database_creator import *
 from database_session.database_session import GetDatabaseSession
 
-from sqlalchemy.orm import  Session
 
 
 class Manage():
 
 
+    DONE_FILE = None
+    LINK_FILE = None
     REGEX_UID = None
     TYPE = None
 
@@ -38,6 +40,8 @@ class Manage():
     def __init__(
             self, session_o: GetDatabaseSession, done_folder_path: str, 
             links_folder_path: str):
+        done_folder_path = done_folder_path + self.DONE_FILE
+        links_folder_path = links_folder_path + self.LINK_FILE
         self.db_session = session_o.session
         self.done_path = done_folder_path
         self.url_list_path = links_folder_path
@@ -162,8 +166,20 @@ class Manage():
             self.input_dict.input_dict(dict=updated_dict)
 
 
+    def save_data_to_google_drive(self):
+        logger.info("Saving %s data to Google Drive...", self.TYPE)
+        google_manage = google.GoogleManager()
+        google_manage.upload_files_to_drive(
+            files_include=[self.DONE_FILE, self.LINK_FILE]
+            )
+        logger.info("Data %s saved to Google Drive.", self.TYPE)
+
+
 class ManagePlayer(Manage):
 
+
+    DONE_FILE = "done_players.json"
+    LINK_FILE =  "players.json"
     REGEX_UID = "([0-9]+)"
     TYPE = "Player"
 
@@ -171,8 +187,6 @@ class ManagePlayer(Manage):
     def __init__(
             self, session_o: GetDatabaseSession, done_folder_path: str, 
             links_folder_path: str):
-        done_folder_path = done_folder_path + "/done_players.json"
-        links_folder_path = links_folder_path + "/players.json"
         super().__init__(
             session_o=session_o, 
             done_folder_path=done_folder_path, links_folder_path=links_folder_path
@@ -225,6 +239,7 @@ class ManagePlayer(Manage):
             self._save_done_file()
         logger.info(f"Process of obtaining data of players from"
                     f" league {league_uid} finished and written to file.")
+        self.save_data_to_google_drive()
          
 
     def add_one_season_in_db(
@@ -316,6 +331,8 @@ class ManagePlayer(Manage):
 class ManageTeam(Manage):
 
 
+    DONE_FILE = "done_teams.json"
+    LINK_FILE =  "teams.json"
     REGEX_UID = "team\/([0-9]+)\/"
     TYPE = "Team"
 
@@ -323,8 +340,6 @@ class ManageTeam(Manage):
     def __init__(
             self, session_o: GetDatabaseSession, done_folder_path: str, 
             links_folder_path: str):
-        done_folder_path = done_folder_path + "/done_teams.json"
-        links_folder_path = links_folder_path + "/teams.json"
         super().__init__(
             session_o=session_o, 
             done_folder_path=done_folder_path, links_folder_path=links_folder_path
@@ -368,6 +383,7 @@ class ManageTeam(Manage):
             json.dump(self.done_file, f)
         logger.info(f"Process of obtaining data of teams from"
                     f" league {league_uid} finished")
+        self.save_data_to_google_drive()
     
 
     @repeat_request_until_success
@@ -394,17 +410,19 @@ class ManageTeam(Manage):
 class ManageLeague(Manage):
 
 
+    DONE_FILE = "done_leagues.json"
+    LINK_FILE =  "leagues.json"
     REGEX_UID = "(.+)"
     TYPE = "League"
 
 
     def __init__(
-            self, session_o: GetDatabaseSession, done_folder_path: str):
-        done_folder_path = done_folder_path + "/done_leagues.json"
+            self, session_o: GetDatabaseSession, done_folder_path: str, 
+            links_folder_path: str):
         super().__init__(
             session_o=session_o, 
             done_folder_path=done_folder_path, 
-            links_folder_path=None
+            links_folder_path=links_folder_path
             )
         self.playwright_session = ps.PlaywrightSetUp()
         self.update_dict = update_league.UpdateLeagueDict()
@@ -432,7 +450,8 @@ class ManageLeague(Manage):
         with open(self.done_file, 'w') as f:
             json.dump(self.done_file, f)
         logger.info(f"Process of adding league with uid {league_uid} "
-                    f"to db finished")    
+                    f"to db finished")   
+        self.save_data_to_google_drive() 
 
 
     @repeat_request_until_success
@@ -447,13 +466,13 @@ class ManageLeague(Manage):
 class ManageGame(Manage):
 
 
+    DONE_FILE = "done_games.json"
+    LINK_FILE =  "games.json"
     TYPE = "Game"
 
 
     def __init__(
             self, session_o: GetDatabaseSession, done_folder_path: str, links_folder_path: str, update_on_conflict: bool):
-        done_folder_path = done_folder_path + "/done_games.json"
-        links_folder_path = links_folder_path + "/games.json"
         super().__init__(
             session_o=session_o, done_folder_path=done_folder_path,
             links_folder_path=links_folder_path)
@@ -519,6 +538,7 @@ class ManageGame(Manage):
             )
         logger.info(f"Process of obtaining data of games"
                     f" from season {season} finished")
+        self.save_data_to_google_drive()
         
 
     def get_season_report_ids(self, season: str) -> dict:
