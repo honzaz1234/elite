@@ -8,11 +8,8 @@ import hockeydata.playwright_setup.playwright_setup as ps
 
 from constants import *
 from decorators import time_execution
+from hockeydata.get_urls.league_uids import LEAGUE_UIDS
 from logger.logging_config import logger
-
-
-with open("leagues.json") as f:
-    LEAGUE_URLS = json.load(f)
 
 
 class LeagueUrlDownload():
@@ -130,7 +127,7 @@ class LeagueUrlDownload():
     
 
     def _add_season_range(self, league_uid: str, url_dict: dict) -> None:
-        url = ELITE_URL + LEAGUE_URLS[league_uid]
+        url = ELITE_URL + LEAGUE_UIDS[league_uid]
         list_seasons = self.get_list_of_years(url=url)
         season_range = {
             'start': int(list_seasons[0]),
@@ -207,7 +204,7 @@ class LeagueUrlDownload():
                     f" {league} started")
         league_team_refs = []
         season_getter = SeasonUrlDownload()
-        league_url = ELITE_URL + LEAGUE_URLS[league]
+        league_url = ELITE_URL + LEAGUE_UIDS[league]
         self.page.goto(league_url)
         sel_league = scrapy.Selector(text=self.page.content())
         season_ref_list = (sel_league
@@ -259,7 +256,7 @@ class SeasonUrlDownload():
                     f" {season} started. ")
         stats_path = (
             ELITE_URL
-            + LEAGUE_URLS[league] 
+            + LEAGUE_UIDS[league] 
             + SeasonUrlDownload.PATHS["stats"] 
             + "/" 
             + season
