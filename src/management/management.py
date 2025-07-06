@@ -224,6 +224,11 @@ class ManagePlayer(Manage):
                 league_uid=league_uid, 
                 seasons_to_get=seasons_to_get
                 )
+        if seasons_to_get == []:
+            seasons_to_get = [
+                season for season in self.urls[league_uid].keys() 
+                if season != "season_range"
+                ]
         for season in seasons_to_get:
             try:
                 self.add_one_season_in_db(
