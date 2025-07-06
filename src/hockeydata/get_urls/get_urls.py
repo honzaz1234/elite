@@ -11,7 +11,7 @@ from decorators import time_execution
 from logger.logging_config import logger
 
 
-with open("./data/links.leagues.json") as f:
+with open("leagues.json") as f:
     LEAGUE_URLS = json.load(f)
 
 
