@@ -103,22 +103,6 @@ QUERIES_INFO = {
         "filters": [
             ]
     },
-    "nhl_teams": {
-        "base_table": db.Team,
-        "selected_cols": [
-            db.Team.id,
-            db.Team.team,
-            db.League.uid
-            ],
-        "joins": [
-            (db.TeamSeason, db.TeamSeason.team_id == db.Team.id),
-            (db.Season, db.TeamSeason.season_id == db.Season.id),
-            (db.League, db.TeamSeason.league_id == db.League.id)
-        ],
-        "filters": [
-            (db.League.uid == "nhl")
-        ]
-    },
     "nhl_elite_names": {
         "base_table": db.NHLEliteNameMapper,
         "selected_cols": [
