@@ -1,5 +1,4 @@
 import common_functions as cf
-import database_insert.db_insert as db_insert
 import gamedata.input_dict.input_game_dict as input_game
 import gamedata.report_getter as report_getter
 import gamedata.update_dict.update_game as update_game
@@ -425,14 +424,10 @@ class ManageLeague(Manage):
                     f" list: {league_uids} finished")
         
 
-    def set_up_management(self) -> None:
-        self._load_done_file()
-        
-
     def add_league_to_db(self, league_uid: str) -> None:
         logger.info(f"Process of adding league with uid {league_uid} "
                     f"to db started")
-        url = ELITE_URL + LEAGUE_URLS[league_uid]
+        url = ELITE_URL + self.urls[league_uid]
         self.scrape_input_into_db_wrapper(url=url)
         with open(self.done_file, 'w') as f:
             json.dump(self.done_file, f)
@@ -474,16 +469,15 @@ class ManageGame(Manage):
     def add_games_from_seasons_to_db(self, seasons: list) -> None:
         logger.info(f"Process of obtaining data of games from following"
                     f" list: {seasons} started")
-        self.set_up_manage_game()
+        self.set_up_management()
         for season in seasons:
             self._add_one_season_in_db(season=season)
         logger.info(f"Process of obtaining data of games from following"
                     f" list: {seasons} finished")
         
 
-    def set_up_manage_game(self) -> None:
-        self._load_done_file()
-        self._load_url_file()
+    def set_up_management(self) -> None:
+        super().set_up_management() 
         self._load_season_ranges()
 
 

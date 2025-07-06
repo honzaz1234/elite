@@ -1,3 +1,4 @@
+import json
 import re 
 import scrapy
 import time
@@ -8,6 +9,10 @@ import hockeydata.playwright_setup.playwright_setup as ps
 from constants import *
 from decorators import time_execution
 from logger.logging_config import logger
+
+
+with open("./data/links.leagues.json") as f:
+    LEAGUE_URLS = json.load(f)
 
 
 class LeagueUrlDownload():
@@ -33,7 +38,8 @@ class LeagueUrlDownload():
         "first_year": "//ul[preceding-sibling::header[./h2[contains(text()"
                       ",'Champions')]]]/li[last()]/a[1]/text()"
     }
-    
+
+
     def __init__(self, page=None):
          self.page = page
          pass
@@ -251,11 +257,13 @@ class SeasonUrlDownload():
         
         logger.info(f"Scraping player's urls for league {league} and season"
                     f" {season} started. ")
-        stats_path = (ELITE_URL
-                     + LEAGUE_URLS[league] 
-                     + SeasonUrlDownload.PATHS["stats"] 
-                     + "/" 
-                     + season)
+        stats_path = (
+            ELITE_URL
+            + LEAGUE_URLS[league] 
+            + SeasonUrlDownload.PATHS["stats"] 
+            + "/" 
+            + season
+            )
         dict_season = {}
         page_html = cf.get_valid_request(stats_path, return_type="content")
         selector_players = scrapy.Selector(text=page_html)
