@@ -101,8 +101,8 @@ class TSParser():
         return player_shifts  
 
 
-    def get_player_shift(self, shift_sel: scrapy.Selector, shift_idx: int) -> dict:
-
+    def get_player_shift(
+            self, shift_sel: scrapy.Selector, shift_idx: int) -> dict:
         shift_dict = {}
         shift_dict["period"]  = cf.get_single_xpath_value(
             sel=shift_sel, xpath="./td[2]/text()", optional=False)
