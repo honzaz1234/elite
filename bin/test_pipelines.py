@@ -1,5 +1,5 @@
 import database_session.database_session as ds
-import management.input_data as management
+import management.management as management
 
 #path to folder with files with already downloaded entities (league, team, #player) must be specified
 
@@ -11,7 +11,7 @@ links_folder_path = "./data/links/"
 
 #path to database must be specifed
 
-db_path = "./database/hockey_v12.db"
+db_path = "./database/hockey_v16_test.db"
 
 #connection to database is managed by class GetDatabaseSession
 #which takes one parameter with the path to the existing DB
@@ -20,12 +20,7 @@ db_path = "./database/hockey_v12.db"
 
 session_o = ds.GetDatabaseSession(db_path=db_path)
 
-management_o = management.ManageLeague(
-    done_folder_path=done_folder_path,
-    session=session_o.session
-)
-
-league_list = ['Czechia', 'NHL', 'SHL', 'AHL']
+league_list = ['NHL', 'SHL', 'AHL']
 
 #before scraping itself method set_up_connection must be called which sets up
 #db session and loads data in table seasons in case the set up of database
@@ -49,19 +44,23 @@ session_o.set_up_connection()
 #the names of leagues must be given as specified in module constants in keys #of dictionary LEAGUE_URLS in hockeydata package
 
 
-type_to_scrape = input("Select one of the following options: player, team"
-                       "league to decide which type of object for given"
-                       " league_list should be downloaded.")
+type_to_scrape = input("Select one of the following options: player, team, "
+                       "league or game to decide which type of object for "
+                       "given league_list should be downloaded: ")
 
 #PLAYER SCRAPER
+
+SEASONS_TO_GET = {
+    "NHL": []
+}
 
 if type_to_scrape=="player":
     manage_player = management.ManagePlayer(
         done_folder_path=done_folder_path,
         links_folder_path=links_folder_path,
-        session=session_o.session
+        session_o=session_o
         )
-    manage_player.add_players_from_leagues_to_db(league_uids=league_list)
+    manage_player.add_from_leagues_to_db(seasons_to_get=SEASONS_TO_GET)
 
 #TEAM SCRAPER
 
@@ -69,9 +68,9 @@ if type_to_scrape=="team":
     manage_team = management.ManageTeam(
         done_folder_path=done_folder_path,
         links_folder_path=links_folder_path,
-        session=session_o.session
+        session_o=session_o
         )
-    manage_team.add_teams_from_leagues_to_db(league_uids=league_list)
+    manage_team.add_from_leagues_to_db(league_uids=league_list)
 
 
 #LEAGUE SCRAPER
@@ -79,6 +78,23 @@ if type_to_scrape=="team":
 if type_to_scrape=="league":
     manage_league = management.ManageLeague(
         done_folder_path=done_folder_path,
-        session=session_o.session
+        session_o=session_o
         )
     manage_league.add_leagues_to_db(league_uids=league_list)
+
+
+# GAME SCRAPER
+
+SEASONS = ["2021-2022"]
+
+if type_to_scrape=="game":
+    manage_game = management.ManageGame(
+        done_folder_path=done_folder_path,
+        links_folder_path=links_folder_path,
+        session_o=session_o,
+        update_on_conflict=False
+    )
+    manage_game.add_games_from_seasons_to_db(seasons=SEASONS)
+
+
+session_o.session.close()
