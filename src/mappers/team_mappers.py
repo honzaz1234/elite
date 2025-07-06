@@ -96,7 +96,8 @@ NHL_FULL_NAME_UID_MAPPER = {
         'Québec Athletic Club': 3194,
         'Toronto Hockey Club': 76,
         'Montréal Wanderers': 3264,
-        'Utah Mammoth': 40261
+        'Utah Mammoth': 40261,
+        'Pittsburgh Hornets': 3039 #AHL team with choice in a draft - 1965
     }
 
 NHL_ABB_TEAM_NAME = {
@@ -146,6 +147,8 @@ def get_team_uid_from_abbrevation(team_abb: str) -> int:
 def get_team_uid_from_full_name(full_name: str) -> int:
         """returns NHL team uid as included in the DB based"""
         """ on team full name"""
+        if full_name == 'California Seals':
+                full_name = 'California Golden Seals'
         
         return NHL_FULL_NAME_UID_MAPPER[full_name]
 
