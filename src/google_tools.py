@@ -37,7 +37,7 @@ class GoogleManager():
 
 
     def upload_file_to_drive(self, file_name: str):
-        logger.info("Uploading file %s to drive.", file_name)
+        logger.info("Uploading file %s to drive...", file_name)
         file_path = self._get_file_path(file_name=file_name)
         file_body = MediaFileUpload(
             file_path, mimetype=self.files[file_name]["mime_type"],
@@ -62,7 +62,10 @@ class GoogleManager():
             )
 
         resp = upload_file.execute()
-        logger.info("File %s uploaded to drive.", file_name)
+        logger.info(
+            "File %s uploaded to drive to folder: %s.", 
+            file_name, file_path
+            )
         self._set_field_value(file_name=file_name, field_id=resp["id"])
 
 
