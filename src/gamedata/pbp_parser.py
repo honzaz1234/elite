@@ -399,7 +399,7 @@ class PBPPenaltyParser(PBPDescriptionParserMultipleOptions):
         rf"(?P<player_name>{PBPDescriptionParser.PLAYER_PATTERN})\s+"
         rf"(?P<penalty_type>{PBPDescriptionParser.PENALTY_PATTERN})\s*"
         rf"\(\s*(?P<penalty_minutes>\d+)\s*min\)(?:\s*\(\s*\d+\s*min\))?\s*,"
-        rf"(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone"
+        rf"\s*(?P<zone>{PBPDescriptionParser.ZONE_PATTERN})\s+Zone"
         )
 
     PATTERN_PP = (
