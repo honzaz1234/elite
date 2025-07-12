@@ -13,11 +13,27 @@ QUERIES_INFO = {
             db.Season.season
             ],
         "joins": [
-            (db.Player, db.PlayerStats.player_id == db.Player.id),
-            (db.Team, db.PlayerStats.team_id == db.Team.id),
-            (db.Season, db.PlayerStats.season_id == db.Season.id),
-            (db.League, db.PlayerStats.league_id == db.League.id),
-            ],
+            {
+                "table": db.Player, 
+                "conn": db.GoalieStats.player_id == db.Player.id, 
+                "type": "inner"
+            },
+            {
+                "table": db.Team, 
+                "conn": db.GoalieStats.team_id == db.Team.id, 
+                "type": "inner"
+            },
+            {
+                "table": db.Season, 
+                "conn": db.GoalieStats.season_id == db.Season.id, 
+                "type": "inner"
+            },
+            {
+                "table": db.League, 
+                "conn": db.GoalieStats.league_id == db.League.id, 
+                "type": "inner"
+            },
+        ],
         "filters": [
             (db.League.uid == 'nhl')
             ]
@@ -33,11 +49,27 @@ QUERIES_INFO = {
             db.Season.season
             ],
         "joins": [
-            (db.Player, db.GoalieStats.player_id == db.Player.id),
-            (db.Team, db.GoalieStats.team_id == db.Team.id),
-            (db.Season, db.GoalieStats.season_id == db.Season.id),
-            (db.League, db.GoalieStats.league_id == db.League.id),
-            ],
+            {
+                "table": db.Player, 
+                "conn": db.GoalieStats.player_id == db.Player.id, 
+                "type": "inner"
+            },
+            {
+                "table": db.Team, 
+                "conn": db.GoalieStats.team_id == db.Team.id, 
+                "type": "inner"
+            },
+            {
+                "table": db.Season, 
+                "conn": db.GoalieStats.season_id == db.Season.id, 
+                "type": "inner"
+            },
+            {
+                "table": db.League, 
+                "conn": db.GoalieStats.league_id == db.League.id, 
+                "type": "inner"
+            },
+        ],
         "filters": [
             (db.League.uid == 'nhl')
             ]
@@ -61,12 +93,32 @@ QUERIES_INFO = {
             db.PlayerDraft.draft_year
             ],
         "joins": [
-            (db.Player, db.PlayerStats.player_id == db.Player.id),
-            (db.Team, db.PlayerStats.team_id == db.Team.id),
-            (db.Season, db.PlayerStats.season_id == db.Season.id),
-            (db.PlayerDraft, db.Player.id == db.PlayerDraft.player_id),
-            (db.League, db.PlayerStats.league_id == db.League.id),
-            ],
+            {
+                "table": db.Player, 
+                "conn": db.PlayerStats.player_id == db.Player.id, 
+                "type": "inner"
+            },
+            {
+                "table": db.Team, 
+                "conn": db.PlayerStats.team_id == db.Team.id, 
+                "type": "inner"
+            },
+            {
+                "table": db.Season, 
+                "conn": db.PlayerStats.season_id == db.Season.id, 
+                "type": "inner"
+            },
+            {
+                "table": db.PlayerDraft, 
+                "conn": db.Player.id == db.PlayerDraft.player_id, 
+                "type": "inner"
+            },
+            {
+                "table": db.League, 
+                "conn": db.PlayerStats.league_id == db.League.id, 
+                "type": "inner"
+            },
+        ],
         "filters": [
             (db.League.uid == 'nhl')
             ]
@@ -79,9 +131,21 @@ QUERIES_INFO = {
             db.League.uid
             ],
         "joins": [
-            (db.TeamSeason, db.TeamSeason.team_id == db.Team.id),
-            (db.Season, db.TeamSeason.season_id == db.Season.id),
-            (db.League, db.TeamSeason.league_id == db.League.id)
+            {
+                "table": db.TeamSeason,
+                "conn": db.TeamSeason.team_id == db.Team.id,
+                "type": "inner"
+            },
+            {
+                "table": db.Season,
+                "conn": db.TeamSeason.season_id == db.Season.id,
+                "type": "inner"
+            },
+            {
+                "table": db.League,
+                "conn": db.TeamSeason.league_id == db.League.id,
+                "type": "inner"
+            },
         ],
         "filters": [
             (db.League.uid == "nhl")
@@ -98,8 +162,12 @@ QUERIES_INFO = {
             db.Season.season,
             ],
         "joins": [
-            (db.Season, db.NHLEliteNameMapper.season_id == db.Season.id),
-            ],
+            {
+                "table": db.Season,
+                "conn": db.NHLEliteNameMapper.season_id == db.Season.id,
+                "type": "inner"
+            },
+        ],
         "filters": [
             ]
     },
@@ -109,10 +177,6 @@ QUERIES_INFO = {
             db.NHLEliteNameMapper.elite_name,
             db.NHLEliteNameMapper.nhl_name,
             ],
-        "joins": [
-        ],
-        "filters": [
-        ]
     },
     "nhl_elite_stadium_mapper": {
         "base_table": db.StadiumMapper,

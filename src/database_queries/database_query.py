@@ -23,7 +23,7 @@ class DbDataGetter():
         if query_file_path is None:
             query_info = QUERIES_INFO[query_name]
         else:
-            query_info = self.get_query_info_from_file(
+            query_info = self._get_query_info_from_file(
                 file_path=query_file_path, query_name=query_name
                 )
         for type_ in ["joins", "filters"]:
@@ -38,7 +38,7 @@ class DbDataGetter():
                 query = query.filter(f)
         if distinct:
             query = query.distinct()
-        self.log_query(query)
+        self._log_query(query)
 
         return query.all()
 
@@ -53,8 +53,10 @@ class DbDataGetter():
             query = self.db_session.query(*selected_cols).select_from(base_table)
 
             if joins:
-                for join_table, condition in joins:
-                    query = query.join(join_table, condition)
+                for join in joins:
+                    query = self._create_join(
+                        query=query, join=join
+                        )
 
             if filters:
                 for f in filters:
@@ -62,22 +64,33 @@ class DbDataGetter():
 
             return query
     
-    def get_list_filter(self, table_column: Column, values: list):
+    
+    def _create_join(self, query: Query, join: dict):
+        if join["type"] == "inner":
+        
+            return query.join(join["table"], join["conn"])
+        
+        elif join["type"] == "left":
+        
+            return query.outerjoin(join["table"], join["conn"])
+
+    
+    def _get_list_filter(self, table_column: Column, values: list):
 
         return table_column.in_(values)
     
 
-    def get_query_info_from_file(
+    def _get_query_info_from_file(
             self, file_path: str, query_name: str) -> dict:
         with open(file_path, "r") as f:
             query_file = json.load(f)
         query_info = query_file[query_name]
-        query_info = self.resolve_mapper(query_info=query_info)
+        query_info = self._resolve_mapper(query_info=query_info)
         
         return query_info
     
 
-    def resolve_mapper(self, query_info: str) -> dict:
+    def _resolve_mapper(self, query_info: str) -> dict:
         query_info["base_table"] = MODEL_MAP[query_info["base_table"]]
 
         query_info["selected_cols"] = [
@@ -86,9 +99,11 @@ class DbDataGetter():
 
         if "joins" in query_info:
             query_info["joins"] = [
-                (
-                    MODEL_MAP[j[0]], eval(j[1], MODEL_MAP)
-                ) 
+                {
+                    "table": MODEL_MAP[j["table"]], 
+                    "conn": eval(j["conn"], MODEL_MAP),
+                    "type": j["type"]
+                } 
                 for j in query_info["joins"]
             ]
 
@@ -100,7 +115,6 @@ class DbDataGetter():
         return query_info
     
     
-
-    def log_query(self, query):
+    def _log_query(self, query):
         compiled_query = query.statement.compile(dialect=sqlite.dialect(), compile_kwargs={"literal_binds": True})
         logger.debug("Executed SQL: %s", str(compiled_query))
