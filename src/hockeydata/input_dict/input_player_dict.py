@@ -1,8 +1,10 @@
-import hockeydata.insert_db.insert_db as insert_db
+import database_creator.database_creator as db
+import database_insert.db_insert as db_insert
+import hockeydata.insert_db.elite_insert_db as elite_insert_db
 
-from hockeydata.constants import *
-from hockeydata.decorators import time_execution
-from hockeydata.logger.logger import logger
+from constants import *
+from decorators import time_execution
+from logger.logging_config import logger
 
 from sqlalchemy.orm import Session
 
@@ -11,10 +13,10 @@ class InputPlayerDict():
     """class containing wrapper methods for uploading player dictionary into db
     """
 
-    def __init__(self, db_session: Session):
-        self.is_goalie = None
+    def __init__(self, db_session: Session, scrape_id: int):
         self.db_session = db_session
-        pass
+        self.scrape_id = scrape_id
+        self.is_goalie = None
 
     def _set_is_goalie(self, dict_: dict):
 
@@ -28,21 +30,24 @@ class InputPlayerDict():
             self.is_goalie = False
 
     @time_execution
-    def input_player_dict(self, player_dict: dict):
+    def input_dict(self, dict: dict) -> None:
         """wrapper method for inputting  player dict into database"""
 
-        self._set_is_goalie(dict_=player_dict)
+        self._set_is_goalie(dict_=dict)
         player_id = self._input_player_info_dict(
-            info_dict=player_dict[GENERAL_INFO])
+            info_dict=dict[GENERAL_INFO])
         #self._input_relation_dict(relation_dict=player_dict[RELATIONS],
         #                          player_id=player_id)
-        self._input_stats_dict(stat_dict=player_dict[SEASON_STATS],
+        self._input_stats_dict(stat_dict=dict[SEASON_STATS],
                                player_id=player_id)
-        self._input_achievement_dict(achiev_dict=player_dict[ACHIEVEMENTS],
+        self._input_achievement_dict(achiev_dict=dict[ACHIEVEMENTS],
                                      player_id=player_id)
-        logger.info(f"Player dict ({player_dict[GENERAL_INFO][PLAYER_NAME]}, "
-                    f" {player_dict[GENERAL_INFO][PLAYER_UID]}) succesfully" 
+        self._input_logs(missing_data=dict[MISSING_DATA], player_id=player_id)
+        self.db_session.commit()
+        logger.info(f"Player dict ({dict[GENERAL_INFO][PLAYER_NAME]}, "
+                    f" {dict[GENERAL_INFO][PLAYER_UID]}) succesfully" 
                     f" inputted into db")
+        
 
     def _input_player_info_dict(self, info_dict: dict) -> int:
         """method for inserting general info dict into database"""
@@ -55,9 +60,12 @@ class InputPlayerDict():
                                          player_id=player_id)
         logger.debug(f"Player info dict ({player_id}) succesfully inputted"
                      " into db")
+        
         return player_id
 
-    def _input_relation_dict(self, relation_dict: dict, player_id: int):
+
+    def _input_relation_dict(
+            self, relation_dict: dict, player_id: int) -> None:
         """wrapper method for upploading relation dict of a player into database
         """
 
@@ -65,25 +73,47 @@ class InputPlayerDict():
         relation_info._input_relation_dict(relation_dict=relation_dict, 
                                            player_id=player_id)
         
-    def _input_stats_dict(self, stat_dict: dict, player_id: int):
+        
+    def _input_stats_dict(self, stat_dict: dict, player_id: int) -> None:
         """wrapper method for uploading player stats into database"""
 
         stats_info = InputStatsDict(db_session=self.db_session)
         stats_info._input_stats_dict(stat_dict=stat_dict, 
                                     player_id=player_id,
                                     is_goalie=self.is_goalie)
-        logger.debug(f"Player stats dict ({player_id}) succesfully inputted"
-                     " into db")
+        logger.debug(
+            f"Player stats dict (db id: {player_id}) succesfully "
+            "inputted into db"
+                     )
+        
 
-    def _input_achievement_dict(self, achiev_dict: dict, player_id: int):
+    def _input_achievement_dict(
+            self, achiev_dict: dict, player_id: int) -> None:
         """wrapper method for uploading player achievements into database"""
 
         achiev_info = InputAchievementDict(db_session=self.db_session)
         achiev_info._input_achievements(dict_achievements=achiev_dict, 
                                         player_id=player_id)
-        logger.debug(f"Player achiev dict (uid: {player_id}) succesfully"
-                     " inputted into db")
-        
+        logger.debug(
+            f"Player achiev dict (id: {player_id}) succesfully "
+            f"inputted into db"
+            )
+
+
+    def _input_logs(self, missing_data: list, player_id: int) -> None:
+        missing_data_info = InputLogs(db_session=self.db_session)
+        missing_data_info._input_missing_data_logs(
+            missing_data=missing_data, player_id=player_id, 
+            scrape_id=self.scrape_id
+            )
+        missing_data_info._input_scraped_player_log(
+            player_id=player_id, scrape_id=self.scrape_id
+            )
+        logger.debug(
+            f"Player logs (id: {player_id}) succesfully "
+            f"inputted into db."
+            )        
+
 
 class InputPlayerInfo():
 
@@ -91,7 +121,7 @@ class InputPlayerInfo():
     """
 
     def __init__(self, db_session: Session):
-        self.insert_db = insert_db.DatabasePipeline(db_session=db_session)
+        self.insert_db = elite_insert_db.EliteDatabasePipeline(db_session=db_session)
         pass
 
     def _input_player(self, info_dict: dict) -> int:
@@ -100,7 +130,9 @@ class InputPlayerInfo():
 
         player_id = self.insert_db.input_data_in_player_table(
             dict_info=info_dict)
+        
         return player_id
+    
 
     def _input_draft_dict(self, draft_dict: dict, player_id: int):
         """method for putting player NHL draft information into table"""
@@ -109,6 +141,7 @@ class InputPlayerInfo():
             one_draft = draft_dict[draft]
             self.insert_db._input_player_draft(player_id=player_id, 
                                                draft_dict=one_draft)
+            
 
     def _input_nationalities(self, nation_list: list, player_id: int):
         """method for putting  relation between player and his nationalites into DB
@@ -125,8 +158,9 @@ class InputRelationDict():
     """
 
     def __init__(self, db_session: Session):
-        self.insert_db = insert_db.DatabasePipeline(db_session=db_session)
+        self.insert_db = elite_insert_db.EliteDatabasePipeline(db_session=db_session)
         pass
+
 
     def _input_relation_dict(self, relation_dict: dict, player_id: int):
         """method for uploading all player relation types into DB"""
@@ -136,6 +170,7 @@ class InputRelationDict():
             self._input_relation_type(player_id=player_id,
                                       type_=relation,
                                       list_uid=uid_list)
+            
 
     def _input_relation_type(self, player_id: int, type_: str, list_uid: list):
             """method for uploading relations of one type into DB"""
@@ -151,8 +186,9 @@ class InputStatsDict():
     """
 
     def __init__(self, db_session: Session):
-        self.insert_db = insert_db.DatabasePipeline(db_session=db_session)
+        self.insert_db = elite_insert_db.EliteDatabasePipeline(db_session=db_session)
         pass
+
 
     def _input_stats_dict(self, stat_dict: dict, player_id: int, is_goalie: bool):
         """method for uploading dict with seasonal stat data of player into DB
@@ -165,6 +201,7 @@ class InputStatsDict():
             competititon_dict = stat_dict[competititon_type]
             self._input_competititon_type(
                 dict_competititon_type=competititon_dict, dict_info=dict_info)
+            
 
     def _input_competititon_type(self, dict_competititon_type: dict, dict_info: dict):
         """method for uploading dict from one type of table (league/tournament) into DB
@@ -175,6 +212,7 @@ class InputStatsDict():
             dict_info[SEASON_NAME] = season_name
             self._input_season_dict(season_dict=season_dict, 
                                     dict_info=dict_info)
+            
     
     def _input_season_dict(self, season_dict: dict, dict_info: dict):
         """method for uploading dict of stats from one season into DB"""
@@ -184,6 +222,7 @@ class InputStatsDict():
             league_dict = season_dict[league_name]
             self._input_league_dict(league_dict=league_dict,    
                                     dict_info=dict_info)
+            
 
     def _input_league_dict(self, league_dict: dict, dict_info: dict):
         """method for uploading dict of stats from one season and one league into DB
@@ -195,6 +234,7 @@ class InputStatsDict():
         for team_name in league_dict:
             team_dict = league_dict[team_name]
             self._input_team_dict(team_dict=team_dict, dict_info=dict_info)
+
 
     def _input_team_dict(self, team_dict: dict, dict_info: dict):
         """method for uploading dict of stat data from one season one league and one team (one row of table) into DB
@@ -221,8 +261,8 @@ class InputAchievementDict():
     """
 
     def __init__(self, db_session: Session):
-        self.insert_db = insert_db.DatabasePipeline(db_session=db_session)
-        pass
+        self.insert_db = elite_insert_db.EliteDatabasePipeline(db_session=db_session)
+
 
     def _input_achievements(self, dict_achievements: dict, player_id: int):
         """method for uploading player achievements from all seasons into DB"""
@@ -232,6 +272,7 @@ class InputAchievementDict():
             self._input_achievement_season(season_dict=season_dict,
                                             player_id=player_id,
                                             season=season)
+            
                 
     def _input_achievement_season(self, season_dict: dict, season: str, player_id: int):
         """method for uploading achievements from one season into DB"""
@@ -239,5 +280,28 @@ class InputAchievementDict():
         for achiev_name in season_dict:
                 self.insert_db._input_achievement_relation(achiev=achiev_name, 
                                                            season=season, player_id=player_id)
+                
+
+class InputLogs():
+
+
+    def __init__(self, db_session: Session):
+        self.insert_db = db_insert.DatabaseMethods(db_session=db_session)
+
+
+    def _input_missing_data_logs(
+            self, missing_data: list, player_id: int, scrape_id: int) -> None:
+        for data_type in missing_data:
+            self.insert_db._input_unique_data(
+                db.PlayerMissingDataLog, player_id=player_id, data_type=data_type, scrape_id=scrape_id
+            )
+
+
+    def _input_scraped_player_log(
+            self, player_id: int, scrape_id: int) -> None:
+        self.insert_db._input_unique_data(
+            db.PlayerScrapeLoger, scrape_id=scrape_id, 
+            player_id=player_id, 
+            )
 
                 

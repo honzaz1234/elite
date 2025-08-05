@@ -1,0 +1,160 @@
+NHL_ABB_UID_MAPPER = {
+        'ANA': 1580,
+        'ARI': 72,
+        'BOS': 52,
+        'BUF': 53,
+        'CGY': 54,
+        'CAR': 55,
+        'CHI': 56,
+        'COL': 57,
+        'CBJ': 58,
+        'DAL': 59,
+        'DET': 60,
+        'EDM': 61,
+        'FLA': 62,
+        'LAK': 79,
+        'MIN': 63,
+        'MTL': 64,
+        'NSH': 65,
+        'NJD': 66,
+        'NYI': 67,
+        'NYR': 68,
+        'OTT': 69,
+        'PHI': 70,
+        'PIT': 71,
+        'SJS': 73,
+        'SEA': 27336,
+        'STL': 74,
+        'TBL': 75,
+        'TOR': 76,
+        'UTA': 40261,
+        'VAN': 77,
+        'VGK': 22211,
+        'WSH': 78,
+        'WPG': 9966
+    }
+
+NHL_FULL_NAME_UID_MAPPER = {
+        'Boston Bruins': 52,
+        'Toronto Maple Leafs': 76,
+        'Tampa Bay Lightning': 75,
+        'Florida Panthers': 62,
+        'Buffalo Sabres': 53,
+        'Ottawa Senators': 69,
+        'Detroit Red Wings': 60,
+        'Montréal Canadiens': 64,
+        'Carolina Hurricanes': 55,
+        'New Jersey Devils': 66,
+        'New York Rangers': 68,
+        'New York Islanders': 67,
+        'Pittsburgh Penguins': 71,
+        'Washington Capitals': 78,
+        'Philadelphia Flyers': 70,
+        'Columbus Blue Jackets': 58,
+        'Colorado Avalanche': 57,
+        'Dallas Stars': 59,
+        'Minnesota Wild': 63,
+        'Winnipeg Jets': 9966,
+        'Nashville Predators': 65,
+        'St. Louis Blues': 74,
+        'Arizona Coyotes': 72,
+        'Chicago Blackhawks': 56,
+        'Vegas Golden Knights': 22211,
+        'Edmonton Oilers': 61,
+        'Los Angeles Kings': 79,
+        'Seattle Kraken': 27336,
+        'Calgary Flames': 54,
+        'Vancouver Canucks': 77,
+        'San Jose Sharks': 73,
+        'Anaheim Ducks': 1580,
+        'Phoenix Coyotes': 72,
+        'Atlanta Thrashers': 51,
+        'Mighty Ducks of Anaheim': 1580,
+        'Hartford Whalers': 546,
+        'Québec Nordiques': 544,
+        'Minnesota North Stars': 543,
+        'Chicago Black Hawks': 56,
+        'Colorado Rockies': 769,
+        'Atlanta Flames': 767,
+        'Cleveland Barons': 96,
+        'California Golden Seals': 1815,
+        'Kansas City Scouts': 3314,
+        'Oakland Seals': 1815,
+        'California/Oakland Seals': 1815,
+        'Brooklyn Americans': 3029,
+        'New York Americans': 3029,
+        'Montréal Maroons': 3284,
+        'St. Louis Eagles': 11424,
+        'Ottawa HC (Senators)': 69,
+        'Detroit Falcons': 60,
+        'Philadelphia Quakers': 5942,
+        'Detroit Cougars': 60,
+        'Pittsburgh Pirates': 7287,
+        'Toronto St. Patricks/Maple Leafs': 76,
+        'Toronto St. Patricks': 76,
+        'Hamilton Tigers': 3196,
+        'Québec Athletic Club': 3194,
+        'Toronto Hockey Club': 76,
+        'Montréal Wanderers': 3264,
+        'Utah Mammoth': 40261,
+        'Pittsburgh Hornets': 3039 #AHL team with choice in a draft - 1965
+    }
+
+NHL_ABB_TEAM_NAME = {
+    "ANA": "Anaheim Ducks",
+    "ARI": "Arizona Coyotes",
+    "BOS": "Boston Bruins",
+    "BUF": "Buffalo Sabres",
+    "CGY": "Calgary Flames",
+    "CAR": "Carolina Hurricanes",
+    "CHI": "Chicago Blackhawks",
+    "COL": "Colorado Avalanche",
+    "CBJ": "Columbus Blue Jackets",
+    "DAL": "Dallas Stars",
+    "DET": "Detroit Red Wings",
+    "EDM": "Edmonton Oilers",
+    "FLA": "Florida Panthers",
+    "LAK": "Los Angeles Kings",
+    "MIN": "Minnesota Wild",
+    "MTL": "Montréal Canadiens",
+    "NSH": "Nashville Predators",
+    "NJD": "New Jersey Devils",
+    "NYI": "New York Islanders",
+    "NYR": "New York Rangers",
+    "OTT": "Ottawa Senators",
+    "PHI": "Philadelphia Flyers",
+    "PIT": "Pittsburgh Penguins",
+    "SJS": "San Jose Sharks",
+    "SEA": "Seattle Kraken",
+    "STL": "St. Louis Blues",
+    "TBL": "Tampa Bay Lightning",
+    "TOR": "Toronto Maple Leafs",
+    "UTA": "Utah Mammoth",
+    "VAN": "Vancouver Canucks",
+    "VGK": "Vegas Golden Knights",
+    "WSH": "Washington Capitals",
+    "WPG": "Winnipeg Jets"
+}
+
+
+def get_team_uid_from_abbrevation(team_abb: str) -> int:
+        """returns NHL team uid as included in the DB based on the 3 letter"""
+        """team abbrevation"""
+        
+        return NHL_ABB_UID_MAPPER[team_abb]
+
+
+def get_team_uid_from_full_name(full_name: str) -> int:
+        """returns NHL team uid as included in the DB based"""
+        """ on team full name"""
+        if full_name == 'California Seals':
+                full_name = 'California Golden Seals'
+        
+        return NHL_FULL_NAME_UID_MAPPER[full_name]
+
+
+def get_nhl_full_name_from_abbrevation(team_abb: str) -> int:
+        """returns NHL team name DB based on the 3 letter"""
+        """team abbrevation"""
+
+        return NHL_ABB_TEAM_NAME[team_abb]

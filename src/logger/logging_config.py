@@ -4,14 +4,20 @@
 import json
 import logging.config
 import logging.handlers
+import os
 import pathlib
 
 
-CONFIG_PATH = './src/hockeydata/logger/logger_config.json'
+
+
+CONFIG_PATH = (
+    pathlib.Path(__file__).resolve().parent / 'logger_config.json'
+    )
 
 
 def setup_logging():
     config_file = pathlib.Path(CONFIG_PATH)
+    os.makedirs("logs", exist_ok=True)
     with open(config_file) as f_in:
         config = json.load(f_in)
     logging.config.dictConfig(config)

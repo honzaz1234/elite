@@ -3,9 +3,12 @@ import playwright.sync_api as sync_api
 import re
 import scrapy
 
-from hockeydata.constants import *
-from hockeydata.decorators import time_execution
-from hockeydata.logger.logger import logger
+from constants import *
+from decorators import time_execution
+from errors import EmptyReturnXpathValueError
+from logger.logging_config import logger
+
+import common_functions as cf
 
 
 class TeamScraper():
@@ -148,7 +151,12 @@ class TeamScraper():
                       .xpath(TeamScraper.INFO_PATHS["short_name"])
                       .getall())
         if short_name == []:
-            raise Exception("team html not downloaded")
+            cf.log_and_raise(
+                None, 
+                EmptyReturnXpathValueError, 
+                xpath=TeamScraper.INFO_PATHS["short_name"],
+                value="[]"
+                       )
         else:
             short_name = short_name[0].strip()
         return short_name
@@ -164,8 +172,7 @@ class TeamScraper():
                          + info 
                          + TeamScraper.INFO_PATHS[key_right])
         info_val = self.selector.xpath(info_path_val).getall()
-        info_val = [string.strip() for string in info_val]
-        info_val = [string for string in info_val if string != ""]
+        info_val = [string.strip() for string in info_val if string != ""]
         if info_val == []:
             info_val = [None]
         return info_val[0]

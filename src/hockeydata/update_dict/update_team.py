@@ -1,8 +1,8 @@
 import re
 
-from hockeydata.constants import * 
-from hockeydata.logger.logger import logger 
-from hockeydata.decorators import time_execution 
+from constants import * 
+from logger.logging_config import logger 
+from decorators import time_execution 
 
 
 class UpdateTeamDict():
@@ -17,7 +17,7 @@ class UpdateTeamDict():
         pass
 
     @time_execution
-    def update_team_dict(self, dict: dict) -> dict:
+    def update_dict(self, dict: dict) -> dict:
         """wrapper method for updating team dict in order to prepared it for insertion into the database
         """
 

@@ -1,8 +1,8 @@
-import hockeydata.insert_db.insert_db as insert_db
+import hockeydata.insert_db.elite_insert_db as elite_insert_db
 
-from hockeydata.constants import *
-from hockeydata.decorators import time_execution
-from hockeydata.logger.logger import logger
+from constants import *
+from decorators import time_execution
+from logger.logging_config import logger
 from sqlalchemy.orm import Session
 
 
@@ -10,28 +10,30 @@ class InputLeagueDict():
 
     """class used for inputting  league information in to the DB"""
 
-    def __init__(self, session_db: Session):
-        self.db_session = session_db
+    def __init__(self, db_session: Session):
+        self.db_session = db_session
 
     @time_execution
-    def input_league_dict(self, league_dict: dict):
+    def input_dict(self, dict: dict):
         """wrapper method for inputting  all scraped data from dict to DB"""
 
         league_id = self._input_league_info_dict(
-            info_dict=league_dict)
+            info_dict=dict
+            )
         self._input_league_achievements(
-            achiev_dict=league_dict[LEAGUE_ACHIEVEMENTS], league_id=league_id)
+            achiev_dict=dict[LEAGUE_ACHIEVEMENTS], league_id=league_id)
         league_standings = InputLeagueStandings(db_session=self.db_session)
         league_standings._input_league_standings_dict(
-            stat_dict=league_dict[SEASON_STANDINGS],
+            stat_dict=dict[SEASON_STANDINGS],
             league_id=league_id)
-        logger.info(f"League dict ({league_dict[LEAGUE_UID]})"
+        self.db_session.commit()
+        logger.info(f"League dict ({dict[LEAGUE_UID]})"
                     f" succesfully inputted into db")
         
     def _input_league_info_dict(self, info_dict: dict) -> int:
         """method for inputting  general info abour league in DB"""
 
-        db_pipe = insert_db.DatabasePipeline(db_session=self.db_session)
+        db_pipe = elite_insert_db.EliteDatabasePipeline(db_session=self.db_session)
         league_id = db_pipe._input_data_in_league_table(
             league_uid=info_dict[LEAGUE_UID], long_name=info_dict[LEAGUE_NAME])
         logger.debug(f"League info dict ({info_dict[LEAGUE_UID]})"
@@ -41,7 +43,7 @@ class InputLeagueDict():
     def _input_league_achievements(self, achiev_dict: dict, league_id: int):
         """method for inputting  league achievements into DB"""
 
-        db_pipe = insert_db.DatabasePipeline(db_session=self.db_session)
+        db_pipe = elite_insert_db.EliteDatabasePipeline(db_session=self.db_session)
         for achiev in achiev_dict:
             db_pipe._input_achievement(achiev=achiev, 
                                        league_id=league_id)
@@ -93,5 +95,5 @@ class InputLeagueStandings():
         del position_dict[TEAM_URL]
         for stat in position_dict:
             row_dict[stat] = position_dict[stat]
-        db_pipe = insert_db.DatabasePipeline(db_session=self.db_session)
+        db_pipe = elite_insert_db.EliteDatabasePipeline(db_session=self.db_session)
         db_pipe._input_team_position(dict_=row_dict)

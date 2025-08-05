@@ -1,16 +1,24 @@
+import json
 import re 
-import requests
 import scrapy
 import time
 
-from hockeydata.constants import *
-from hockeydata.decorators import time_execution
-from hockeydata.logger.logger import logger
+import common_functions as cf 
+import hockeydata.playwright_setup.playwright_setup as ps
+
+from constants import *
+from decorators import time_execution
+from hockeydata.get_urls.league_uids import LEAGUE_UIDS
+from logger.logging_config import logger
 
 
 class LeagueUrlDownload():
 
     SLEEP = 120
+    WAIT_LEAGUE_PAGE = (
+        "//ul[preceding-sibling::header[./h2[contains(text(),"
+        "'Champions')]]]/li[last()]/a[1]"
+    )
         
     PATHS = {
         "league": "/league",
@@ -27,7 +35,8 @@ class LeagueUrlDownload():
         "first_year": "//ul[preceding-sibling::header[./h2[contains(text()"
                       ",'Champions')]]]/li[last()]/a[1]/text()"
     }
-    
+
+
     def __init__(self, page=None):
          self.page = page
          pass
@@ -39,10 +48,16 @@ class LeagueUrlDownload():
 
         dict_leagues = {}
         path_all_leagues = ELITE_URL + LeagueUrlDownload.PATHS["all_leagues"]
-        html_leagues = requests.get(path_all_leagues).content
+        html_leagues = cf.get_valid_request(path_all_leagues, return_type="content")
         leagues_sel = scrapy.Selector(text=html_leagues)
-        leagues_ref = leagues_sel.xpath(LeagueUrlDownload.PATHS["league_names_ref"]).getall()
-        leagues_names = leagues_sel.xpath(LeagueUrlDownload.PATHS["league_name"]).getall()
+        leagues_ref = cf.get_list_xpath_values(
+            sel=leagues_sel, 
+            xpath=self.PATHS["league_names_ref"], 
+            optional=False)
+        leagues_names =  cf.get_list_xpath_values(
+            sel=leagues_sel, 
+            xpath=self.PATHS["league_name"], 
+            optional=False)
         for ind in range(len(leagues_ref)):
             dict_leagues[leagues_names[ind]] = leagues_ref[ind]
         return dict_leagues
@@ -70,28 +85,80 @@ class LeagueUrlDownload():
             list_seasons.append(season1)
          return list_seasons
     
-    def get_player_refs(self, league: str, years: list=None) -> dict:
+
+    def get_player_refs(
+            self, league_uid: str, url_dict: dict={}, seasons: list=[]) -> dict:
         """downloads player urls based on league and list of  years
             output: dictionary: season -> (players-goalies) -> urls
         """
+        if "season_range" not in url_dict[league_uid]:
+            self._add_season_range(
+                league_uid=league_uid, url_dict=url_dict
+                )
+        season_range = url_dict[league_uid]["season_range"]
+        all_years = range(season_range['start'], season_range['finish'] + 1)
+        seasons_to_get = self.create_list_of_seasons(years=all_years)
+        if seasons != []:
+            seasons_to_get = [
+                season for season in seasons_to_get if season in seasons
+                ]
+        seasons_to_download = [
+            season for season in seasons_to_get 
+            if season not in url_dict[league_uid]
+            ]
+        if seasons_to_download == []:
+            logger.info("All required seasons are already downloaded.")
 
-        if years == None:
-            url = ELITE_URL + LEAGUE_URLS[league]
-            list_seasons= self.get_list_of_seasons(url=url)
-        elif years == []:
-                return
-        dict_player_ref = self.get_player_urls(list_seasons=list_seasons,
-                                               league=league)
+            return
+        logger.info("Urls for players from league %s for seasons %s "
+                    "are not yet in the dict and will be downloaded now.",
+                        league_uid, seasons_to_download
+                        )
+        dict_player_ref = self.get_player_urls(
+            list_seasons=seasons_to_download, league=league_uid
+            )
+        logger.info("Urls for players from league %s for seasons %s "
+                    "were succesfully downloaded.",
+                        league_uid, seasons_to_download
+                        )
+        
+        
         return dict_player_ref
     
-    def get_list_of_seasons(self, url: str):
+
+    def _add_season_range(self, league_uid: str, url_dict: dict) -> None:
+        url = ELITE_URL + LEAGUE_UIDS[league_uid]
+        list_seasons = self.get_list_of_years(url=url)
+        season_range = {
+            'start': int(list_seasons[0]),
+            'finish': int(list_seasons[-1])
+            }
+        url_dict[league_uid]["season_range"] = season_range
+
+        
+    def create_list_of_seasons(self, years: list) -> list:
+        season_list = []
+        for year in years:
+            season_string = self.create_season_string(year)
+            season_list.append(season_string)
+
+        return season_list
+    
+    
+    def get_list_of_years(self, url: str) -> list:
         
         block_check = True
-        while block_check != None:
-                self.page.goto(url)
+        while block_check is not None:
+                ps.go_to_page_wait_selector(
+                    page=self.page, 
+                    url=url, 
+                    sel_wait=self.WAIT_LEAGUE_PAGE
+                              )
                 sel_league = scrapy.Selector(text=self.page.content())
-                block_check = sel_league.xpath(BLOCK_SELECTOR).get()
-                if block_check != None:
+                block_check = cf.get_single_xpath_value(
+                    sel=sel_league, xpath=BLOCK_SELECTOR, optional=True
+                    )
+                if block_check is not None:
                     logger.info("Limit for pages scraped achieved. Timeout"
                                 " will follow...")
                     time.sleep(LeagueUrlDownload.SLEEP)
@@ -102,11 +169,9 @@ class LeagueUrlDownload():
             .xpath(LeagueUrlDownload.PATHS["last_year"])
             .getall()[0]))
         years = [year for year in range(first_year, last_year)]
-        list_seasons = []
-        for year in years:
-            season_string = self.create_season_string(year)
-            list_seasons.append(season_string)
-        return list_seasons
+
+        return years
+
 
     @time_execution
     def get_player_urls(self, list_seasons: list, league: str) -> dict:
@@ -139,7 +204,7 @@ class LeagueUrlDownload():
                     f" {league} started")
         league_team_refs = []
         season_getter = SeasonUrlDownload()
-        league_url = ELITE_URL + LEAGUE_URLS[league]
+        league_url = ELITE_URL + LEAGUE_UIDS[league]
         self.page.goto(league_url)
         sel_league = scrapy.Selector(text=self.page.content())
         season_ref_list = (sel_league
@@ -167,11 +232,10 @@ class SeasonUrlDownload():
 
     PATHS = {
         "player_ref": "//table[@id='export-skater-stats-table']"
-                      "//td[@class='player']//a/@href",
+                      "//td[@class='player']/span[@class='txt-blue']/a/@href",
         "goalie_ref": "//table[@id='export-goalie-stats-table']//td"
-                      "[@class='player']//a/@href",
-        "last_page_players": "//span[@class = 'hidden-xs']/a/@href",
-        "last_page_goalies": "//span[@class = 'hidden-xs']/a/@href",
+                      "[@class='player']/span[@class='txt-blue']/a/@href",
+        "last_page": "//a[contains(text(),'Last page')]/@href",
         "team_url": "//td[@class='team']//@href",
         "stats": "/stats",
         "page_goalie": "?sort-goalie-stats=svp&page-goalie="
@@ -190,16 +254,20 @@ class SeasonUrlDownload():
         
         logger.info(f"Scraping player's urls for league {league} and season"
                     f" {season} started. ")
-        stats_path = (ELITE_URL
-                     + LEAGUE_URLS[league] 
-                     + SeasonUrlDownload.PATHS["stats"] 
-                     + "/" 
-                     + season)
+        stats_path = (
+            ELITE_URL
+            + LEAGUE_UIDS[league] 
+            + SeasonUrlDownload.PATHS["stats"] 
+            + "/" 
+            + season
+            )
         dict_season = {}
-        page_html = requests.get(stats_path).content
+        page_html = cf.get_valid_request(stats_path, return_type="content")
         selector_players = scrapy.Selector(text=page_html)
-        block_check = selector_players.xpath(BLOCK_SELECTOR).get()
-        if block_check != None:
+        block_check = cf.get_single_xpath_value(
+            sel=selector_players, xpath=BLOCK_SELECTOR, optional=True
+            )
+        if block_check is not None:
             return False
         dict_season = self.get_player_season_refs(selector=selector_players,
                                                   stats_path=stats_path)
@@ -208,6 +276,7 @@ class SeasonUrlDownload():
         logger.info(f" {len(dict_season['goalies'])} urls for"
                     f" goalies and {len(dict_season['players'])} urls for"
                     f" skaters were scrapped")
+        
         return dict_season
     
     def get_player_season_refs(
@@ -217,9 +286,10 @@ class SeasonUrlDownload():
                 output dictionary: (players-goalies) -> urls"""
             
             dict_season = {}
-            ref_last_page = selector.xpath(
-                SeasonUrlDownload.PATHS["last_page_players"]).getall()
-
+            ref_last_page = cf.get_list_xpath_values(
+                sel=selector, xpath=self.PATHS["last_page"],
+                optional=True
+                )
             dict_season["goalies"] = self.get_goalies_season_refs(
                 ref_last_page=ref_last_page,
                 stats_path=stats_path
@@ -276,13 +346,17 @@ class SeasonUrlDownload():
         """downloads urls of player profiles from 1 page of seasonal statistic board"""
 
         subpage_path = path + "?page=" + str(index)
-        subpage_html = requests.get(subpage_path).content
+        subpage_html = cf.get_valid_request(subpage_path, return_type="content")
         selector_subpage = scrapy.Selector(text=subpage_html)
-        block_check = selector_subpage.xpath(BLOCK_SELECTOR).get()
-        if block_check != None:
+        block_check = cf.get_single_xpath_value(
+            sel=selector_subpage, xpath=BLOCK_SELECTOR, optional=True
+            )
+        if block_check is not None:
             return False
-        player_refs = selector_subpage.xpath(
-            SeasonUrlDownload.PATHS["player_ref"]).getall()
+        player_refs =  cf.get_list_xpath_values(
+            sel=selector_subpage, 
+            xpath=self.PATHS["player_ref"],
+            optional=False)
         return player_refs
 
     def _page_goalie(self, path: str, index: int) -> list:
@@ -291,13 +365,17 @@ class SeasonUrlDownload():
         subpage_path = (path 
                         + SeasonUrlDownload.PATHS["page_goalie"] 
                         + str(index))
-        subpage_html = requests.get(subpage_path).content
+        subpage_html = cf.get_valid_request(subpage_path, return_type="content")
         selector_subpage = scrapy.Selector(text=subpage_html)
-        block_check = selector_subpage.xpath(BLOCK_SELECTOR).get()
-        if block_check != None:
+        block_check = cf.get_single_xpath_value(
+            sel=selector_subpage, xpath=BLOCK_SELECTOR, optional=True
+            )
+        if block_check is not None:
             return False
-        goalies_refs = selector_subpage.xpath(
-            SeasonUrlDownload.PATHS["goalie_ref"]).getall()
+        goalies_refs = cf.get_list_xpath_values(
+            sel=selector_subpage, 
+            xpath=self.PATHS["goalie_ref"],
+            optional=False)
         return goalies_refs
 
     def get_team_season_refs(
@@ -309,10 +387,12 @@ class SeasonUrlDownload():
                     " started")
         url_season = (ELITE_URL 
                       + season_ref)
-        season_html = requests.get(url_season).content
+        season_html = cf.get_valid_request(url_season, return_type="content")
         sel_season = scrapy.Selector(text=season_html)
-        team_refs = sel_season.xpath(
-            SeasonUrlDownload.PATHS["team_url"]).getall()
+        team_refs = cf.get_list_xpath_values(
+            sel=sel_season, 
+            xpath=self.PATHS["team_url"],
+            optional=False)
         for team_ref in team_refs:
             team_ref_wo_season = re.findall(
                 "(.+)\/[0-9]{4}\-[0-9]{4}$", team_ref)
