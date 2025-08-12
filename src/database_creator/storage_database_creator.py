@@ -64,7 +64,9 @@ class PlayerStats(Base):
 
 
     def __repr__(self):
-        return "<PlayerStats(id=%s, player_id=%s)>" % (self.id, self.player_id)
+        return "<PlayerStats(id=%s, player_id=%s, html_data=%s)>" % (
+            self.id, self.player_id, self.html_data
+            )
 
 
 class PlayerInfos(Base):
@@ -78,7 +80,8 @@ class PlayerInfos(Base):
 
 
     def __repr__(self):
-        return "<PlayerInfos(id=%s, player_id=%s)>" % (self.id, self.player_id)
+        return "<PlayerInfos(id=%s, player_id=%s, html_data=%s)>" % (
+            self.id, self.player_id)
 
 
 class Achievements(Base):
@@ -92,4 +95,5 @@ class Achievements(Base):
 
 
     def __repr__(self):
-        return "<Achievements(id=%s, player_id=%s)>" % (self.id, self.player_id)
+        return "<Achievements(id=%s, player_id=%s, html_data=%s)>" % (
+            self.id, self.player_id)
