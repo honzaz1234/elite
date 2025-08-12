@@ -73,11 +73,7 @@ class PlayerScraper(PlaywrightScraper):
     }
 
 
-    def get_data(self):
-        logger.info(
-            'Scraping of new player info at web adress: %s '
-            'started', self.url
-            )
+    def go_to_page(self):
         ps.go_to_page_wait_selector(
             page=self.page, url=self.url,
             sel_wait=self.PATHS["player_facts"]
@@ -85,6 +81,13 @@ class PlayerScraper(PlaywrightScraper):
         ps.click_optional_button(
             page=self.page, sel_click=self.PATHS["accept_cookies"],
             button_type="Accept Cookies", wait_time=5000
+            )
+
+
+    def get_data(self):
+        logger.info(
+            'Scraping of new player info at web adress: %s '
+            'started', self.url
             )
         self.scraped_data["player_type"] = self._scrape_data(
             xpath_name="player_type"
