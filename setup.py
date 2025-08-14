@@ -18,9 +18,7 @@ setup(
     license='MIT',
     license_files = ('LICENSE.txt',),
     package_dir={"": "src"},
-    packages = [
-        'hockeydb', 'hockeydb.database_creator', 'hockeydb.database_insert', 'hockeydb.database_queries', 'hockeydb.database_session', 'hockeydb.gamedata', 'hockeydb.hockeydata', 'hockeydb.logger', 'hockeydb.management', 'hockeydb.mappers', 'hockeydb.gamedata.input_dict', 'hockeydb.gamedata.update_dict', 'hockeydb.hockeydata.defunct', 'hockeydb.hockeydata.get_data', 'hockeydb.hockeydata.get_urls', 'hockeydb.hockeydata.input_dict', 'hockeydb.hockeydata.insert_db', 'hockeydb.hockeydata.playwright_setup', 'hockeydb.hockeydata.scraper', 'hockeydb.hockeydata.tests', 'hockeydb.hockeydata.update_dict'
-        ],
+    packages = find_packages(where="src"),
     install_requires=["sqlalchemy", "scrapy", "requests"],
     python_requires="~=3.10"
 )
