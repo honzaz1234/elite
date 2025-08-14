@@ -1,0 +1,7 @@
+class DataGetter():
+
+
+    def __init__(self):
+        pass
+
+
