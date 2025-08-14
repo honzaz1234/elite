@@ -1,3 +1,7 @@
+import json
+import os
+import re
+
 import common_functions as cf
 import gamedata.input_dict.input_game_dict as input_game
 import gamedata.report_getter as report_getter
@@ -15,9 +19,6 @@ import entity_data.input_dict.input_player_dict as input_player_dict
 import entity_data.input_dict.input_team_dict as input_team_dict
 import entity_data.playwright_setup.playwright_setup as ps
 import mappers.db_mappers as db_mapper
-import json
-import os
-import re
 
 from constants import *
 from decorators import repeat_request_until_success, time_execution
