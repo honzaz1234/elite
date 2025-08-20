@@ -21,7 +21,7 @@ class Scrape(Base):
     __tablename__ = 'scrapes'
 
     id = Column(Integer, primary_key=True)
-    start_datetime = Column(DateTime, default=datetime.utcnow, nullable=False)
+    start_datetime = Column(DateTime, default=lambda: datetime.utcnow(), nullable=False)
     end_datetime = Column(DateTime, nullable=True)
     description = Column(String, nullable=False)
 
@@ -75,7 +75,7 @@ class Player(Base):
     player_uid = Column(Integer, nullable=False)
     scrape_id = Column(Integer, ForeignKey('scraped.id'), nullable=False)
     is_goalie = Column(Boolean, nullable=False)
-    time = Column(DateTime, default=datetime.utcnow, nullable=False)
+    time = Column(DateTime, default=lambda: datetime.utcnow(), nullable=False)
 
 
     __table_args__ = (
