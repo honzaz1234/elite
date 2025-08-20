@@ -1,13 +1,16 @@
+import os
+
 from pathlib import Path
 
-import entity_data.playwright_setup.playwright_setup as ps
+import hockeydata.entity_data.playwright_setup.playwright_setup as ps
 
-from  entity_data.scrapers import * 
+from  hockeydata.entity_data.scrapers import * 
 
 
 current_dir = Path(__file__).parent
 
 FOLDER_PATH = current_dir / "data" 
+
 
 URL_LIST_SKATERS = [
     ("howe", "https://www.eliteprospects.com/player/20605/gordie-howe"),
@@ -22,6 +25,13 @@ URL_LIST_GOALIES = [
    # ("brodeur", "https://www.eliteprospects.com/player/9096/martin-brodeur"),
     ("dostal", "https://www.eliteprospects.com/player/236340/lukas-dostal"),
 ]
+
+
+for filename in os.listdir(FOLDER_PATH):
+    file_path = os.path.join(FOLDER_PATH, filename)
+    if os.path.isfile(file_path):
+        os.remove(file_path)
+
 
 playwright_session = ps.PlaywrightSetUp()
 
