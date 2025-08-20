@@ -1,3 +1,4 @@
+import re
 import scrapy
 
 from playwright.sync_api import Page
@@ -5,6 +6,7 @@ from playwright.sync_api import Page
 import common_functions as cf
 import entity_data.playwright_setup.playwright_setup as ps
 
+from constants import PLAYER_UID_REGEX
 from logger.logging_config import logger
 
 
@@ -91,6 +93,8 @@ class PlayerScraper(PlaywrightScraper):
             'Scraping of new player info at web adress: %s '
             'started', self.url
             )
+        self.scraped_data["player_uid"] = re.findall(
+            PLAYER_UID_REGEX, self.url)[0]
         self.scraped_data["player_type"] = self._scrape_data(
             xpath_name="player_type"
             )
@@ -207,4 +211,7 @@ class GoalieScraper(PlayerScraper):
             + "')]"
             )
         ps.click_on_button(self.page, selection_path)
+
+
+
         
