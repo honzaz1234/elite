@@ -1,9 +1,19 @@
-from sqlalchemy import Boolean, Column, Integer, LargeBinary, String, DateTime, ForeignKey
+from sqlalchemy import Boolean, Column, Integer, LargeBinary, String, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import declarative_base
 from datetime import datetime
 
 
 Base = declarative_base()
+
+
+class HtmlPreviewMixin():
+
+
+    def html_preview(self, length: int = 50) -> bytes:
+        """Return a preview of html_data up to `length` bytes."""
+        if hasattr(self, "html_data") and self.html_data:
+            return self.html_data[:length] + b"..." if len(self.html_data) > length else self.html_data
+        return b""
 
 
 class Scrape(Base):
@@ -30,9 +40,36 @@ class Scrape(Base):
         )
     
 
+class PlayerURL(Base):
+
+    __tablename__ = 'player_urls'
+
+
+    id = Column(Integer, primary_key=True)
+    player_url = Column(String, nullable=False)
+    player_uid = Column(Integer, nullable=False)
+
+
+    __table_args__ = (
+        UniqueConstraint('player_url', 'player_uid', name='uq_player_urls_all_columns'),
+    )
+
+
+    def __init__(self, player_url: str, player_uid: int):
+        self.player_url = player_url
+        self.player_uid = player_uid
+
+
+    def __repr__(self):
+        return "<PlayerURL(id=%s, player_uid=%s, url='%s')>" % (
+            self.id, self.player_uid, self.player_url
+        )
+    
+
 class Player(Base):
 
     __tablename__ = 'players'
+
 
     id = Column(Integer, primary_key=True)
     player_uid = Column(Integer, nullable=False)
@@ -41,20 +78,25 @@ class Player(Base):
     time = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
-    def __init__(
-            self, player_uid: int, scrape_id: int):
+    __table_args__ = (
+        UniqueConstraint('scrape_id', 'player_uid', name='uq_players_scrape_id_player_uid'),
+    )
+
+
+    def __init__(self, player_uid: int, scrape_id: int, is_goalie: bool):
         self.player_uid = player_uid
         self.scrape_id = scrape_id
-        self.time =  datetime.utcnow()
+        self.is_goalie = is_goalie
 
 
     def __repr__(self):
-        return "<Player(id=%s, player_uid='%s', scrape_id='%s', time=%s)>" % (
-            self.id, self.player_uid, self.scrape_id, self.time
+        return (
+            "<Player(id=%s, player_uid='%s', scrape_id='%s', is_goalie=%s, time=%s)>"
+            % (self.id, self.player_uid, self.scrape_id, self.is_goalie, self.time)
         )
     
     
-class SkaterStats(Base):
+class SkaterStats(Base, HtmlPreviewMixin):
 
     __tablename__ = 'skater_stats'
 
@@ -62,16 +104,17 @@ class SkaterStats(Base):
     id = Column(Integer, primary_key=True)
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     league_type = Column(String, nullable=False)
-    html_data = Column(LargeBinary, nullable=False) 
+    html_data = Column(LargeBinary, nullable=False)
 
 
     def __repr__(self):
-        return "<PlayerStats(id=%s, player_id=%s, html_data=%s)>" % (
-            self.id, self.player_id, self.html_data
-            )
+        return (
+            "<SkaterStats(id=%s, player_id=%s, league_type=%s, html_data=%s)>" %
+            (self.id, self.player_id, self.league_type, self.html_preview())
+        )
     
 
-class GoalieStats(Base):
+class GoalieStats(Base, HtmlPreviewMixin):
 
     __tablename__ = 'goalie_stats'
 
@@ -80,13 +123,20 @@ class GoalieStats(Base):
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
     league_type = Column(String, nullable=False)
     season_type = Column(String, nullable=False)
-    html_data = Column(LargeBinary, nullable=False) 
+    html_data = Column(LargeBinary, nullable=False)
+
+
+    def __init__(self, player_id: int, html_data: bytes):
+        self.player_id = player_id
+        self.html_data = html_data
 
 
     def __repr__(self):
-        return "<PlayerStats(id=%s, player_id=%s, html_data=%s)>" % (
-            self.id, self.player_id, self.html_data
-            )
+        return (
+            "<GoalieStats(id=%s, player_id=%s, league_type=%s, "
+            "season_type=%s, html_data=%s)>" %
+            (self.id, self.player_id, self.league_type, self.season_type, self.html_preview())
+        )
 
 
 class PlayerFacts(Base):
@@ -99,21 +149,92 @@ class PlayerFacts(Base):
     html_data = Column(LargeBinary)  
 
 
+    def __init__(self, player_id: int, html_data: str):
+        self.player_id = player_id
+        self.html_data = html_data
+
+
     def __repr__(self):
-        return "<PlayerInfos(id=%s, player_id=%s, html_data=%s)>" % (
-            self.id, self.player_id)
+        preview = self.html_data[:50] + b"..." if len(self.html_data) > 50 else self.html_data
+        return "<PlayerFacts(id=%s, player_id=%s, html_data=%s)>" % (
+            self.id, self.player_id, preview
+        )
 
 
-class Achievements(Base):
+class Achievements(Base, HtmlPreviewMixin):
 
     __tablename__ = 'achievements'
 
 
     id = Column(Integer, primary_key=True)
     player_id = Column(Integer, ForeignKey('players.id'), nullable=False)
-    html_data = Column(LargeBinary) 
+    html_data = Column(LargeBinary)
+
+
+    def __init__(self, player_id: int, html_data: bytes):
+        self.player_id = player_id
+        self.html_data = html_data
 
 
     def __repr__(self):
         return "<Achievements(id=%s, player_id=%s, html_data=%s)>" % (
-            self.id, self.player_id)
+            self.id, self.player_id, self.html_preview()
+        )
+    
+
+class PlayerMissingDataLog(Base):
+
+    __tablename__ = "player_missing_data_logs"
+
+
+    id = Column(Integer, primary_key=True)
+    player_id = Column(Integer, ForeignKey("players.id"), nullable=False)
+    data_type = Column(String, nullable=False)
+
+
+    __table_args__ = (
+        UniqueConstraint(
+            'player_id', 'data_type',
+            name='uq_player_missing_data_logs_all_columns'
+        ),
+    )
+
+
+    def __init__(self, player_id: int, data_type: str):
+        self.player_id = player_id
+        self.data_type = data_type
+
+
+    def __repr__(self):
+        return "<PlayerMissingDataLog(id=%s, player_id=%s, data_type='%s')>" % (
+            self.id, self.player_id, self.data_type
+        )
+    
+
+class PlayerScrapeLog(Base):
+
+    __tablename__ = "player_scrape_logs"
+
+
+    id = Column(Integer, primary_key=True)
+    scrape_id = Column(ForeignKey("scrapes.id"), nullable=False)
+    player_id = Column(Integer, ForeignKey("players.id"), nullable=False)
+
+
+    __table_args__ = (
+        UniqueConstraint(
+           'scrape_id', 'player_id',
+           name='uq_player_scrape_logs_all_columns'
+        ),
+    )
+
+
+    def __init__(self, scrape_id: int, player_id: int):
+        self.scrape_id = scrape_id
+        self.player_id = player_id
+
+
+    def __repr__(self):
+        return "<PlayerScrapeLog(id=%s, scrape_id=%s, player_id=%s)>" % (
+            self.id, self.scrape_id, self.player_id
+        )
