@@ -1,36 +1,8 @@
 import pytest
 
-from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 from hockeydata.entity_data.scrapers import GoalieScraper, SkaterScraper
-
-
-SKATER_URLS = [
-    "https://www.eliteprospects.com/player/20605/gordie-howe",
-    "https://www.eliteprospects.com/player/183442/connor-mcdavid"
-]
-
-current_dir = Path(__file__).parent
-
-FOLDER_PATH = current_dir / "data" 
-
-# dict with htmls of skaters and goalies (stats, achievements, factds)
-PLAYER_HTML = {
-    file.stem: file.read_text(encoding="utf-8")
-    for file in FOLDER_PATH.glob("*.html")
-}
-
-SKATER_URLS = [ ]
-
-
-@pytest.fixture(scope="session")
-def player_html():
-    folder = Path(__file__).parent / "data"
-    return {
-        file.stem: file.read_text(encoding="utf-8")
-        for file in folder.glob("*.html")
-    }
 
 
 @pytest.fixture(scope="session")
@@ -164,7 +136,7 @@ class TestGoalieScraper():
         ],
         indirect=["scraper_factory"]
     )
-5
+
     def test__get_player_stats(
         scraper_factory, player_page, html_keys, player_html):
         player_page._get_player_stats()
