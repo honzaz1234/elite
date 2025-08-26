@@ -4,8 +4,7 @@ from database_queries.database_query import DbDataGetter
 from sqlalchemy.orm import Session
 
 
-class StorageDBGetter():
-
+class StorageDBDataGetter():
 
 
     def __init__(
@@ -23,7 +22,7 @@ class StorageDBGetter():
                 db_query=self.db_query, data=self.data, scrape_ids=scrape_ids, player_uids=player_uids
             )
         else:
-            self.stats_getter = PlayerStatsGetter(
+            self.stats_getter = SkaterStatsGetter(
                 db_query=self.db_query, data=self.data, scrape_ids=scrape_ids, player_uids=player_uids
             )
 
@@ -34,6 +33,26 @@ class StorageDBGetter():
         self.stats_getter.get_data()
 
         return self.data
+    
+
+class SkaterStorageDBDataGetter(StorageDBDataGetter):
+
+
+    def __init__(
+            self, db_session: Session, scrape_ids: list, player_uids: list):
+        self.data = self.data = {
+            uid: {
+                "player_facts": {},
+                "achievements": {},
+                "stats": {
+                    "regular": {},
+                    "play_off": {}
+                }
+            }
+            for uid in player_uids
+        }
+        super().__init__(
+            db_session=db_session, scrape_ids=scrape_ids, player_uids=player_uids, data=self.data)
 
 
 class DataGetter():
@@ -78,7 +97,7 @@ class BaseDataGetter(DataGetter):
         super().__init__(db_query=db_query, filters=filters, data=data) 
 
 
-    def _save_info(self, row) -> None:
+    def _save_info(self, row: tuple) -> None:
         player_uid, is_goalie, player_url = row
         self.data[player_uid] = {}
         self.data[player_uid]["is_goalie"] = is_goalie
@@ -112,7 +131,7 @@ class PlayerFactsGetter(HTMLDataGetter):
     DB_QUERY = "storage_player_facts"
 
 
-    def _save_info(self, row) -> None:
+    def _save_info(self, row: tuple) -> None:
         player_uid, html_data = row
         self.data[player_uid]["player_facts"] = html_data
 
@@ -123,9 +142,36 @@ class AchievementsGetter(HTMLDataGetter):
     DB_QUERY = "storage_achievements"
 
 
-    def _save_info(self, row) -> None:
+    def _save_info(self, row: tuple) -> None:
         player_uid, html_data = row
         self.data[player_uid]["achievements"] = html_data
+
+
+class SkaterStatsGetter(HTMLDataGetter):
+
+
+    DB_QUERY = "storage_skater_stats"
+
+
+    def _save_info(self, row: tuple) -> None:
+        player_uid, league_type, html_data = row
+        self.data[player_uid][league_type] = html_data
+
+
+class GoalieStatsGetter(HTMLDataGetter):
+
+
+    DB_QUERY = "storage_skater_stats"
+
+
+    def _save_info(self, row: tuple) -> None:
+        player_uid, league_type, season_type, html_data = row
+        if league_type not in self.data[player_uid]:
+            self.data[player_uid] = {}
+        self.data[player_uid][league_type][season_type] = html_data
+
+
+
 
 
 
