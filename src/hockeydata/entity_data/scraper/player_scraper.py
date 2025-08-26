@@ -2,9 +2,10 @@ import entity_data.playwright_setup.playwright_setup as ps
 import playwright.sync_api as sync_api
 import re
 import scrapy
-import time
+
 
 from playwright.sync_api import Page
+from scrapy import Selector
 
 import common_functions as cf
 
@@ -13,8 +14,9 @@ from decorators import time_execution
 from logger.logging_config import logger
 
     
-class PlayerScraper:
-    """Class for downloading information from individual players webpages;
+class PlayerParser:
+    """Class for parsing information from players htmls obtained by player 
+       scraper;
        includes one method which wraps around methods from classes for downloading 
        individual subparts of player web page:
        a) general info (name, position, age...)
@@ -22,79 +24,56 @@ class PlayerScraper:
        c) player achievements 
     """
 
-
-    PATHS = {
-        "accept_cookies": "//button[contains(., 'AGREE')]",
-        "player_facts":  "//section[@id='player-facts']",
-    }
-
-
-    def __init__(self, url: str, page: Page):
+    
+    def __init__(self, scraped_data: dict):
         """Arguments:
-        url - url of webpage with player's information
-        html - html code of player profile webpage
-        selector - selector object created from html of player's webpage   
-                   used for attaining individual pieces of information
+        scraped_data - dict with htmls obtained in previous step
+        parsed_data - dict with resulting parsed data
         """
 
-        self.url = url
-        self.page = page
-        self.selector = None
-        self.missing_data = []
+        self.scraped_data = scraped_data
+        self.parsed_data = dict.fromkeys(
+            ("player_facts", "achievements", "stats"), {}
+            )
 
 
-    @time_execution
     def get_info_all(self, years: list=None) -> dict:
-        """Wrapper method containing all individual methods for scrapping data 
-            Output: dictionary used  for storing data on a player
-                    Stats - keys: individual seasons -> (league - team) -> regular_season_playoff -> stats (list)
-                            structure of list with data for one season: 
-                            a) for player - games played, goals, assists, total points, PIM, plus-minus
-                            b) for goalie - games played, gd?, goal against average, save percentage, 
-                                            goals against, shots saved, shutouts, wins, looses, ties, toi
-                    Info - one level dictionary with general info of player 
-                    Keys: name, height - (cm/f,inch), weight - (kg/lbs), 
-                    nation, Shoots - (L, R), youth team, contract - (season),
-                    cap hit, nhl rights - (team, signed), drafed - (string with year, round and position)
-                    Achievements  - keys are seasons, values are lists with award names
-            Arguments: years - list of years for which data is downloaded 
-            """
-        
+        """Arguments: years - list of years for which data is parsed"""
         logger.info(
-            'Scraping of new player info at web adress: %s '
-            'started', self.url
+            'Parsing of new player info %s started', 
+            self.scraped_data["player_uid"]
             )
-        ps.go_to_page_wait_selector(
-            page=self.page, url=self.url,
-            sel_wait=self.PATHS["player_facts"]
-            )
-        ps.click_optional_button(
-            page=self.page, sel_click=self.PATHS["accept_cookies"],
-            button_type="Accept Cookies", wait_time=5000
-            )
-        self.selector = scrapy.Selector(text=self.page.content())
-        dict_player = {}
-        gi_o = PlayerGeneralInfo(
-            selector=self.selector, url=self.url
-            )
-        dict_player[GENERAL_INFO] = gi_o._get_general_info()
-        a_o = PlayerAchievements(
-            page=self.page, selector=self.selector, 
-            missing_data=self.missing_data
-            )
-        #f_r_o = FamilyRelations(selector=self.selector)
-        #dict_player[RELATIONS] = f_r_o._get_relation_dict()
-        dict_player[ACHIEVEMENTS] = a_o._get_achievements()
-        stats_object = self.stats_factory(
-            general_info=dict_player[GENERAL_INFO])
-        dict_player[SEASON_STATS] = stats_object._get_all_stats(years=years)
-        dict_player[MISSING_DATA] = self.missing_data
-        logger.info("Dict from player with name %s (%s) succesfully "
-                    "scraped.", 
-                    {dict_player[GENERAL_INFO][PLAYER_NAME]},
-                    {dict_player[GENERAL_INFO][PLAYER_UID]})
+        self._parse_player_facts()
+        self._parse_achievements()
+        self._parse_stats()
 
-        return dict_player
+
+    def _parse_player_facts(self) -> None:
+        facts_o = PlayerFactsParser(
+            facts_html=self.scraped_data["player_facts"]
+            )
+        self.parsed_data["player_facts"] = facts_o.parse_data()
+
+
+    def _parse_achievements(self, years: list) -> None:
+        """
+        Arguments: 
+        years - list of years for which the achievements should be scraped
+        """
+
+        achiev_o = AchievementsParser(
+            acheivements_html=self.scraped_data[ACHIEVEMENTS]
+            )
+        
+        self.parsed_data[ACHIEVEMENTS] = achiev_o.get_data(years=years)
+
+
+    def _parse_stats(self, years: list) -> None:
+        """
+        Arguments: 
+        years - list of years for which the achievements should be scraped
+        """
+        pass
     
 
     def stats_factory(self, general_info: dict) -> 'Stats':
@@ -103,12 +82,12 @@ class PlayerScraper:
         """
 
         if GOALIE_PLAYER in general_info[POSITION]:
-            stats_object = GoalieStats(
+            stats_object = GoalieStatsParser(
                 page=self.page, type_player=GOALIE_PLAYER, 
                 selector=self.selector, missing_data=self.missing_data
                 )
         else:
-            stats_object = SkaterStats(
+            stats_object = SkaterStatsParser(
                 page=self.page, type_player=OTHER_PLAYER, 
                 selector=self.selector, missing_data=self.missing_data
                 )
@@ -116,7 +95,7 @@ class PlayerScraper:
         return stats_object
 
 
-class PlayerGeneralInfo():
+class PlayerFactsParser():
     
 
     #check that the table is loaded before beginning of the scrape
@@ -164,37 +143,26 @@ class PlayerGeneralInfo():
         "Status": [ACTIVE, "text()"],
     } 
     
-    def __init__(self, selector: scrapy.Selector, url: str):
-        """attribute: selector - selector created from html of
-                                 player's webpage"
-                      url - url of player's webpage            
+    def __init__(self, facts_html: bytes):
+        """attribute: facts_html - part of the page html with player facts data
         """
 
-        self.selector = selector
-        self.url = url
+        self.selector = Selector(text=facts_html.decode("utf-8"))
 
-    def _get_general_info(self) -> dict:
+
+    def parse_data(self) -> dict:
         """wrapper method for attaining all available info on player"""
-        
-        dict_gi = self._get_info_wrapper()
-        dict_gi[PLAYER_NAME] = self._get_name()
-        dict_gi[PLAYER_UID] = re.findall(PLAYER_UID_REGEX,
-                                         self.url)[0]
-        logger.debug("player dict: %s", dict_gi)
-        logger.debug(
-            "Dictionary with general info of player %s "
-            "succesfully scraped.", 
-            {dict_gi[PLAYER_NAME]}
-            )
-        
-        return dict_gi
+        parsed_data[PLAYER_NAME] = self._get_name()
+        parsed_data = self._get_info_wrapper()
+
+        return parsed_data
 
 
     def _get_name(self) -> str:
         """method for attaining player's name"""
 
         name = (self.selector
-                .xpath(PlayerGeneralInfo.PATHS["player_name"])
+                .xpath(PlayerFactsParser.PATHS["player_name"])
                 .getall())
         name = [string.strip() for string in name if string != ""]
 
@@ -205,10 +173,10 @@ class PlayerGeneralInfo():
         """wrapper method for downloading all general info from facts table"""
 
         dict_gi = {}
-        for info_name in PlayerGeneralInfo.INFO_NAMES:
+        for info_name in PlayerFactsParser.INFO_NAMES:
             keep_list = False
-            key_name = PlayerGeneralInfo.PROJECT_MAPPING[info_name][0]
-            if info_name in PlayerGeneralInfo.KEEP_LIST:
+            key_name = PlayerFactsParser.PROJECT_MAPPING[info_name][0]
+            if info_name in PlayerFactsParser.KEEP_LIST:
                 keep_list = True
             dict_gi[key_name] = self._get_info(info_name=info_name,
                                                 keep_list=keep_list)
@@ -219,10 +187,10 @@ class PlayerGeneralInfo():
         """method for getting one value from general info table on player's webpage
         """
 
-        info_path_val = (PlayerGeneralInfo.PATHS["gi_left"]
+        info_path_val = (PlayerFactsParser.PATHS["gi_left"]
                          + info_name
-                         + PlayerGeneralInfo.PATHS["gi_right"]
-                         + PlayerGeneralInfo.PROJECT_MAPPING[info_name][1]
+                         + PlayerFactsParser.PATHS["gi_right"]
+                         + PlayerFactsParser.PROJECT_MAPPING[info_name][1]
                          + "[not(self::comment())]")
         info_val = cf.get_list_xpath_values(
             sel=self.selector,
@@ -340,7 +308,7 @@ class FamilyRelations():
         return relations_uid
 
 
-class Stats():
+class StatsParser():
     """class for downloading season data from stat tables on player webpage"""
 
     # xpaths to access statistics in league and tournament tables on player webpage
@@ -356,12 +324,7 @@ class Stats():
     }
 
     def __init__(
-            self, type_player: str, selector: scrapy.Selector, 
-            page: Page, missing_data: dict):
-        """attribute: selector - original selector of whole webpage of player
-                      page - playwright page object with loaded webpage of  
-                             a player
-        """
+            self, type_player: str, stats_html: dict):
 
 
         self.type_player = type_player
@@ -418,16 +381,16 @@ class Stats():
     def _get_path_type(self, type_: str) -> str:
 
         if type_ == "leagues":
-            path_type = Stats.PATHS["path_league"]
+            path_type = StatsParser.PATHS["path_league"]
         elif type_ == "tournaments":
-            path_type = Stats.PATHS["path_tournament"]
+            path_type = StatsParser.PATHS["path_tournament"]
     
         return path_type
     
 
     def get_path_years(self, path_type: str) -> str:
     
-        return path_type + Stats.PATHS["stat_years"]
+        return path_type + StatsParser.PATHS["stat_years"]
     
 
     def _merge_league_dict(self, old_dict: dict, new_dict: dict) -> dict:
@@ -512,9 +475,9 @@ class Stats():
         
         new_season_dict = {}
         path_season = (path_type
-                        + SkaterStats.PATHS["stats_table_l"]
+                        + SkaterStatsParser.PATHS["stats_table_l"]
                         + str(ind)
-                        + SkaterStats.PATHS["stats_table_r"])
+                        + SkaterStatsParser.PATHS["stats_table_r"])
         sub_dict = self._get_season_stats(
             path_season=path_season)
         new_season_dict = self._merge_league_dict(
@@ -549,7 +512,7 @@ class Stats():
         return onerow_object
     
 
-class SkaterStats(Stats):
+class SkaterStatsParser(StatsParser):
     """class for downloading season data from stat tables on player webpage"""
 
     # xpaths to access statistics in league and tournament tables on player webpage
@@ -580,7 +543,7 @@ class SkaterStats(Stats):
         return dict_stats
     
         
-class GoalieStats(Stats):
+class GoalieStatsParser(StatsParser):
 
 
     TYPE = {
@@ -616,7 +579,7 @@ class GoalieStats(Stats):
         dict_stats = {}
         path_years = self.get_path_years(path_type=path_type)
         list_years = self._get_years_list(path_years)
-        for season_type in GoalieStats.TYPE:
+        for season_type in GoalieStatsParser.TYPE:
             self._select_season_type(path_type=path_type,
                                      season_type=season_type)
             self.season_type = season_type
@@ -628,12 +591,12 @@ class GoalieStats(Stats):
     
     def _select_season_type(self, path_type: str, season_type: str) -> None:
         button_path = (path_type 
-                        + GoalieStats.PATHS['season_scroll'])
+                        + GoalieStatsParser.PATHS['season_scroll'])
         ps.click_on_button(self.page, button_path)
         selection_path = (path_type 
-                        + GoalieStats.PATHS['season_selection']
+                        + GoalieStatsParser.PATHS['season_selection']
                         + "[contains(text(), '" 
-                        + GoalieStats.TYPE[season_type]
+                        + GoalieStatsParser.TYPE[season_type]
                         + "')]")
         ps.click_on_button(self.page, selection_path)
         self.selector = scrapy.Selector(text=self.page.content())
@@ -816,7 +779,7 @@ class OneRowGoalieStat(OneRowStat):
         return dict_team
     
 
-class PlayerAchievements():
+class AchievementsParser():
     """class grouping methods for extracting achieviements of player"""
 
     #xpaths used to access player achievements
@@ -832,22 +795,16 @@ class PlayerAchievements():
     }
 
     def __init__(
-            self, page: Page, selector: str, missing_data: dict):
+            self, acheivements_html: bytes):
         """selector - original selector of webpage of player"""
-        self.page = page
-        self.selector = selector
-        self.missing_data = missing_data
+        self.selector = Selector(text=html_data.decode(encoding="utf-8"))
 
 
-    def _get_achievements(self, years: list=None) -> dict:
+    def get_data(self, years: list=None) -> dict:
         """method for downloading achievements of player into dictionary"""
-
-        cf.check_data_presence(
-            page=self.page, selector=self.PATHS["achievements"], data_type="achievements", logger_dict=self.missing_data
-            )
         dict_achiev = {}
         list_years = self.selector.xpath(
-            PlayerAchievements.PATHS["achievements_years"]).getall()
+            AchievementsParser.PATHS["achievements_years"]).getall()
         list_years = [string.strip() for string in list_years]
         for ind in range(1, len(list_years) + 1):
             if years is not None:
@@ -855,7 +812,6 @@ class PlayerAchievements():
                     continue
             dict_achiev[list_years[ind - 1]] = self.get_season_achievements(
                 ind=ind)
-        logger.debug("Acheivement dict: %s", dict_achiev)
 
         return dict_achiev
     
@@ -863,9 +819,9 @@ class PlayerAchievements():
     def get_season_achievements(self, ind: int) -> list:
         """method for getting list of achievements in one season"""
 
-        path = (PlayerAchievements.PATHS["achievements_l"]
+        path = (AchievementsParser.PATHS["achievements_l"]
                     + str(ind)
-                    + PlayerAchievements.PATHS["achievements_r"])
+                    + AchievementsParser.PATHS["achievements_r"])
         awards = self.selector.xpath(path).getall()
         awards = [award.strip() for award in awards]
         return awards
