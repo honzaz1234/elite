@@ -21,7 +21,7 @@ class Scrape(Base):
     __tablename__ = 'scrapes'
 
     id = Column(Integer, primary_key=True)
-    start_datetime = Column(DateTime, default=lambda: datetime.utcnow(), nullable=False)
+    start_datetime = Column(DateTime, default=lambda: datetime.now(), nullable=False)
     end_datetime = Column(DateTime, nullable=True)
     description = Column(String, nullable=False)
 
@@ -29,7 +29,7 @@ class Scrape(Base):
     def __init__(
             self, description=None, start_datetime=None, end_datetime=None
             ):
-        self.start_datetime = start_datetime or datetime.utcnow()
+        self.start_datetime = start_datetime or datetime.now()
         self.end_datetime = end_datetime
         self.description = description
 
@@ -73,9 +73,9 @@ class Player(Base):
 
     id = Column(Integer, primary_key=True)
     player_uid = Column(Integer, nullable=False)
-    scrape_id = Column(Integer, ForeignKey('scraped.id'), nullable=False)
+    scrape_id = Column(Integer, ForeignKey('scrapes.id'), nullable=False)
     is_goalie = Column(Boolean, nullable=False)
-    time = Column(DateTime, default=lambda: datetime.utcnow(), nullable=False)
+    time = Column(DateTime, default=lambda: datetime.now(), nullable=False)
 
 
     __table_args__ = (
@@ -126,18 +126,20 @@ class GoalieStats(Base, HtmlPreviewMixin):
     html_data = Column(LargeBinary, nullable=False)
 
 
-    def __init__(self, player_id: int, html_data: bytes):
+    def __init__(self, player_id: int, league_type: str, season_type: str, html_data: bytes):
         self.player_id = player_id
+        self.league_type = league_type
+        self.season_type = season_type
         self.html_data = html_data
 
 
     def __repr__(self):
         return (
-            "<GoalieStats(id=%s, player_id=%s, league_type=%s, "
-            "season_type=%s, html_data=%s)>" %
-            (self.id, self.player_id, self.league_type, self.season_type, self.html_preview())
+            f"<GoalieStats(id={self.id}, player_id={self.player_id}, "
+            f"league_type={self.league_type}, season_type={self.season_type}, "
+            f"html_data={self.html_preview()})>"
         )
-
+    
 
 class PlayerFacts(Base):
 
