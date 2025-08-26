@@ -1,5 +1,6 @@
 import common_functions as cf
 import database_creator.database_creator as db
+import database_creator.storage_database_creator as storage_db
 import database_insert.db_insert  as db_insert
 import entity_data.get_urls.get_urls as league_url
 
@@ -10,34 +11,28 @@ from datetime import datetime
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql.schema import Table
+from types import ModuleType
 
 
 class GetDatabaseSession():
     """class which purpose is to manage scraping of all available entities including establishing connection to the database
     """
 
-    def __init__(self, db_path: str):
-
+    def __init__(self, db_path: str, db_source: ModuleType):
         self.database_path = db_path
+        self.db_source = db_source
         self.engine = None
         self.session = None
         self.meta_data = None
-
-
-    def set_up_connection(self) -> None:
-        logger.info("New scrapping session started")
-        self.start_session()
-        are_seasons_filled = self.check_seasons_table()
-        if are_seasons_filled==False:
-            self.add_data_to_season_table()
+        self.scrape_id = None
 
 
     def start_session(self) -> None:
         self.engine = create_engine("sqlite:///" + self.database_path, echo=False)
-        db.Base.metadata.create_all(bind=self.engine)
+        self.db_source.Base.metadata.create_all(bind=self.engine)
         DBSession = sessionmaker(bind=self.engine)
         self.session = DBSession()
-        self.meta_data = db.Base.metadata
+        self.meta_data = self.db_source.Base.metadata
         logger.info(
             "New DB session initiated with db at %s", 
             self.database_path
@@ -62,8 +57,25 @@ class GetDatabaseSession():
         self.session.commit()
 
 
+class GetParseDBSession(GetDatabaseSession):
+    """Class managing session used for connection with DB storing parsed data
+       of games and hockey entitites (players, leagues, teams)"""
+    
+
+    def __init__(self, db_path):
+        super().__init__(db_path=db_path, db_source=db)
+    
+
+    def set_up_connection(self) -> None:
+        logger.info("New scrapping session started")
+        self.start_session()
+        are_seasons_filled = self.check_seasons_table()
+        if are_seasons_filled==False:
+            self.add_data_to_season_table()
+
+
     def check_seasons_table(self) -> bool:
-        check_data = self.session.query(db.Season).all()
+        check_data = self.session.query(self.db_source.Season).all()
         if check_data == []:
             return False
         return True
@@ -85,7 +97,7 @@ class GetDatabaseSession():
         seasons_insert = []
         for season in season_list:
             seasons_insert.append({"season": season})
-        self.session.bulk_insert_mappings(db.Season, seasons_insert)
+        self.session.bulk_insert_mappings(self.db_source.Season, seasons_insert)
 
 
     def add_years_to_seasons_table(self) -> None:
@@ -93,14 +105,14 @@ class GetDatabaseSession():
         years_insert = []
         for year in years:
             years_insert.append({"season": year})
-        self.session.bulk_insert_mappings(db.Season, years_insert)
+        self.session.bulk_insert_mappings(self.db_source.Season, years_insert)
 
 
     def add_data_to_stadium_mapper_table(self, stadium_mapper: list) -> None:
         stadium_mapper_insert = []
         for row in stadium_mapper:
             stadium_mapper_insert.append(row)
-        self.session.bulk_insert_mappings(db.StadiumMapper, stadium_mapper_insert)
+        self.session.bulk_insert_mappings(self.db_source.StadiumMapper, stadium_mapper_insert)
 
 
     def add_data_to_reference_tables(
@@ -117,18 +129,26 @@ class GetDatabaseSession():
         for row in reference_table_mapper:
             reference_table_insert.append(row)
         self.session.bulk_insert_mappings(
-            db.StadiumMapper, reference_table_insert)
+            self.db_source.StadiumMapper, reference_table_insert)
+
+
+class GetScrapeDBSession(GetDatabaseSession):
+    """Class managing session used for connection with DB storing raw scraped 
+       HTML data of games and hockey entitites (players, leagues, teams)"""
+    pass
+
+
+    def __init__(self, db_path):
+        super().__init__(db_path=db_path, db_source=storage_db)
 
 
     def create_scrape_table_entry(self, type_: str) -> int:
         insert_o = db_insert.DatabaseMethods(db_session=self.session)
-        scrape_id = insert_o._input_data(
-            table=db.ScrapeLog, type=type_,
+        self.scrape_id = insert_o._input_data(
+            table=self.db_source.Scrape, type=type_,
             time_start=datetime.now()
             )
         self.session.commit()
-
-        return scrape_id
 
         
 
