@@ -1,0 +1,64 @@
+{
+  "base_player_html_data": {
+    "base_table": "Player",
+    "selected_cols": [
+      "Player.id",
+      "Player.player_uid",
+      "Player.is_goalie",
+      "Player.scrape_id",
+      "PlayerFacts.html_data.label('facts_html')"
+    ],
+    "joins": [
+      {
+        "table": "PlayerFacts", 
+        "conn": "Player.id == PlayerFacts.player_id", 
+        "type": "left"
+      },
+      {
+        "table": "Achievements", 
+        "conn": "Achievements.id == LeaguAchievements.player_id", 
+        "type": "left"
+      }
+    ],
+    "filters": [
+      "(db.Player.id == 1)"
+            ]
+  },
+  "skater_stats": {
+      "base_table": "Player",
+      "selected_cols": [
+        "Player.id",
+        "SkaterStats.league_type",
+        "SkaterStats.html_data"
+      ],
+      "joins": [
+        {
+          "table": "SkaterStats", 
+          "conn": "Player.id == SkaterStats.player_id", 
+          "type": "left"
+        }
+      ],
+      "filters": [
+        "(db.Player.id == 1)"
+              ]
+  },
+  "goalie_stats": {
+      "base_table": "Player",
+      "selected_cols": [
+        "Player.id",
+        "GoalieStats.league_type",
+        "GoalieStats.season_type",
+        "GoalieStats.html_data"
+      ],
+      "joins": [
+        {
+          "table": "GoalieStats", 
+          "conn": "Player.id == GoalieStats.player_id", 
+          "type": "left"
+        }
+      ],
+      "filters": [
+        "(db.Player.id == 1)"
+              ]
+  }
+}
