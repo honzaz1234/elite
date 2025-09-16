@@ -1,7 +1,10 @@
-*.json
-*.db
 __pycache__/
-*.egg-info/
-*.egg
+.venv/
 build/
 logs/
+*.db
+*.egg
+*.egg-info/
+*.html
+*.json
+*.pkl
