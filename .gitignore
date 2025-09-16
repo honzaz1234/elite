@@ -1,10 +1,12 @@
 __pycache__/
 .venv/
+.vscode/
 build/
+data/**/*.json
+google/*.json
 logs/
 *.db
 *.egg
 *.egg-info/
 *.html
-*.json
 *.pkl
