@@ -16,6 +16,10 @@ from types import ModuleType
 
 class GetDatabaseSession():
     """class which purpose is to manage scraping of all available entities including establishing connection to the database
+    Arguments:
+        db_path - path to the database file or in case id does not exist yet 
+        where it should be saved
+        db_source - 
     """
 
     def __init__(self, db_path: str, db_source: ModuleType):
