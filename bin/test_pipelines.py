@@ -74,10 +74,11 @@ if type_to_scrape=="team":
 
 
 #LEAGUE SCRAPER
-
+##!!!Do not run needs to be updated
 if type_to_scrape=="league":
     manage_league = management.ManageLeague(
         done_folder_path=done_folder_path,
+        links_folder_path=links_folder_path,
         session_o=session_o
         )
     manage_league.add_leagues_to_db(league_uids=league_list)
