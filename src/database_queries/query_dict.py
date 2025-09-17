@@ -15,22 +15,22 @@ QUERIES_INFO = {
         "joins": [
             {
                 "table": db.Player, 
-                "conn": db.GoalieStats.player_id == db.Player.id, 
+                "conn": db.PlayerStats.player_id == db.Player.id, 
                 "type": "inner"
             },
             {
                 "table": db.Team, 
-                "conn": db.GoalieStats.team_id == db.Team.id, 
+                "conn": db.PlayerStats.team_id == db.Team.id, 
                 "type": "inner"
             },
             {
                 "table": db.Season, 
-                "conn": db.GoalieStats.season_id == db.Season.id, 
+                "conn": db.PlayerStats.season_id == db.Season.id, 
                 "type": "inner"
             },
             {
                 "table": db.League, 
-                "conn": db.GoalieStats.league_id == db.League.id, 
+                "conn": db.PlayerStats.league_id == db.League.id, 
                 "type": "inner"
             },
         ],
