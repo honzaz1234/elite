@@ -7,7 +7,7 @@ long_description = (this_directory/"README.md").read_text()
 
 setup(
     name='hockeydata',
-    version='0.1.2',
+    version='0.1.3',
     description='Package for scraping data from eliteprospect website and transfering it in SQL database',
     long_description=long_description,
     long_description_content_type="text/markdown",
