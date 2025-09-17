@@ -157,7 +157,7 @@ class Manage():
 
 
     def get_uid(self, url: str) -> str:
-        uid = re.findall(self.REGEX_UID, url)[0]
+        uid = int(re.findall(self.REGEX_UID, url)[0])
 
         return uid
 
@@ -337,13 +337,7 @@ class ManagePlayer(Manage):
             "Player URLs for seasons %s from league %s were be added "
             "to player URL dictionary", new_data.keys(), league_uid
             )
-        
-
-    def get_uid(self, url: str) -> int:
-        uid = int(re.findall(self.REGEX_UID, url)[0])
-
-        return uid
-    
+            
 
 class ManageTeam(Manage):
 
@@ -385,6 +379,7 @@ class ManageTeam(Manage):
                     f" league {league_uid} started")
         url_list = self.get_team_urls_in_league(
             league_uid=league_uid)
+        logger.info("Scraping of team data will now proceed.")
         try:
             for url in url_list:
                 self.scrape_input_into_db_wrapper(url=url)
@@ -414,7 +409,10 @@ class ManageTeam(Manage):
 
     def get_team_urls_in_league(self, league_uid: str) -> list:
         if league_uid in self.urls:
+            logger.info("URLs for league %s already scraped.", league_uid)
             return  self.urls[league_uid] 
+        logger.info(
+            "URLs for league %s not yet available, scraping will proceed.", league_uid)
         url_list = self.get_urls.get_team_refs(league=league_uid)
         if url_list != []:
             self.urls[league_uid] = url_list
@@ -478,6 +476,12 @@ class ManageLeague(Manage):
             dict_league = league_o.get_info()
 
             return dict_league
+    
+
+    def get_uid(self, url: str) -> str:
+        uid = re.findall(self.REGEX_UID, url)[0]
+
+        return uid
 
 
 class ManageGame(Manage):
