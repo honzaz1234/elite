@@ -553,7 +553,7 @@ class ManageGame(Manage):
         if season not in self.done_file:
             season_dict = self.get_season_report_ids(season=season)
         else:
-            season_dict = self.done_file[season]
+            season_dict = self.urls[season]
         self.get_season_data(
             season_dict=season_dict, season=season
             )
@@ -569,7 +569,7 @@ class ManageGame(Manage):
                 season=season, 
                 game_data=self.done_file
                 )
-            self.done_file[season] = season_dict
+            self.urls[season] = season_dict
         except Exception as e:
             logger.error(f"Downloading of game report ids failed: {e}")
             logger.info("Downloading of game report ids failed..."
@@ -612,7 +612,7 @@ class ManageGame(Manage):
             self, season: str, season_dict: dict) -> None:
         mappers = self.get_dict_with_all_mappers(season=season)
         try:
-            for game in season_dict["report_data"]:
+            for game in season_dict['report_data']:
                 if game['id'] in self.done_file[season]:
                     continue
                 report_id = self.scrape_and_input_game_into_db(
