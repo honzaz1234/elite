@@ -34,8 +34,10 @@ class TeamScraper():
     OTHER_PATHS = {
         "affiliated_teams": "//dt[contains(text(), 'Affiliated Team')]"
                             "/following-sibling::dd//li//@href",
-        "retired_num": "//div[@id='team-retired-player']//li/span/text()",
-        "retired_url": "//div[@id='team-retired-player']/div//a/@href"
+        "retired_num_sec": "//header[.//h2[contains(., 'Retired Numbers')]]"
+                            "/following-sibling::ul",
+        "retired_num": "//li/span/a/text()[2]",
+        "retired_url": "//li/span/a/@href"
     }
 
     #names of general info found on the team's webpage
@@ -191,8 +193,9 @@ class TeamScraper():
         """
 
         dict_num = {}
-        path_url = TeamScraper.OTHER_PATHS["retired_url"]
-        path_num = TeamScraper.OTHER_PATHS["retired_num"]
+        ret_num_sec = TeamScraper.OTHER_PATHS["retired_num_sec"]
+        path_url = ret_num_sec + TeamScraper.OTHER_PATHS["retired_url"]
+        path_num = ret_num_sec + TeamScraper.OTHER_PATHS["retired_num"]
         urls = self.selector.xpath(path_url).getall()
         numbers = self.selector.xpath(path_num).getall()
         for ind in range(len(urls)):
@@ -206,7 +209,7 @@ class HistoricNames():
     """class for creating dictionary with team historic names and season range in which these names were used
     """
     #xpaths used to access information on historic names 
-
+    "//header[./h2[contains(text(), 'History and Standings')]]/following-sibling::div//table/tbody//tr[./td[1]/a[text()!='']/text()][1]/td[1]/a[text()!='']/text()"
     HN_PATHS = {
         "season_tbody": "//header[./h2[contains(text(), 'History and"
                         " Standings')]]/following-sibling::div//table/tbody",
@@ -292,7 +295,7 @@ class HistoricNames():
             team_names = self._get_team_names()
         dict_titles = {}
         for ind in range(1, n_names + 1):
-            season_range = self.get_season_range(ind * 2) 
+            season_range = self.get_season_range(ind) 
             dict_titles[team_names[ind-1]] = season_range
         logger.debug(f"Historic Names scraped: "
                      f"{dict_titles}")

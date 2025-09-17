@@ -20,7 +20,6 @@ db_path = "./database/hockey_v16_test.db"
 
 session_o = ds.GetDatabaseSession(db_path=db_path)
 
-league_list = ['NHL', 'SHL', 'AHL']
 
 #before scraping itself method set_up_connection must be called which sets up
 #db session and loads data in table seasons in case the set up of database
@@ -64,23 +63,29 @@ if type_to_scrape=="player":
 
 #TEAM SCRAPER
 
+LEAGUE_LIST = ['NHL', 'SHL', 'AHL']
+
 if type_to_scrape=="team":
     manage_team = management.ManageTeam(
         done_folder_path=done_folder_path,
         links_folder_path=links_folder_path,
         session_o=session_o
         )
-    manage_team.add_from_leagues_to_db(league_uids=league_list)
+    manage_team.add_from_leagues_to_db(league_uids=LEAGUE_LIST)
 
 
 #LEAGUE SCRAPER
+##!!!Do not run needs to be updated
+
+LEAGUE_LIST = ['NHL', 'SHL', 'AHL']
 
 if type_to_scrape=="league":
     manage_league = management.ManageLeague(
         done_folder_path=done_folder_path,
+        links_folder_path=links_folder_path,
         session_o=session_o
         )
-    manage_league.add_leagues_to_db(league_uids=league_list)
+    manage_league.add_leagues_to_db(league_uids=LEAGUE_LIST)
 
 
 # GAME SCRAPER

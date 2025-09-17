@@ -179,8 +179,7 @@ class UpdateTeamDict():
         new_num_dict = num_dict.copy()
         for url_key in list(new_num_dict.keys()):
             u_id = int(re.findall(PLAYER_UID_REGEX, url_key)[0])
-            new_number = int(re.findall(
-                UpdateTeamDict.RETIRED_NUM_REGEX, new_num_dict[url_key])[0])
+            new_number = int(new_num_dict[url_key])
             new_dict = [new_number, url_key]
             new_num_dict[u_id] = new_dict
             del new_num_dict[url_key]

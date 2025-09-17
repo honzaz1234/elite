@@ -165,7 +165,7 @@ class InputGameInfo():
             mappers: dict, update_on_conflict: bool
             ):
         self.db_session = db_session
-        self.mappers_o = db_mapper.GetDBID(session=self.db_session)
+        self.mappers_o = db_mapper.GetDBID(db_session=self.db_session)
         self.input_gi = InputGeneralInfo(
             db_session=self.db_session, 
             stadium_mapper=mappers["stadium"], update_on_conflict=update_on_conflict
