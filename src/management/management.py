@@ -143,7 +143,7 @@ class Manage():
 
 
     def scrape_input_into_db_wrapper(self, url: str) -> None:
-        uid = int(re.findall(self.REGEX_UID, url)[0])
+        uid = self.get_uid(url=url)
         if uid in self.done_file:
             
             return
@@ -154,6 +154,12 @@ class Manage():
                 json.dump(self.done_file, f)
             raise e
         self.done_file.append(uid)
+
+
+    def get_uid(self, url: str) -> str:
+        uid = re.findall(self.REGEX_UID, url)[0]
+
+        return uid
 
 
     @time_execution
@@ -331,6 +337,12 @@ class ManagePlayer(Manage):
             "Player URLs for seasons %s from league %s were be added "
             "to player URL dictionary", new_data.keys(), league_uid
             )
+        
+
+    def get_uid(self, url: str) -> int:
+        uid = int(re.findall(self.REGEX_UID, url)[0])
+
+        return uid
     
 
 class ManageTeam(Manage):
@@ -417,7 +429,7 @@ class ManageLeague(Manage):
 
     DONE_FILE = "done_leagues.json"
     LINK_FILE =  "leagues.json"
-    REGEX_UID = "(.+)"
+    REGEX_UID = "league/(.+)$"
     TYPE = "League"
 
 
@@ -606,7 +618,7 @@ class ManageGame(Manage):
             self.input_mapper_o.input_all_mappers(mappers=mappers)
         except Exception as e:
             self.input_mapper_o.input_all_mappers(mappers=mappers)
-            self.session.close()
+            self.db_session.close()
             raise e
         
 
@@ -670,7 +682,7 @@ class ManageGame(Manage):
             self, updated_data: dict, match_player_mapper: dict, 
             mappers: dict) -> None:
         input_o = input_game.InputGameInfo(
-            db_session=self.session, 
+            db_session=self.db_session, 
             match_player_mapper=match_player_mapper, 
             mappers=mappers, 
             update_on_conflict=self.update_on_conflict
