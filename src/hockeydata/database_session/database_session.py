@@ -1,7 +1,7 @@
 import common_functions as cf
 import database_creator.database_creator as db
 import database_insert.db_insert  as db_insert
-import hockeydata.get_urls.get_urls as league_url
+import entity_data.get_urls.get_urls as league_url
 
 from constants import *
 from logger.logging_config import logger

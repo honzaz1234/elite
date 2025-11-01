@@ -1,4 +1,4 @@
-import hockeydata.playwright_setup.playwright_setup as ps
+import entity_data.playwright_setup.playwright_setup as ps
 import playwright.sync_api as sync_api
 import re
 import scrapy

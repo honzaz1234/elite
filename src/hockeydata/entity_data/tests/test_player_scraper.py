@@ -1,8 +1,8 @@
-import hockeydata.tests.test_class as test_class 
+import entity_data.tests.test_class as test_class 
 import os
 import unittest
 
-from hockeydata.scraper.player_scraper import *
+from entity_data.scraper.player_scraper import *
 from constants import *
 
 

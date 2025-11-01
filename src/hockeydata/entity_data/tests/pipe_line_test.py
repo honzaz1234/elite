@@ -1,14 +1,14 @@
-import hockeydata.get_urls.get_urls as get_urls
-import hockeydata.scraper.league_scraper as league_scraper
-import hockeydata.scraper.player_scraper as player_scraper
-import hockeydata.scraper.team_scraper as team_scraper
-import hockeydata.update_dict.update_league as league_updater
-import hockeydata.update_dict.update_player as player_updater
-import hockeydata.update_dict.update_team as team_updater
-import hockeydata.playwright_setup.playwright_setup as ps
-import hockeydata.input_dict.input_league_dict as input_dict_league
-import hockeydata.input_dict.input_player_dict as input_dict_player
-import hockeydata.input_dict.input_team_dict as input_dict_team
+import entity_data.get_urls.get_urls as get_urls
+import entity_data.scraper.league_scraper as league_scraper
+import entity_data.scraper.player_scraper as player_scraper
+import entity_data.scraper.team_scraper as team_scraper
+import entity_data.update_dict.update_league as league_updater
+import entity_data.update_dict.update_player as player_updater
+import entity_data.update_dict.update_team as team_updater
+import entity_data.playwright_setup.playwright_setup as ps
+import entity_data.input_dict.input_league_dict as input_dict_league
+import entity_data.input_dict.input_player_dict as input_dict_player
+import entity_data.input_dict.input_team_dict as input_dict_team
 import database_session.database_session as ds
 
 import json

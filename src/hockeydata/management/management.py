@@ -3,17 +3,17 @@ import gamedata.input_dict.input_game_dict as input_game
 import gamedata.report_getter as report_getter
 import gamedata.update_dict.update_game as update_game
 import google_tools as google
-import hockeydata.scraper.league_scraper as league_scraper
-import hockeydata.scraper.player_scraper as player_scraper
-import hockeydata.scraper.team_scraper as team_scraper
-import hockeydata.get_urls.get_urls as get_url
-import hockeydata.update_dict.update_league as update_league
-import hockeydata.update_dict.update_player as update_player
-import hockeydata.update_dict.update_team as update_team
-import hockeydata.input_dict.input_league_dict as input_league_dict
-import hockeydata.input_dict.input_player_dict as input_player_dict
-import hockeydata.input_dict.input_team_dict as input_team_dict
-import hockeydata.playwright_setup.playwright_setup as ps
+import entity_data.scraper.league_scraper as league_scraper
+import entity_data.scraper.player_scraper as player_scraper
+import entity_data.scraper.team_scraper as team_scraper
+import entity_data.get_urls.get_urls as get_url
+import entity_data.update_dict.update_league as update_league
+import entity_data.update_dict.update_player as update_player
+import entity_data.update_dict.update_team as update_team
+import entity_data.input_dict.input_league_dict as input_league_dict
+import entity_data.input_dict.input_player_dict as input_player_dict
+import entity_data.input_dict.input_team_dict as input_team_dict
+import entity_data.playwright_setup.playwright_setup as ps
 import mappers.db_mappers as db_mapper
 import json
 import os

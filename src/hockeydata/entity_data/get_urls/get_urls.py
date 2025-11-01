@@ -4,11 +4,11 @@ import scrapy
 import time
 
 import common_functions as cf 
-import hockeydata.playwright_setup.playwright_setup as ps
+import entity_data.playwright_setup.playwright_setup as ps
 
 from constants import *
 from decorators import time_execution
-from hockeydata.get_urls.league_uids import LEAGUE_UIDS
+from entity_data.get_urls.league_uids import LEAGUE_UIDS
 from logger.logging_config import logger
 
 

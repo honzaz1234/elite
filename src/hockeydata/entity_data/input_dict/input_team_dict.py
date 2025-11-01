@@ -1,4 +1,4 @@
-import hockeydata.insert_db.elite_insert_db as elite_insert_db
+import entity_data.insert_db.elite_insert_db as elite_insert_db
 
 from constants import *
 from decorators import time_execution
