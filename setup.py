@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import find_packages, setup
 from pathlib import Path
 
 this_directory = Path(__file__).parent
@@ -17,8 +17,7 @@ setup(
     license='MIT',
     license_files = ('LICENSE.txt',),
     package_dir={"": "src"},
-    packages = ['hockeydata', 'hockeydata.tests', 
-                'hockeydata.database_creator', 'hockeydata.get_urls', 'hockeydata.input_dict', 'hockeydata.insert_db', 'hockeydata.scraper', 'hockeydata.update_dict'],
+    packages = find_packages(where="src"),
     install_requires=["sqlalchemy", "scrapy", "requests"],
     python_requires="~=3.10"
 )
