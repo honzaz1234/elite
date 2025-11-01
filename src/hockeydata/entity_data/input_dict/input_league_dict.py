@@ -1,8 +1,8 @@
-import hockeydata.insert_db.elite_insert_db as elite_insert_db
+import hockeydata.entity_data.insert_db.elite_insert_db as elite_insert_db
 
-from constants import *
-from decorators import time_execution
-from logger.logging_config import logger
+from hockeydata.constants import *
+from hockeydata.decorators import time_execution
+from hockeydata.logger.logging_config import logger
 from sqlalchemy.orm import Session
 
 

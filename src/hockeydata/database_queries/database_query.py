@@ -5,9 +5,9 @@ from sqlalchemy import Column, Table
 from sqlalchemy.dialects import sqlite
 from sqlalchemy.orm import Session, Query
 
-from logger.logging_config import logger
-from database_queries.query_dict import QUERIES_INFO
-from database_queries.string_db_mapper import MODEL_MAP
+from hockeydata.logger.logging_config import logger
+from hockeydata.database_queries.query_dict import QUERIES_INFO
+from hockeydata.database_queries.string_db_mapper import MODEL_MAP
 
 
 class DbDataGetter():

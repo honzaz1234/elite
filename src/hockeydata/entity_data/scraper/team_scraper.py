@@ -1,14 +1,14 @@
-import entity_data.playwright_setup.playwright_setup as ps
+import hockeydata.entity_data.playwright_setup.playwright_setup as ps
 import playwright.sync_api as sync_api
 import re
 import scrapy
 
-from constants import *
-from decorators import time_execution
-from errors import EmptyReturnXpathValueError
-from logger.logging_config import logger
+from hockeydata.constants import *
+from hockeydata.decorators import time_execution
+from hockeydata.errors import EmptyReturnXpathValueError
+from hockeydata.logger.logging_config import logger
 
-import common_functions as cf
+import hockeydata.common_functions as cf
 
 
 class TeamScraper():

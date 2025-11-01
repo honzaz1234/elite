@@ -1,12 +1,12 @@
-import entity_data.playwright_setup.playwright_setup as ps
+import hockeydata.entity_data.playwright_setup.playwright_setup as ps
 import playwright.sync_api as sync_api
 import re
 import scrapy
 
-import common_functions as cf
-from constants import *
-from decorators import time_execution
-from logger.logging_config import logger
+import hockeydata.common_functions as cf
+from hockeydata.constants import *
+from hockeydata.decorators import time_execution
+from hockeydata.logger.logging_config import logger
 
 
 class LeagueScrapper():

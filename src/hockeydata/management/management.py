@@ -1,29 +1,29 @@
-import common_functions as cf
-import gamedata.input_dict.input_game_dict as input_game
-import gamedata.report_getter as report_getter
-import gamedata.update_dict.update_game as update_game
-import google_tools as google
-import entity_data.scraper.league_scraper as league_scraper
-import entity_data.scraper.player_scraper as player_scraper
-import entity_data.scraper.team_scraper as team_scraper
-import entity_data.get_urls.get_urls as get_url
-import entity_data.update_dict.update_league as update_league
-import entity_data.update_dict.update_player as update_player
-import entity_data.update_dict.update_team as update_team
-import entity_data.input_dict.input_league_dict as input_league_dict
-import entity_data.input_dict.input_player_dict as input_player_dict
-import entity_data.input_dict.input_team_dict as input_team_dict
-import entity_data.playwright_setup.playwright_setup as ps
-import mappers.db_mappers as db_mapper
+import hockeydata.common_functions as cf
+import hockeydata.gamedata.input_dict.input_game_dict as input_game
+import hockeydata.gamedata.report_getter as report_getter
+import hockeydata.gamedata.update_dict.update_game as update_game
+import hockeydata.google_tools as google
+import hockeydata.entity_data.scraper.league_scraper as league_scraper
+import hockeydata.entity_data.scraper.player_scraper as player_scraper
+import hockeydata.entity_data.scraper.team_scraper as team_scraper
+import hockeydata.entity_data.get_urls.get_urls as get_url
+import hockeydata.entity_data.update_dict.update_league as update_league
+import hockeydata.entity_data.update_dict.update_player as update_player
+import hockeydata.entity_data.update_dict.update_team as update_team
+import hockeydata.entity_data.input_dict.input_league_dict as input_league_dict
+import hockeydata.entity_data.input_dict.input_player_dict as input_player_dict
+import hockeydata.entity_data.input_dict.input_team_dict as input_team_dict
+import hockeydata.entity_data.playwright_setup.playwright_setup as ps
+import hockeydata.mappers.db_mappers as db_mapper
 import json
 import os
 import re
 
-from constants import *
-from decorators import repeat_request_until_success, time_execution
-from errors import GameDataError
-from logger.logging_config import logger
-from database_creator.database_creator import *
+from hockeydata.constants import *
+from hockeydata.decorators import repeat_request_until_success, time_execution
+from hockeydata.errors import hockeydata.gamedataError
+from hockeydata.logger.logging_config import logger
+from  hockeydata.database_creator.database_creator import *
 from database_session.database_session import GetDatabaseSession
 
 

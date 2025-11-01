@@ -3,13 +3,13 @@ import re
 import scrapy
 import time
 
-import common_functions as cf 
-import entity_data.playwright_setup.playwright_setup as ps
+import hockeydata.common_functions as cf 
+import hockeydata.entity_data.playwright_setup.playwright_setup as ps
 
-from constants import *
-from decorators import time_execution
-from entity_data.get_urls.league_uids import LEAGUE_UIDS
-from logger.logging_config import logger
+from hockeydata.constants import *
+from hockeydata.decorators import time_execution
+from hockeydata.entity_data.get_urls.league_uids import LEAGUE_UIDS
+from hockeydata.logger.logging_config import logger
 
 
 class LeagueUrlDownload():

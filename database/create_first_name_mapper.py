@@ -1,6 +1,6 @@
-import database_creator.database_creator as db
+import hockeydata.database_creator.database_creator as db
 import database_session.database_session as ds
-import database_queries.database_query as dq
+import hockeydata.database_queries.database_query as dq
 
 import unicodedata
 

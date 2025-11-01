@@ -1,9 +1,9 @@
-import entity_data.tests.test_class as test_class 
+import hockeydata.entity_data.tests.test_class as test_class 
 import os
 import unittest
 
-from entity_data.scraper.player_scraper import *
-from constants import *
+from hockeydata.entity_data.scraper.player_scraper import *
+from hockeydata.constants import *
 
 
 data_loader = test_class.TestDataLoader()

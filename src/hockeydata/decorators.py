@@ -6,7 +6,7 @@ import time
 from functools import wraps
 from sqlalchemy.exc import SQLAlchemyError
 
-from logger.logging_config import logger
+from hockeydata.logger.logging_config import logger
 
 
 MAX_ATTEMPT = 15

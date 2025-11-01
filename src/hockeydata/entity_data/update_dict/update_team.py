@@ -1,8 +1,8 @@
 import re
 
-from constants import * 
-from logger.logging_config import logger 
-from decorators import time_execution 
+from hockeydata.constants import * 
+from hockeydata.logger.logging_config import logger 
+from hockeydata.decorators import time_execution 
 
 
 class UpdateTeamDict():

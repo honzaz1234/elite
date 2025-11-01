@@ -1,10 +1,10 @@
-import common_functions as cf
-import database_creator.database_creator as db
-import database_insert.db_insert  as db_insert
-import entity_data.get_urls.get_urls as league_url
+import hockeydata.common_functions as cf
+import hockeydata.database_creator.database_creator as db
+import hockeydata.database_insert.db_insert  as db_insert
+import hockeydata.entity_data.get_urls.get_urls as league_url
 
-from constants import *
-from logger.logging_config import logger
+from hockeydata.constants import *
+from hockeydata.logger.logging_config import logger
 
 from datetime import datetime
 from sqlalchemy import create_engine, text

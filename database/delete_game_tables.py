@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, MetaData, Table, text
 from sqlalchemy.orm import sessionmaker
 
-import database_creator.database_creator as db
+import hockeydata.database_creator.database_creator as db
 
 
 DB_URL = "sqlite:///./database/hockey_v14_test.db"

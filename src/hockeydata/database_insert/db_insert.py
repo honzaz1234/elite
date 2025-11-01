@@ -1,6 +1,6 @@
-from constants import *
-from decorators import sql_executor
-from database_insert import logger
+from hockeydata.constants import *
+from hockeydata.decorators import sql_executor
+from  hockeydata.database_insert import logger
 
 from sqlalchemy import update
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert

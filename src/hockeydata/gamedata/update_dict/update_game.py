@@ -2,15 +2,15 @@ import re
 import unicodedata
 
 from datetime import datetime
-from decorators import time_execution
+from hockeydata.decorators import time_execution
 from sqlalchemy.sql.schema import Table
 
-import common_functions as cf
+import hockeydata.common_functions as cf
 import  mappers.team_mappers as team_map
 import  database_creator.database_creator as db
 
-from errors import MissingPlayer, MissingPlayerID, MissingPlayKeyError, TooManyPOIError, UpdateGameDataError, UpdatePlayError
-from logger.logging_config import logger
+from hockeydata.errors import MissingPlayer, MissingPlayerID, MissingPlayKeyError, TooManyPOIError, UpdateGameDataError, UpdatePlayError
+from hockeydata.logger.logging_config import logger
 
 
 def get_updated_period(period: str) -> int:

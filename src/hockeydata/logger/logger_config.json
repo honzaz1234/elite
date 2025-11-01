@@ -7,7 +7,7 @@
         "datefmt": "%Y-%m-%dT%H:%M:%S%z"
       },
       "json": {
-        "()": "logger.json_logger.JSONFormatter",
+        "()": "hockeydata.logger.json_logger.JSONFormatter",
         "fmt_keys": {
           "level": "levelname",
           "message": "message",

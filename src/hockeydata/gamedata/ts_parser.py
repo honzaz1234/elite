@@ -1,8 +1,8 @@
 import scrapy
 
-import common_functions as cf
+import hockeydata.common_functions as cf
 
-from logger.logging_config import logger
+from hockeydata.logger.logging_config import logger
 
 
 class TSParser():

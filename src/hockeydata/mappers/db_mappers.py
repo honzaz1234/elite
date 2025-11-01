@@ -2,9 +2,9 @@ import unicodedata
 
 from collections import Counter
 
-import database_creator.database_creator as db
-import database_queries.database_query as dq
-import mappers.team_mappers as team_map
+import hockeydata.database_creator.database_creator as db
+import hockeydata.database_queries.database_query as dq
+import hockeydata.mappers.team_mappers as team_map
 
 
 class GetDBID():

@@ -1,10 +1,10 @@
 import re
 import scrapy
 
-import common_functions as cf
+import hockeydata.common_functions as cf
 
-from errors import WrongPlayDesc
-from logger.logging_config import logger
+from hockeydata.errors import WrongPlayDesc
+from hockeydata.logger.logging_config import logger
 
 
 

@@ -1,16 +1,16 @@
-import database_creator.database_creator as db
-import database_insert.db_insert as db_insert
-import mappers.db_mappers as db_mapper
+import hockeydata.database_creator.database_creator as db
+import hockeydata.database_insert.db_insert as db_insert
+import hockeydata.mappers.db_mappers as db_mapper
 
-from common_functions import dict_diff_unique, log_and_raise
-from errors import InputPlayDBError, NoneReferenceValueError
-from database_creator.database_config import TABLE_CONFIG
-from decorators import time_execution
-from logger.logging_config import logger
+from hockeydata.common_functions import dict_diff_unique, log_and_raise
+from hockeydata.errors import InputPlayDBError, NoneReferenceValueError
+from  hockeydata.database_creator.database_config import TABLE_CONFIG
+from hockeydata.decorators import time_execution
+from hockeydata.logger.logging_config import logger
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.schema import Table
 
-from constants import * 
+from hockeydata.constants import * 
 
 
 class InputEliteNHLmapper():

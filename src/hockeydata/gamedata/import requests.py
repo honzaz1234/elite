@@ -1,5 +1,5 @@
 import requests
-from gamedata import pbp_parser
+from hockeydata.gamedata import pbp_parser
 
 URL = "https://www.nhl.com/scores/htmlreports/20242025/PL020560.HTM"
 
