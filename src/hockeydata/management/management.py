@@ -21,7 +21,7 @@ import re
 
 from hockeydata.constants import *
 from hockeydata.decorators import repeat_request_until_success, time_execution
-from hockeydata.errors import hockeydata.gamedataError
+from hockeydata.errors import GameDataError
 from hockeydata.logger.logging_config import logger
 from  hockeydata.database_creator.database_creator import *
 from database_session.database_session import GetDatabaseSession
