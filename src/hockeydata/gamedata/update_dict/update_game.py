@@ -6,8 +6,8 @@ from hockeydata.decorators import time_execution
 from sqlalchemy.sql.schema import Table
 
 import hockeydata.common_functions as cf
-import  mappers.team_mappers as team_map
-import  database_creator.database_creator as db
+import hockeydata.mappers.team_mappers as team_map
+import hockeydata.database_creator.database_creator as db
 
 from hockeydata.errors import MissingPlayer, MissingPlayerID, MissingPlayKeyError, TooManyPOIError, UpdateGameDataError, UpdatePlayError
 from hockeydata.logger.logging_config import logger
