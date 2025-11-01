@@ -162,13 +162,14 @@ class InputGameInfo():
 
     def __init__(
             self,  db_session: Session, match_player_mapper: dict, 
-            mappers: dict, update_on_conflict: bool
+            mappers: dict, update_on_conflict: bool, season: str
             ):
         self.db_session = db_session
         self.mappers_o = db_mapper.GetDBID(db_session=self.db_session)
         self.input_gi = InputGeneralInfo(
             db_session=self.db_session, 
-            stadium_mapper=mappers["stadium"], update_on_conflict=update_on_conflict
+            stadium_mapper=mappers["stadium"], update_on_conflict=update_on_conflict,
+            season_id=mappers["look_ups"][db.Season][season]
             )
         self.input_shifts = InputShifts(
             db_session=self.db_session, match_player_mapper=match_player_mapper
@@ -177,11 +178,12 @@ class InputGameInfo():
             db_session=self.db_session, 
             look_ups=mappers["look_ups"], update_on_conflict=update_on_conflict
             )
+        
 
     @time_execution
     def input_game_dict(self, game: dict) -> None:
 
-        match_id = self.input_gi._input_general_info(game)
+        match_id = self.input_gi._input_general_info(game=game)
         self.input_shifts._input_shifts(
             game["shifts"], game["HT"], game["VT"], match_id)
         self.input_PBP._input_PBP(game["PBP"], match_id)
@@ -192,15 +194,16 @@ class InputGeneralInfo():
 
 
     def __init__(self, db_session: Session, 
-                 stadium_mapper: dict, update_on_conflict: bool):
+                 stadium_mapper: dict, update_on_conflict: bool, season_id: int):
         self.db_method =  db_insert.DatabaseMethods(db_session)
         self.db_query = db_insert.Query(db_session)
         self.stadium_mapper = stadium_mapper
         self.update_on_conflict = update_on_conflict
+        self.season_id = season_id
 
 
     @time_execution
-    def _input_general_info(self, game) -> int:
+    def _input_general_info(self, game: dict) -> int:
         stadium_id = self._get_stadium_id(game["stadium"])
         input_dict = self._get_general_info_input_dict(game, stadium_id)
         match_id = self.db_method.insert_update_or_ignore_on_conflict(
@@ -212,7 +215,8 @@ class InputGeneralInfo():
                   "time": input_dict["time"],
                   "attendance": input_dict["attendance"],
                   "home_team_id": input_dict["HT"],
-                  "away_team_id": input_dict["VT"]
+                  "away_team_id": input_dict["VT"],
+                  "season_id": self.season_id
                   },
               self.update_on_conflict,
               TABLE_CONFIG["reference"][db.Match]["index_update"],

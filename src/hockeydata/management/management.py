@@ -24,7 +24,7 @@ from hockeydata.decorators import repeat_request_until_success, time_execution
 from hockeydata.errors import GameDataError
 from hockeydata.logger.logging_config import logger
 from  hockeydata.database_creator.database_creator import *
-from database_session.database_session import GetDatabaseSession
+from hockeydata.database_session.database_session import GetDatabaseSession
 
 
 
@@ -654,7 +654,7 @@ class ManageGame(Manage):
             self.input_game_data(
                 updated_data=updated_dict, 
                 match_player_mapper=match_player_mapper, 
-                mappers=mappers
+                mappers=mappers, season=season
                 )
         except:
             cf.log_and_raise(
@@ -684,14 +684,15 @@ class ManageGame(Manage):
 
     def input_game_data(
             self, updated_data: dict, match_player_mapper: dict, 
-            mappers: dict) -> None:
+            mappers: dict, season: str) -> None:
         input_o = input_game.InputGameInfo(
             db_session=self.db_session, 
             match_player_mapper=match_player_mapper, 
             mappers=mappers, 
-            update_on_conflict=self.update_on_conflict
+            update_on_conflict=self.update_on_conflict,
+            season=season
             )
-        input_o.input_game_dict(updated_data)
+        input_o.input_game_dict(game=updated_data)
 
 
 

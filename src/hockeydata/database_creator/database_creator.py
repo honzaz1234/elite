@@ -856,6 +856,7 @@ class Match(Base):
 
     id = Column(Integer, primary_key=True)
     match_id = Column(Integer, nullable=False)
+    season_id = Column(Integer, ForeignKey('seasons.id'), nullable=False)
     stadium_id = Column(Integer, ForeignKey('stadiums.id'), nullable=False)
     date = Column(String, nullable=False)
     time = Column(Integer)
@@ -865,14 +866,15 @@ class Match(Base):
 
     __table_args__ = (
         UniqueConstraint(
-            'match_id', 'date', 
+            'match_id', 'season_id', 
             name='uq_matches_match_id_date'
         ),
     )
 
-    def __init__(self, match_id, stadium_id, date, time, 
+    def __init__(self, match_id, season_id, stadium_id, date, time, 
                  attendance, home_team_id, away_team_id):
         self.match_id = match_id
+        self.season_id = season_id
         self.stadium_id = stadium_id
         self.date = date
         self.time = time
@@ -882,7 +884,7 @@ class Match(Base):
 
 
     def __repr__(self):
-        return (f"({self.id}, {self.match_id}, {self.stadium_id}, "
+        return (f"({self.id}, {self.match_id}, {self.season_id}, {self.stadium_id}, "
                f"{self.date}, {self.time}, {self.attendance}, "
                f"{self.home_team_id}, {self.away_team_id})")
 

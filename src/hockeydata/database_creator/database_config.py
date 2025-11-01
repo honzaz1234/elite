@@ -6,7 +6,7 @@ TABLE_CONFIG = {
         db.Match: {
             "index_update": [
                 db.Match.match_id.name,
-                db.Match.date.name
+                db.Match.season_id.name
             ]
         },
         db.Play: {
