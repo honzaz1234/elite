@@ -1,4 +1,4 @@
-from database_session import database_session
+from hockeydata.database_session import database_session
 
 from sqlalchemy import create_engine, MetaData, Table, text
 from sqlalchemy.orm import sessionmaker
@@ -17,7 +17,7 @@ NewSession = sessionmaker(bind=new_engine)
 old_session = OldSession()
 new_session = NewSession()
 
-# Reflect metadata from both databases
+# Reflect metadata from both databases                                                                                                                     
 old_metadata = MetaData()
 new_metadata = MetaData()
 old_metadata.reflect(bind=old_engine)
