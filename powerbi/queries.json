@@ -1,0 +1,91 @@
+{
+  "goals": {
+    "base_table": "GoalPlay",
+    "selected_cols": [
+      "GoalPlay.player_id",
+      "Player.name"
+    ],
+    "joins": [
+      {
+        "table": "Play", 
+        "conn": "GoalPlay.play_id == Play.id", 
+        "type": "left"
+      },
+      {
+        "table": "Match", 
+        "conn": "Play.match_id == Match.id", 
+        "type": "left"
+      },
+      {
+        "table": "Season", 
+        "conn": "Match.season_id == Season.id", 
+        "type": "left"
+      },
+      {
+        "table": "Player", 
+        "conn": "Player.id == GoalPlay.player_id", 
+        "type": "left"
+      }
+
+    ]
+  },
+  "assists": {
+    "base_table": "AssistPlay",
+    "selected_cols": [
+      "Player.name",
+      "AssistPlay.player_id",
+      "AssistPlay.is_primary"
+    ],
+    "joins": [
+      {
+        "table": "GoalPlay", 
+        "conn": "AssistPlay.goal_id == GoalPlay.id", 
+        "type": "left"
+      },
+      {
+        "table": "Play", 
+        "conn": "GoalPlay.play_id == Play.id", 
+        "type": "left"
+      },
+      {
+        "table": "Match", 
+        "conn": "Play.match_id == Match.id", 
+        "type": "left"
+      },
+      {
+        "table": "Season", 
+        "conn": "Match.season_id == Season.id", 
+        "type": "left"
+      },
+      {
+        "table": "Player", 
+        "conn": "Player.id == AssistPlay.player_id", 
+        "type": "left"
+      }
+
+    ]
+  },
+  "shifts": {
+    "base_table": "PlayerShift",
+    "selected_cols": [
+      "Player.id",
+      "Player.name",
+      "Player.position",
+      "PlayerShift.shift_start",
+      "PlayerShift.shift_end"
+    ],
+    "joins": [
+      {
+        "table": "Match", 
+        "conn": "PlayerShift.match_id == Match.id", 
+        "type": "left"
+      },
+      {
+        "table": "Player", 
+        "conn": "PlayerShift.player_id == Player.id", 
+        "type": "left"
+      }
+
+    ]
+  }
+}

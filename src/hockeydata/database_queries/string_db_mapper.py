@@ -10,5 +10,10 @@ MODEL_MAP = {
     "PlayerDraft": db.PlayerDraft,
     "League": db.League,
     "PlayerNationality": db.PlayerNationality,
-    "Nationality": db.Nationality
+    "Nationality": db.Nationality,
+    "GoalPlay": db.GoalPlay,
+    "Play": db.Play,
+    "Match": db.Match,
+    "AssistPlay": db.AssistPlay,
+    "PlayerShift": db.PlayerShift
 }
