@@ -15,5 +15,6 @@ MODEL_MAP = {
     "Play": db.Play,
     "Match": db.Match,
     "AssistPlay": db.AssistPlay,
-    "PlayerShift": db.PlayerShift
+    "PlayerShift": db.PlayerShift,
+    "Place": db.Place
 }

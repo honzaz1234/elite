@@ -27,10 +27,9 @@ df_points["points"] = df_points['n_goals'] + df_points['n_assits']
 data_shifts =  getter.get_db_query_result(query_name="shifts", query_file_path=query_path)
 df_shifts = pd.DataFrame(data_shifts)
 df_shifts['shift_duration'] = df_shifts['shift_end'] - df_shifts["shift_start"]
-df_shifts_sum = df_shifts[['id', 'shift_duration']].groupby('id').sum()
-df_shifts_sum = df_shifts[['id', 'shift_duration']].groupby('id').sum()
+df_shifts_sum = df_shifts[['player_id', 'shift_duration']].groupby('player_id').sum()
 #get minutes divided by stats
-df_points = pd.merge(df_points, df_shifts_sum, left_on="player_id", right_on="id")
+df_points = pd.merge(df_points, df_shifts_sum, on="player_id")
 df_points['min_per_point'] = ((df_points['shift_duration'] / df_points['points']).round(3) / 60).round(3)
 df_points['min_per_goal'] = ((df_points['shift_duration'] / df_points['n_goals']).round(3) / 60).round(3)
 #add general info

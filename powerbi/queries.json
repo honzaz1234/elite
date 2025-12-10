@@ -2,8 +2,7 @@
   "goals": {
     "base_table": "GoalPlay",
     "selected_cols": [
-      "GoalPlay.player_id",
-      "Player.name"
+      "GoalPlay.player_id"
     ],
     "joins": [
       {
@@ -32,7 +31,6 @@
   "assists": {
     "base_table": "AssistPlay",
     "selected_cols": [
-      "Player.name",
       "AssistPlay.player_id",
       "AssistPlay.is_primary"
     ],
@@ -68,9 +66,7 @@
   "shifts": {
     "base_table": "PlayerShift",
     "selected_cols": [
-      "Player.id",
-      "Player.name",
-      "Player.position",
+      "PlayerShift.player_id",
       "PlayerShift.shift_start",
       "PlayerShift.shift_end"
     ],
@@ -79,13 +75,25 @@
         "table": "Match", 
         "conn": "PlayerShift.match_id == Match.id", 
         "type": "left"
-      },
+      }
+    ]
+  },
+  "player_basic_info": {
+    "base_table": "Player",
+    "selected_cols": [
+      "Player.id",
+      "Player.name",
+      "Player.position",
+      "Place.country_s"
+    ],
+    "joins": [
       {
-        "table": "Player", 
-        "conn": "PlayerShift.player_id == Player.id", 
+        "table": "Place", 
+        "conn": "Player.place_birth_id == Place.id", 
         "type": "left"
       }
 
     ]
+
   }
 }
