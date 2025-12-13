@@ -6,6 +6,7 @@ google/credentials.json
 google/files.json
 google/token.json
 logs/
+.vscode/
 *.db
 *.egg
 *.egg-info/
