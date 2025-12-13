@@ -11,7 +11,7 @@ links_folder_path = "./data/links/"
 
 #path to database must be specifed
 
-db_path = "./database/hockey_v16_test.db"
+db_path = "./database/hockey_v17_test.db"
 
 #connection to database is managed by class GetDatabaseSession
 #which takes one parameter with the path to the existing DB

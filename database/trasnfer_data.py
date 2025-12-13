@@ -6,8 +6,8 @@ import pandas as pd
 
 
 # Define database URLs
-OLD_DB_URL = "sqlite:///./database/hockey_v15_test.db"
-NEW_DB_URL = "sqlite:///./database/hockey_v16_test.db"
+OLD_DB_URL = "sqlite:///./database/hockey_v16_test.db"
+NEW_DB_URL = "sqlite:///./database/hockey_v17_test.db"
 
 # Create engines and sessions
 old_engine = create_engine(OLD_DB_URL)
