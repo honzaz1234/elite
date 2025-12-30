@@ -31,6 +31,7 @@ PLACE_DICT = "place_dict"
 
 # player dicitonary keys
 ACHIEVEMENTS = "achievements"
+PLAYER_FACTS = "player_facts"
 SEASON_STATS = "season_stats"
 MISSING_DATA = "missing_data"
 
