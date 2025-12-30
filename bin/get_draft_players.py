@@ -1,7 +1,7 @@
 import json
 
-import database_session.database_session as ds
-import management.management as management
+import hockeydata.database_session.database_session as ds
+import hockeydata.management.management as management
 
 
 #path to folder with files with already downloaded entities (league, team, #player) must be specified

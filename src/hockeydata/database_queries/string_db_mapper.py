@@ -1,4 +1,4 @@
-import database_creator.database_creator as db
+import hockeydata.database_creator.database_creator as db
 
 
 MODEL_MAP = {

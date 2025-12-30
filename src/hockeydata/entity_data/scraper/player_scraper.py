@@ -3,6 +3,7 @@ import playwright.sync_api as sync_api
 import re
 import scrapy
 
+
 from playwright.sync_api import Page
 from scrapy import Selector
 

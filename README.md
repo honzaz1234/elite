@@ -1,24 +1,27 @@
 # hockeydata
 
-The purpose of hockeydata package is to provide methods for downloading hockey data 
-from eliteprospects.com website and for transfering them into custom database. There are 
-methods available in the package to download information on 3 different entities: team, 
-league and player. 
-In case of the team, the data that can be accessed with the help of the package is 
-general information about selected team, as for example the year the team was founded, 
-its location, in what league it plays, the various  names that the team had over its history, 
-players and numbers whose were retired by the team, its affiliated teams and info about stadium 
-in which it plays. 
-In case of the league, there can be downloaded awards that the league awards to its players and 
-historical seasonal standing of teams in the league.
-For player entity, there are available methods for downloading general info (age, position, handedness...), 
-the information on relatives of the player who were also hockey players, league awards awarded to player 
-in each season, and his statistics for each season in both tournaments and leagues.
+The purpose of the hockeydata package is to provide tools for downloading hockey data 
+from both EliteProspects and NHL.com, and transferring it into a custom database for 
+further analysis.
+
+The package currently supports downloading the following entities:
+
+* Teams: general information such as founding year, location, current league, historical 
+  team names, retired player numbers, affiliated teams, and stadium details.
+
+* Leagues: league awards and historical seasonal standings of participating teams.
+
+* Players: general information (age, position, handedness, etc.), family connections to 
+  other hockey players, league awards received across seasons, and player statistics 
+  for both leagues and tournaments.
+
+* Games (from NHL.com): detailed game data, including schedules, results, and 
+  player/game statistics.
 
 ## Installation
 
-The package is not available on PyPI. In order to install it please run setup.py file in root directory 
-of project (available at: https://github.com/honzaz1234/elite).
+The package is not available on PyPI. 
+To install it, run the setup.py file located in the root directory of the project:
 
 ```bash
 python setup.py install
@@ -30,8 +33,8 @@ pip install .
 
 ## Usage
 
-For example of code usage please see bin folder of the project in which there are availaible example
-scripts for downloading all 3 entities (league, team, player).
+For examples of how to use the code, see the bin folder of the project. 
+It contains example scripts for downloading all four entities: league, team, and player and game data.
 
 ## License
 

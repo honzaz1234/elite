@@ -1,31 +1,30 @@
+import hockeydata.common_functions as cf
+import hockeydata.gamedata.input_dict.input_game_dict as input_game
+import hockeydata.gamedata.report_getter as report_getter
+import hockeydata.gamedata.update_dict.update_game as update_game
+import hockeydata.google_tools as google
+import hockeydata.entity_data.scraper.league_scraper as league_scraper
+import hockeydata.entity_data.scraper.player_scraper as player_scraper
+import hockeydata.entity_data.scraper.team_scraper as team_scraper
+import hockeydata.entity_data.get_urls.get_urls as get_url
+import hockeydata.entity_data.update_dict.update_league as update_league
+import hockeydata.entity_data.update_dict.update_player as update_player
+import hockeydata.entity_data.update_dict.update_team as update_team
+import hockeydata.entity_data.input_dict.input_league_dict as input_league_dict
+import hockeydata.entity_data.input_dict.input_player_dict as input_player_dict
+import hockeydata.entity_data.input_dict.input_team_dict as input_team_dict
+import hockeydata.entity_data.playwright_setup.playwright_setup as ps
+import hockeydata.mappers.db_mappers as db_mapper
 import json
 import os
 import re
 
-import common_functions as cf
-import gamedata.input_dict.input_game_dict as input_game
-import gamedata.report_getter as report_getter
-import gamedata.update_dict.update_game as update_game
-import google_tools as google
-import entity_data.parser.league_scraper as league_scraper
-import entity_data.parser.player_parser as player_parser
-import entity_data.parser.team_scraper as team_scraper
-import entity_data.get_urls.get_urls as get_url
-import entity_data.update_dict.update_league as update_league
-import entity_data.update_dict.update_player as update_player
-import entity_data.update_dict.update_team as update_team
-import entity_data.input_dict.input_league_dict as input_league_dict
-import entity_data.input_dict.input_player_dict as input_player_dict
-import entity_data.input_dict.input_team_dict as input_team_dict
-import entity_data.playwright_setup.playwright_setup as ps
-import mappers.db_mappers as db_mapper
-
-from constants import *
-from decorators import repeat_request_until_success, time_execution
-from errors import GameDataError
-from logger.logging_config import logger
-from database_creator.database_creator import *
-from database_session.database_session import GetDatabaseSession
+from hockeydata.constants import *
+from hockeydata.decorators import repeat_request_until_success, time_execution
+from hockeydata.errors import GameDataError
+from hockeydata.logger.logging_config import logger
+from  hockeydata.database_creator.database_creator import *
+from hockeydata.database_session.database_session import GetDatabaseSession
 
 
 
@@ -144,7 +143,7 @@ class Manage():
 
 
     def scrape_input_into_db_wrapper(self, url: str) -> None:
-        uid = int(re.findall(self.REGEX_UID, url)[0])
+        uid = self.get_uid(url=url)
         if uid in self.done_file:
             
             return
@@ -155,6 +154,12 @@ class Manage():
                 json.dump(self.done_file, f)
             raise e
         self.done_file.append(uid)
+
+
+    def get_uid(self, url: str) -> str:
+        uid = int(re.findall(self.REGEX_UID, url)[0])
+
+        return uid
 
 
     @time_execution
@@ -332,7 +337,7 @@ class ManagePlayer(Manage):
             "Player URLs for seasons %s from league %s were be added "
             "to player URL dictionary", new_data.keys(), league_uid
             )
-    
+            
 
 class ManageTeam(Manage):
 
@@ -374,6 +379,7 @@ class ManageTeam(Manage):
                     f" league {league_uid} started")
         url_list = self.get_team_urls_in_league(
             league_uid=league_uid)
+        logger.info("Scraping of team data will now proceed.")
         try:
             for url in url_list:
                 self.scrape_input_into_db_wrapper(url=url)
@@ -403,7 +409,10 @@ class ManageTeam(Manage):
 
     def get_team_urls_in_league(self, league_uid: str) -> list:
         if league_uid in self.urls:
+            logger.info("URLs for league %s already scraped.", league_uid)
             return  self.urls[league_uid] 
+        logger.info(
+            "URLs for league %s not yet available, scraping will proceed.", league_uid)
         url_list = self.get_urls.get_team_refs(league=league_uid)
         if url_list != []:
             self.urls[league_uid] = url_list
@@ -418,7 +427,7 @@ class ManageLeague(Manage):
 
     DONE_FILE = "done_leagues.json"
     LINK_FILE =  "leagues.json"
-    REGEX_UID = "(.+)"
+    REGEX_UID = "league/(.+)$"
     TYPE = "League"
 
 
@@ -467,6 +476,12 @@ class ManageLeague(Manage):
             dict_league = league_o.get_info()
 
             return dict_league
+    
+
+    def get_uid(self, url: str) -> str:
+        uid = re.findall(self.REGEX_UID, url)[0]
+
+        return uid
 
 
 class ManageGame(Manage):
@@ -538,7 +553,7 @@ class ManageGame(Manage):
         if season not in self.done_file:
             season_dict = self.get_season_report_ids(season=season)
         else:
-            season_dict = self.done_file[season]
+            season_dict = self.urls[season]
         self.get_season_data(
             season_dict=season_dict, season=season
             )
@@ -554,7 +569,7 @@ class ManageGame(Manage):
                 season=season, 
                 game_data=self.done_file
                 )
-            self.done_file[season] = season_dict
+            self.urls[season] = season_dict
         except Exception as e:
             logger.error(f"Downloading of game report ids failed: {e}")
             logger.info("Downloading of game report ids failed..."
@@ -597,7 +612,7 @@ class ManageGame(Manage):
             self, season: str, season_dict: dict) -> None:
         mappers = self.get_dict_with_all_mappers(season=season)
         try:
-            for game in season_dict["report_data"]:
+            for game in season_dict['report_data']:
                 if game['id'] in self.done_file[season]:
                     continue
                 report_id = self.scrape_and_input_game_into_db(
@@ -607,7 +622,7 @@ class ManageGame(Manage):
             self.input_mapper_o.input_all_mappers(mappers=mappers)
         except Exception as e:
             self.input_mapper_o.input_all_mappers(mappers=mappers)
-            self.session.close()
+            self.db_session.close()
             raise e
         
 
@@ -639,7 +654,7 @@ class ManageGame(Manage):
             self.input_game_data(
                 updated_data=updated_dict, 
                 match_player_mapper=match_player_mapper, 
-                mappers=mappers
+                mappers=mappers, season=season
                 )
         except:
             cf.log_and_raise(
@@ -669,14 +684,15 @@ class ManageGame(Manage):
 
     def input_game_data(
             self, updated_data: dict, match_player_mapper: dict, 
-            mappers: dict) -> None:
+            mappers: dict, season: str) -> None:
         input_o = input_game.InputGameInfo(
-            db_session=self.session, 
+            db_session=self.db_session, 
             match_player_mapper=match_player_mapper, 
             mappers=mappers, 
-            update_on_conflict=self.update_on_conflict
+            update_on_conflict=self.update_on_conflict,
+            season=season
             )
-        input_o.input_game_dict(updated_data)
+        input_o.input_game_dict(game=updated_data)
 
 
 

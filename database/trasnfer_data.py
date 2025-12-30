@@ -1,4 +1,4 @@
-from database_session import database_session
+from hockeydata.database_session import database_session
 
 from sqlalchemy import create_engine, MetaData, Table, text
 from sqlalchemy.orm import sessionmaker
@@ -6,8 +6,8 @@ import pandas as pd
 
 
 # Define database URLs
-OLD_DB_URL = "sqlite:///./database/hockey_v15_test.db"
-NEW_DB_URL = "sqlite:///./database/hockey_v16_test.db"
+OLD_DB_URL = "sqlite:///./database/hockey_v16_test.db"
+NEW_DB_URL = "sqlite:///./database/hockey_v17_test.db"
 
 # Create engines and sessions
 old_engine = create_engine(OLD_DB_URL)
@@ -17,7 +17,7 @@ NewSession = sessionmaker(bind=new_engine)
 old_session = OldSession()
 new_session = NewSession()
 
-# Reflect metadata from both databases
+# Reflect metadata from both databases                                                                                                                     
 old_metadata = MetaData()
 new_metadata = MetaData()
 old_metadata.reflect(bind=old_engine)

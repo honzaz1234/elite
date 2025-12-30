@@ -1,16 +1,16 @@
-import database_creator.database_creator as db
-import database_insert.db_insert as db_insert
-import mappers.db_mappers as db_mapper
+import hockeydata.database_creator.database_creator as db
+import hockeydata.database_insert.db_insert as db_insert
+import hockeydata.mappers.db_mappers as db_mapper
 
-from common_functions import dict_diff_unique, log_and_raise
-from errors import InputPlayDBError, NoneReferenceValueError
-from database_creator.database_config import TABLE_CONFIG
-from decorators import time_execution
-from logger.logging_config import logger
+from hockeydata.common_functions import dict_diff_unique, log_and_raise
+from hockeydata.errors import InputPlayDBError, NoneReferenceValueError
+from  hockeydata.database_creator.database_config import TABLE_CONFIG
+from hockeydata.decorators import time_execution
+from hockeydata.logger.logging_config import logger
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.schema import Table
 
-from constants import * 
+from hockeydata.constants import * 
 
 
 class InputEliteNHLmapper():
@@ -162,13 +162,14 @@ class InputGameInfo():
 
     def __init__(
             self,  db_session: Session, match_player_mapper: dict, 
-            mappers: dict, update_on_conflict: bool
+            mappers: dict, update_on_conflict: bool, season: str
             ):
         self.db_session = db_session
-        self.mappers_o = db_mapper.GetDBID(session=self.db_session)
+        self.mappers_o = db_mapper.GetDBID(db_session=self.db_session)
         self.input_gi = InputGeneralInfo(
             db_session=self.db_session, 
-            stadium_mapper=mappers["stadium"], update_on_conflict=update_on_conflict
+            stadium_mapper=mappers["stadium"], update_on_conflict=update_on_conflict,
+            season_id=mappers["look_ups"][db.Season][season]
             )
         self.input_shifts = InputShifts(
             db_session=self.db_session, match_player_mapper=match_player_mapper
@@ -177,11 +178,12 @@ class InputGameInfo():
             db_session=self.db_session, 
             look_ups=mappers["look_ups"], update_on_conflict=update_on_conflict
             )
+        
 
     @time_execution
     def input_game_dict(self, game: dict) -> None:
 
-        match_id = self.input_gi._input_general_info(game)
+        match_id = self.input_gi._input_general_info(game=game)
         self.input_shifts._input_shifts(
             game["shifts"], game["HT"], game["VT"], match_id)
         self.input_PBP._input_PBP(game["PBP"], match_id)
@@ -192,15 +194,16 @@ class InputGeneralInfo():
 
 
     def __init__(self, db_session: Session, 
-                 stadium_mapper: dict, update_on_conflict: bool):
+                 stadium_mapper: dict, update_on_conflict: bool, season_id: int):
         self.db_method =  db_insert.DatabaseMethods(db_session)
         self.db_query = db_insert.Query(db_session)
         self.stadium_mapper = stadium_mapper
         self.update_on_conflict = update_on_conflict
+        self.season_id = season_id
 
 
     @time_execution
-    def _input_general_info(self, game) -> int:
+    def _input_general_info(self, game: dict) -> int:
         stadium_id = self._get_stadium_id(game["stadium"])
         input_dict = self._get_general_info_input_dict(game, stadium_id)
         match_id = self.db_method.insert_update_or_ignore_on_conflict(
@@ -212,7 +215,8 @@ class InputGeneralInfo():
                   "time": input_dict["time"],
                   "attendance": input_dict["attendance"],
                   "home_team_id": input_dict["HT"],
-                  "away_team_id": input_dict["VT"]
+                  "away_team_id": input_dict["VT"],
+                  "season_id": self.season_id
                   },
               self.update_on_conflict,
               TABLE_CONFIG["reference"][db.Match]["index_update"],

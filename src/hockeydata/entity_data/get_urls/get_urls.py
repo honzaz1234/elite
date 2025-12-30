@@ -3,13 +3,13 @@ import re
 import scrapy
 import time
 
-import common_functions as cf 
-import entity_data.playwright_setup.playwright_setup as ps
+import hockeydata.common_functions as cf 
+import hockeydata.entity_data.playwright_setup.playwright_setup as ps
 
-from constants import *
-from decorators import time_execution
-from entity_data.get_urls.league_uids import LEAGUE_UIDS
-from logger.logging_config import logger
+from hockeydata.constants import *
+from hockeydata.decorators import time_execution
+from hockeydata.entity_data.get_urls.league_uids import LEAGUE_UIDS
+from hockeydata.logger.logging_config import logger
 
 
 class LeagueUrlDownload():
@@ -28,8 +28,8 @@ class LeagueUrlDownload():
         "league_name": "//div[preceding-sibling::header[contains(@id, '-men')]]//a[@class='TextLink_link__3JbdQ TableBody_link__MNtRl']/text()",
         "season_refs": "//a[@style='font-weight: 800;']/@href",
         "standings": "/standings/",
-        "year_list": "//ul[preceding-sibling::header[./h2[contains(text()"
-                     ", 'Champions')]]]/li/a[1]/@href",
+        "year_list": "//div[preceding-sibling::header[./h2[contains(text(),"
+                     " 'Champions')]]]/ul/li//a[1]/@href",
         "last_year": "//ul[preceding-sibling::header[./h2[contains(text()"
                       ",'Champions')]]]/li[1]/a[1]/text()",
         "first_year": "//ul[preceding-sibling::header[./h2[contains(text()"
@@ -221,6 +221,8 @@ class LeagueUrlDownload():
                 league_team_refs = list(set(league_team_refs))
         logger.info(f"Process of obtaining team urls for league"
                     f" {league} finished")
+        if len(league_team_refs) == 0:
+            raise ValueError("No URL scraped. Check the xpaths.")
         logger.info(f"By scraping, {len(league_team_refs)} seasons of team"
                     " urls were obtained")
         return league_team_refs

@@ -1,10 +1,10 @@
-import database_creator.database_creator as db
-import database_insert.db_insert as db_insert
-import entity_data.insert_db.elite_insert_db as elite_insert_db
+import hockeydata.database_creator.database_creator as db
+import hockeydata.database_insert.db_insert as db_insert
+import hockeydata.entity_data.insert_db.elite_insert_db as elite_insert_db
 
-from constants import *
-from decorators import time_execution
-from logger.logging_config import logger
+from hockeydata.constants import *
+from hockeydata.decorators import time_execution
+from hockeydata.logger.logging_config import logger
 
 from sqlalchemy.orm import Session
 

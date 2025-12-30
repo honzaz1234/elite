@@ -1,8 +1,8 @@
-import database_creator.database_creator as db
-import database_insert.db_insert as db_insert
+import hockeydata.database_creator.database_creator as db
+import hockeydata.database_insert.db_insert as db_insert
 
-from constants import *
-from logger.logging_config import logger
+from hockeydata.constants import *
+from hockeydata.logger.logging_config import logger
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 

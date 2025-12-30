@@ -4,7 +4,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.oauth2.credentials import Credentials
 
-from logger.logging_config import logger
+from hockeydata.logger.logging_config import logger
 
 
 class GoogleManager():

@@ -3,9 +3,9 @@ import scrapy
 
 from playwright.sync_api import Page
 
-from errors import EmptyReturnXpathValueError
-from decorators import repeat_request_until_success
-from logger.logging_config import logger
+from hockeydata.errors import EmptyReturnXpathValueError
+from hockeydata.decorators import repeat_request_until_success
+from hockeydata.logger.logging_config import logger
 
 
 def convert_season_format(season):

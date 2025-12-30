@@ -1,10 +1,12 @@
 __pycache__/
 .venv/
-.vscode/
 build/
 data/**/*.json
-google/*.json
+google/credentials.json
+google/files.json
+google/token.json
 logs/
+.vscode/
 *.db
 *.egg
 *.egg-info/

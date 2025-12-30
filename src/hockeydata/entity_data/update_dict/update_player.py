@@ -1,12 +1,12 @@
 import datetime
 import re
 
-import common_functions as cf
-import mappers.team_mappers as team_map
+import hockeydata.common_functions as cf
+import hockeydata.mappers.team_mappers as team_map
 
-from constants import *
-from decorators import time_execution
-from logger.logging_config import logger
+from hockeydata.constants import *
+from hockeydata.decorators import time_execution
+from hockeydata.logger.logging_config import logger
 
 
 class UpdatePlayer:

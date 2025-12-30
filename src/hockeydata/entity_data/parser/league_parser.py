@@ -1,12 +1,12 @@
-import entity_data.playwright_setup.playwright_setup as ps
+import hockeydata.entity_data.playwright_setup.playwright_setup as ps
 import playwright.sync_api as sync_api
 import re
 import scrapy
 
-import common_functions as cf
-from constants import *
-from decorators import time_execution
-from logger.logging_config import logger
+import hockeydata.common_functions as cf
+from hockeydata.constants import *
+from hockeydata.decorators import time_execution
+from hockeydata.logger.logging_config import logger
 
 
 class LeagueScrapper():
@@ -16,11 +16,11 @@ class LeagueScrapper():
     #xpath to access different types of info regarding the league
 
     PATHS = {
-        "achievements": "//ul[contains(@class, 'LeagueAwards_league-awards')]"
-                        "/li//text()",
+        "achievements": "//div[preceding-sibling::header[./h2[contains(text(),"
+                        "'Awards')]]]/ul/li//a[1]/text()",
         "long_name": "//h1//text()",
-        "season_href": "//ul[contains(@class, 'list-of-champions')]/li"
-                       "/a[contains(@class, 'yearLink')]/@href"
+        "season_href": "//div[preceding-sibling::header[./h2[contains(text(),"
+                       "'Champions')]]]/ul/li//a[1]/@href"
     }
 
     def __init__(self, url: str, page: sync_api.Page):
@@ -162,7 +162,7 @@ class LeagueSeasonScraper():
         for section_ind in range(1, n_sections + 1):
             dict_season[section_names[section_ind - 1]] = self._get_section(
                 section_ind=section_ind)
-        logger.debug(f"League standings ({self.season}): {dict_season}")
+        logger.debug(f"League standings for season ({self.season}): scraped")
         if len(dict_season) == 0:
             error_message = f"0 rows found in table at adress: {self.url}"
             cf.log_and_raise(error_message)

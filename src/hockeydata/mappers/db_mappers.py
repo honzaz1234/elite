@@ -2,9 +2,9 @@ import unicodedata
 
 from collections import Counter
 
-import database_creator.database_creator as db
-import database_queries.database_query as dq
-import mappers.team_mappers as team_map
+import hockeydata.database_creator.database_creator as db
+import hockeydata.database_queries.database_query as dq
+import hockeydata.mappers.team_mappers as team_map
 
 
 class GetDBID():
@@ -58,7 +58,7 @@ class GetDBID():
 
     def get_all_player_season_data(
             self, selected_seasons: list) -> dict:
-        seasons_filter = [self.query.get_list_filter(
+        seasons_filter = [self.query._get_list_filter(
             table_column=db.Season.season,
             values=selected_seasons
             )]                                      
@@ -149,7 +149,7 @@ class GetDBID():
     def get_nhl_elite_mapper(
             self, selected_seasons: list=None) -> dict:
         if selected_seasons:
-            seasons_filter = [self.query.get_list_filter(
+            seasons_filter = [self.query._get_list_filter(
                 table_column=db.Season.season,
                 values=selected_seasons
                 )]
@@ -181,6 +181,7 @@ class GetDBID():
 
         return season_team_players
     
+
     def get_elite_nhl_names(self) -> dict:
         results = self.query.get_db_query_result(
             query_name="nhl_elite_names", 

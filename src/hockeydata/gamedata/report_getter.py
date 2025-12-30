@@ -1,13 +1,13 @@
 import json
 
-import gamedata.ts_parser as ts_parser
-import gamedata.pbp_parser as pbp_parser
+import hockeydata.gamedata.ts_parser as ts_parser
+import hockeydata.gamedata.pbp_parser as pbp_parser
 
 from datetime import datetime, timedelta
 
-from common_functions import get_valid_request
-from decorators import repeat_request_until_success, time_execution
-from logger.logging_config import logger
+from hockeydata.common_functions import get_valid_request
+from hockeydata.decorators import repeat_request_until_success, time_execution
+from hockeydata.logger.logging_config import logger
 
 
 def generate_dates_between(start_date: str, end_date: str):

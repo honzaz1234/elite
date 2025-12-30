@@ -1,5 +1,5 @@
-import database_creator.database_creator as db
-import database_creator.storage_database_creator as storage_db
+import hockeydata.database_creator.database_creator as db
+import hockeydata.database_creator.storage_database_creator as storage_db
 
 
 QUERIES_INFO = {
@@ -16,22 +16,22 @@ QUERIES_INFO = {
         "joins": [
             {
                 "table": db.Player, 
-                "conn": db.GoalieStats.player_id == db.Player.id, 
+                "conn": db.PlayerStats.player_id == db.Player.id, 
                 "type": "inner"
             },
             {
                 "table": db.Team, 
-                "conn": db.GoalieStats.team_id == db.Team.id, 
+                "conn": db.PlayerStats.team_id == db.Team.id, 
                 "type": "inner"
             },
             {
                 "table": db.Season, 
-                "conn": db.GoalieStats.season_id == db.Season.id, 
+                "conn": db.PlayerStats.season_id == db.Season.id, 
                 "type": "inner"
             },
             {
                 "table": db.League, 
-                "conn": db.GoalieStats.league_id == db.League.id, 
+                "conn": db.PlayerStats.league_id == db.League.id, 
                 "type": "inner"
             },
         ],

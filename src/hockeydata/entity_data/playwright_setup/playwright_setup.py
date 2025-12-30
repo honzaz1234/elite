@@ -1,6 +1,6 @@
 import playwright.sync_api as sync_api
 
-from logger.logging_config import logger
+from hockeydata.logger.logging_config import logger
 
 
 COOKIES_AGREE_XPATH = "//button[./*[contains(text(), 'AGREE')]]"
