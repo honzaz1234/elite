@@ -7,9 +7,9 @@ import gamedata.input_dict.input_game_dict as input_game
 import gamedata.report_getter as report_getter
 import gamedata.update_dict.update_game as update_game
 import google_tools as google
-import entity_data.scraper.league_scraper as league_scraper
-import entity_data.scraper.player_scraper as player_scraper
-import entity_data.scraper.team_scraper as team_scraper
+import entity_data.parser.league_scraper as league_scraper
+import entity_data.parser.player_parser as player_parser
+import entity_data.parser.team_scraper as team_scraper
 import entity_data.get_urls.get_urls as get_url
 import entity_data.update_dict.update_league as update_league
 import entity_data.update_dict.update_player as update_player
@@ -270,7 +270,7 @@ class ManagePlayer(Manage):
 
     @repeat_request_until_success
     def scrape(self, url: str) -> dict:
-        player_o = player_scraper.PlayerScraper(
+        player_o = player_parser.PlayerScraper(
                 url=url, page=self.playwright_session.page,
                 )
         dict_player = player_o.get_info_all()

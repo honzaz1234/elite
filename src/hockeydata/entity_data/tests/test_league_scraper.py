@@ -1,7 +1,7 @@
 import entity_data.tests.test_class as test_class 
 import unittest
 
-from entity_data.scraper.league_scraper import *
+from entity_data.parser.league_scraper import *
 from constants import *
 
 
