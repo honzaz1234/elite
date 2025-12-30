@@ -123,10 +123,10 @@ class SkaterScraper(PlayerScraper):
 
 
     def _get_player_stats(self):
-        self.scraped_data["stats_league"] = self._scrape_data(
+        self.scraped_data["league"] = self._scrape_data(
             xpath_name="stats_league"
             )
-        self.scraped_data["stats_tournament"] = self._scrape_data(
+        self.scraped_data["tournament"] = self._scrape_data(
             xpath_name="stats_tournament" 
             )
 
