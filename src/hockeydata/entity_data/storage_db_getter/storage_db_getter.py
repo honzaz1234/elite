@@ -1,5 +1,5 @@
-import database_creator.storage_database_creator as storage_db
-from database_queries.database_query import DbDataGetter
+import hockeydata.database_creator.storage_database_creator as storage_db
+from hockeydata.database_queries.database_query import DbDataGetter
 
 from sqlalchemy.orm import Session
 
@@ -9,22 +9,55 @@ class StorageDBDataGetter():
 
     def __init__(
             self, db_session: Session, scrape_ids: list, player_uids: list, is_goalie: bool):
+        
         self.db_query = DbDataGetter(db_session=db_session)
-        self.data = {}
+        if is_goalie:
+            self.data = {
+                uid: {
+                    "player_facts": {},
+                    "achievements": {},
+                    "stats": {
+                        "league": {
+                            "regular": {},
+                            "playoff": {}
+                        },
+                        "tournament": {
+                            "regular": {},
+                            "playoff": {}
+                        }
+                    }
+                }
+                for uid in player_uids
+            }
+            stats_getter = GoalieStatsGetter(
+                db_query=self.db_query, data=self.data, scrape_ids=scrape_ids, player_uids=player_uids
+            )
+
+        else:
+            self.data = {
+                uid: {
+                    "player_facts": {},
+                    "achievements": {},
+                    "stats": {
+                        "league": {},
+                        "tournament": {}
+                    }
+                }
+                for uid in player_uids
+            }
+        stats_getter = SkaterStatsGetter(
+                db_query=self.db_query, data=self.data, scrape_ids=scrape_ids, player_uids=player_uids
+            )
+
+
+        self.db_query = DbDataGetter(db_session=db_session)
         self.facts_getter = PlayerFactsGetter(
             db_query=self.db_query, data=self.data, scrape_ids=scrape_ids, player_uids=player_uids
             )
         self.achievements_getter = AchievementsGetter(
             db_query=self.db_query, data=self.data, scrape_ids=scrape_ids, player_uids=player_uids
             )
-        if is_goalie:
-            self.stats_getter = GoalieStatsGetter(
-                db_query=self.db_query, data=self.data, scrape_ids=scrape_ids, player_uids=player_uids
-            )
-        else:
-            self.stats_getter = SkaterStatsGetter(
-                db_query=self.db_query, data=self.data, scrape_ids=scrape_ids, player_uids=player_uids
-            )
+        self.stats_getter = stats_getter
 
 
     def get_data(self) -> dict:
@@ -33,27 +66,7 @@ class StorageDBDataGetter():
         self.stats_getter.get_data()
 
         return self.data
-    
-
-class SkaterStorageDBDataGetter(StorageDBDataGetter):
-
-
-    def __init__(
-            self, db_session: Session, scrape_ids: list, player_uids: list):
-        self.data = self.data = {
-            uid: {
-                "player_facts": {},
-                "achievements": {},
-                "stats": {
-                    "regular": {},
-                    "play_off": {}
-                }
-            }
-            for uid in player_uids
-        }
-        super().__init__(
-            db_session=db_session, scrape_ids=scrape_ids, player_uids=player_uids, data=self.data)
-
+        
 
 class DataGetter():
 
@@ -84,12 +97,12 @@ class DataGetter():
 class BaseDataGetter(DataGetter):
 
 
-    DB_QUERY = "storage_player_base_info"
+    DB_QUERY = ""
 
 
     def __init__(self, db_query: DbDataGetter, data: dict):
         filters = [
-                db_query.get_list_filter(
+                db_query._get_list_filter(
                     table_column=storage_db.Scrape.id, 
                     values=self.scrape_ids
                     )
@@ -113,12 +126,12 @@ class HTMLDataGetter(DataGetter):
     def __init__(
             self, db_query: DbDataGetter, data: dict, scrape_ids: list, player_uids: list):
         filters = [
-                db_query.get_list_filter(
+                db_query._get_list_filter(
                     table_column=storage_db.Scrape.id, 
                     values=scrape_ids
                     ),
-                db_query.get_list_filter(
-                    table_column=storage_db.Player.player_uid,
+                db_query._get_list_filter(
+                    table_column=storage_db.PlayerLog.player_uid,
                     values=player_uids
                     )
             ]
@@ -155,7 +168,7 @@ class SkaterStatsGetter(HTMLDataGetter):
 
     def _save_info(self, row: tuple) -> None:
         player_uid, league_type, html_data = row
-        self.data[player_uid][league_type] = html_data
+        self.data[player_uid]['stats'][league_type] = html_data
 
 
 class GoalieStatsGetter(HTMLDataGetter):
@@ -168,7 +181,7 @@ class GoalieStatsGetter(HTMLDataGetter):
         player_uid, league_type, season_type, html_data = row
         if league_type not in self.data[player_uid]:
             self.data[player_uid] = {}
-        self.data[player_uid][league_type][season_type] = html_data
+        self.data[player_uid]['stats'][league_type][season_type] = html_data
 
 
 

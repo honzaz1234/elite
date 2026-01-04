@@ -1,5 +1,6 @@
 import hockeydata.common_functions as cf
 import hockeydata.database_creator.database_creator as db
+import hockeydata.database_creator.storage_database_creator as storage_db
 import hockeydata.database_insert.db_insert  as db_insert
 import hockeydata.entity_data.get_urls.get_urls as league_url
 
@@ -70,7 +71,7 @@ class GetParseDBSession(GetDatabaseSession):
     
 
     def set_up_connection(self) -> None:
-        logger.info("New scrapping session started")
+        logger.info("New parsing session started")
         self.start_session()
         are_seasons_filled = self.check_seasons_table()
         if are_seasons_filled==False:
@@ -143,6 +144,11 @@ class GetScrapeDBSession(GetDatabaseSession):
 
     def __init__(self, db_path):
         super().__init__(db_path=db_path, db_source=storage_db)
+
+
+    def set_up_connection(self) -> None:
+        logger.info("New scraping session started")
+        self.start_session()
 
 
     def create_scrape_table_entry(self, type_: str) -> int:
