@@ -61,6 +61,17 @@ class GetDatabaseSession():
         self.session.commit()
 
 
+    def check_is_table_empty(self, table: Table) -> bool:
+        check_data = self.session.query(table).all()
+        if check_data == []:
+            return False
+        return True
+    
+
+    def close_session(self) -> None:
+        self.session.close()
+
+
 class GetParseDBSession(GetDatabaseSession):
     """Class managing session used for connection with DB storing parsed data
        of games and hockey entitites (players, leagues, teams)"""
@@ -73,16 +84,9 @@ class GetParseDBSession(GetDatabaseSession):
     def set_up_connection(self) -> None:
         logger.info("New parsing session started")
         self.start_session()
-        are_seasons_filled = self.check_seasons_table()
+        are_seasons_filled = self.check_is_table_empty(table=self.db_source.Season)
         if are_seasons_filled==False:
             self.add_data_to_season_table()
-
-
-    def check_seasons_table(self) -> bool:
-        check_data = self.session.query(self.db_source.Season).all()
-        if check_data == []:
-            return False
-        return True
 
 
     def add_data_to_season_table(self) -> None:
@@ -142,6 +146,8 @@ class GetScrapeDBSession(GetDatabaseSession):
     pass
 
 
+    SCRAPE_TYPES = ["game", "player", "league", "team"]
+
     def __init__(self, db_path):
         super().__init__(db_path=db_path, db_source=storage_db)
 
@@ -149,6 +155,17 @@ class GetScrapeDBSession(GetDatabaseSession):
     def set_up_connection(self) -> None:
         logger.info("New scraping session started")
         self.start_session()
+        scrape_types_filled = self.check_is_table_empty(table=self.db_source.ScrapeType)
+        if not scrape_types_filled:
+            self.add_scrape_types_to_scrape_types_table()
+
+
+    def add_scrape_types_to_scrape_types_table(self) -> None:
+        scrape_type_insert = []
+        for scrape_type in self.SCRAPE_TYPES:
+            scrape_type_insert.append({"scrape_type": scrape_type})
+        self.session.bulk_insert_mappings(self.db_source.ScrapeType, scrape_type_insert)
+        self.session.commit()
 
 
     def create_scrape_table_entry(self, type_: str) -> int:
