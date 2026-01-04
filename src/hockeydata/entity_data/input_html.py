@@ -1,8 +1,10 @@
+from datetime import datetime
 from sqlalchemy.orm import Session
 
-import database_creator.storage_database_creator as db
+import hockeydata.database_creator.storage_database_creator as db
 
-from database_insert.db_insert import DatabaseMethods
+from hockeydata.database_insert.db_insert import DatabaseMethods, Query
+from hockeydata.logger.logging_config import logger
 
 
 class HTMLInputter():
@@ -12,14 +14,40 @@ class HTMLInputter():
 
 
     def __init__(
-            self, db_session: Session, scraped_data: dict, scrape_id: int):
+            self, db_session: Session, scrape_id: int):
         self.insert_db = DatabaseMethods(db_session=db_session)
-        self.scraped_data = scraped_data
         self.scrape_id = scrape_id
 
 
     def input_data(self):
         pass
+
+
+class LogInputter(HTMLInputter):
+
+
+    def __init__(
+            self, db_session: Session, scrape_id: int, 
+            start_time: datetime, end_time: datetime, scrape_type: str
+            ):
+        super().__init__(
+            db_session=db_session, scrape_id=scrape_id
+            )
+        self.query = Query(db_session=db_session)
+        self.db_session = db_session
+        self.start_time = start_time
+        self.end_time = end_time
+        self.scrape_type = scrape_type
+
+
+    def _input_log(self):
+        scrape_type_id = self.query._find_id_in_table(table=db.ScrapeType, scrape_type=self.scrape_type)
+        self.player_id = self.insert_db._input_data(
+            table=db.Scrape, 
+            start_datetime=self.start_time,
+            end_datetime=self.end_time,
+            scrape_type_id=scrape_type_id
+            )
 
 
 class PlayerHTMLInputter(HTMLInputter):
@@ -28,21 +56,25 @@ class PlayerHTMLInputter(HTMLInputter):
     def __init__(
             self, db_session: Session, scraped_data: dict, scrape_id: int):
         super().__init__(
-            db_session=db_session, scraped_data=scraped_data, scrape_id=scrape_id
+            db_session=db_session, scrape_id=scrape_id
             )
         self.db_session = db_session
+        self.scraped_data = scraped_data
         self.is_goalie = None
         self.player_uid = None 
         self.player_id = None
 
 
-    def _input_data(self):
+    def input_data(self):
         self._set_is_goalie()
         self._set_player_uid()
-        self._input_player()
+        self._input_player_log()
         self._input_player_facts_html()
         self._input_achievements_html()
         self._input_stats_htmls()
+        #to be deleted later
+        self.db_session.commit()
+        logger.info('Data for player %s succesfully inputed into storage DB.', self.player_id)
     
 
     def _set_is_goalie(self) -> None:
@@ -61,9 +93,9 @@ class PlayerHTMLInputter(HTMLInputter):
         self.player_uid = self.scraped_data["player_uid"]
 
 
-    def _input_player(self):
+    def _input_player_log(self):
         self.player_id = self.insert_db._input_data(
-            table=db.Player, player_uid=self.player_uid,
+            table=db.PlayerLog, player_uid=self.player_uid,
             is_goalie=self.is_goalie,
             scrape_id=self.scrape_id
             )
@@ -95,6 +127,16 @@ class PlayerHTMLInputter(HTMLInputter):
                 player_id=self.player_id
                 ) 
         stats_class._input_data()
+
+
+    def _input_missing_data_logs(
+            self, missing_data: list) -> None:
+        for data_type in missing_data:
+            self.insert_db._input_data(
+                db.PlayerMissingDataLog, 
+                player_id=self.player_id, 
+                data_type=data_type
+            )
 
 
 class InputStatsHtml():
@@ -154,15 +196,14 @@ class InputSkaterStatsHtml(InputStatsHtml):
             table=db.SkaterStats, 
             player_id=self.player_id,
             league_type="league", 
-            html_data=self.scraped_data["stats_league"]
+            html_data=self.scraped_data["league"]
             )
         self.insert_db._input_data(
             table=db.SkaterStats, 
             player_id=self.player_id,
             league_type="tournament", 
-            html_data=self.scraped_data["stats_tournament"]
+            html_data=self.scraped_data["tournament"]
             )
-
 
 
 
