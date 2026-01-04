@@ -3,11 +3,11 @@ import scrapy
 
 from playwright.sync_api import Page
 
-import common_functions as cf
-import entity_data.playwright_setup.playwright_setup as ps
+import hockeydata.common_functions as cf
+import hockeydata.entity_data.playwright_setup.playwright_setup as ps
 
-from constants import PLAYER_UID_REGEX
-from logger.logging_config import logger
+from hockeydata.constants import PLAYER_UID_REGEX
+from hockeydata.logger.logging_config import logger
 
 
 class PlaywrightScraper:
@@ -52,7 +52,7 @@ class PlaywrightScraper:
         else:    
             logger.info("Data type %s succesfully scraped.", xpath_name) 
 
-            return scraped_data.get()
+            return scraped_data.get().encode("utf-8")
 
 
 class PlayerScraper(PlaywrightScraper):
