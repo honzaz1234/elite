@@ -281,27 +281,6 @@ class InputAchievementDict():
                 self.insert_db._input_achievement_relation(achiev=achiev_name, 
                                                            season=season, player_id=player_id)
                 
-
-class InputLogs():
-
-
-    def __init__(self, db_session: Session):
-        self.insert_db = db_insert.DatabaseMethods(db_session=db_session)
-
-
-    def _input_missing_data_logs(
-            self, missing_data: list, player_id: int, scrape_id: int) -> None:
-        for data_type in missing_data:
-            self.insert_db._input_unique_data(
-                db.PlayerMissingDataLog, player_id=player_id, data_type=data_type, scrape_id=scrape_id
-            )
-
-
-    def _input_scraped_player_log(
-            self, player_id: int, scrape_id: int) -> None:
-        self.insert_db._input_unique_data(
-            db.PlayerScrapeLoger, scrape_id=scrape_id, 
-            player_id=player_id, 
-            )
+                
 
                 
