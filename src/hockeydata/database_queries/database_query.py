@@ -6,7 +6,7 @@ from sqlalchemy.dialects import sqlite
 from sqlalchemy.orm import Session, Query
 
 from hockeydata.logger.logging_config import logger
-from hockeydata.database_queries.query_dict import QUERIES_INFO
+from hockeydata.entity_data.storage_db_getter.query_dict import QUERIES_INFO
 from hockeydata.database_queries.string_db_mapper import MODEL_MAP
 
 
