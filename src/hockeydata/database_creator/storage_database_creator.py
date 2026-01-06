@@ -36,7 +36,10 @@ class Scrape(Base):
 
     def __repr__(self):
         return "<Scrape(id=%s, start='%s', end='%s', scrape_type_id='%s')>" % (
-            self.id, self.start_datetime, self.end_datetime, self.scrape_type_id
+            self.id, 
+            self.start_datetime, 
+            self.end_datetime, 
+            self.scrape_type_id
         )
     
 
@@ -54,7 +57,8 @@ class ScrapeType(Base):
 
     def __repr__(self):
         return "<Scrape(id=%s, scrape_type='%s')>" % (
-            self.id, self.scrape_type
+            self.id, 
+            self.scrape_type
         )
     
     
@@ -81,7 +85,9 @@ class PlayerURL(Base):
 
     def __repr__(self):
         return "<PlayerURL(id=%s, player_uid=%s, url='%s')>" % (
-            self.id, self.player_uid, self.player_url
+            self.id, 
+            self.player_uid, 
+            self.player_url
         )
     
 
@@ -110,8 +116,14 @@ class PlayerLog(Base):
 
     def __repr__(self):
         return (
-            "<Player(id=%s, player_uid='%s', scrape_id='%s', is_goalie=%s, time=%s)>"
-            % (self.id, self.player_uid, self.scrape_id, self.is_goalie, self.time)
+            "<Player(id=%s, player_uid='%s', scrape_id='%s', is_goalie=%s, "
+            "time=%s)>"  % (
+                self.id, 
+                self.player_uid, 
+                self.scrape_id, 
+                self.is_goalie, 
+                self.time
+                )
         )
     
     
@@ -122,14 +134,26 @@ class SkaterStats(Base, HtmlPreviewMixin):
 
     id = Column(Integer, primary_key=True)
     player_id = Column(Integer, ForeignKey('playerlogs.id'), nullable=False)
-    league_type = Column(String, nullable=False)
+    competetition_type = Column(String, nullable=False)
     html_data = Column(LargeBinary, nullable=False)
+
+
+    def __init__(
+            self, player_id: int, competetition_type: str, html_data: bytes):
+        self.player_id = player_id
+        self.competetition_type = competetition_type
+        self.html_data = html_data
 
 
     def __repr__(self):
         return (
-            "<SkaterStats(id=%s, player_id=%s, league_type=%s, html_data=%s)>" %
-            (self.id, self.player_id, self.league_type, self.html_preview())
+            "<SkaterStats(id=%s, player_id=%s, competetition_type=%s, "
+            "html_data=%s)>" % (
+                self.id, 
+                self.player_id, 
+                self.competetition_type, 
+             self.html_preview()
+             )
         )
     
 
@@ -140,23 +164,26 @@ class GoalieStats(Base, HtmlPreviewMixin):
 
     id = Column(Integer, primary_key=True)
     player_id = Column(Integer, ForeignKey('playerlogs.id'), nullable=False)
-    league_type = Column(String, nullable=False)
+    competetition_type = Column(String, nullable=False)
     season_type = Column(String, nullable=False)
     html_data = Column(LargeBinary, nullable=False)
 
 
-    def __init__(self, player_id: int, league_type: str, season_type: str, html_data: bytes):
+    def __init__(
+            self, player_id: int, competetition_type: str, season_type: str, html_data: bytes):
         self.player_id = player_id
-        self.league_type = league_type
+        self.competetition_type = competetition_type
         self.season_type = season_type
         self.html_data = html_data
 
 
     def __repr__(self):
-        return (
-            f"<GoalieStats(id={self.id}, player_id={self.player_id}, "
-            f"league_type={self.league_type}, season_type={self.season_type}, "
-            f"html_data={self.html_preview()})>"
+        return "<GoalieStats(id=%s, player_id=%s, competetition_type=%s, season_type=%s, html_data=%s)>" % (
+            self.id,
+            self.player_id,
+            self.competetition_type,
+            self.season_type,
+            self.html_preview(),
         )
     
 
@@ -178,7 +205,9 @@ class PlayerFacts(Base):
     def __repr__(self):
         preview = self.html_data[:50] + b"..." if len(self.html_data) > 50 else self.html_data
         return "<PlayerFacts(id=%s, player_id=%s, html_data=%s)>" % (
-            self.id, self.player_id, preview
+            self.id, 
+            self.player_id, 
+            preview
         )
 
 
@@ -199,7 +228,9 @@ class Achievements(Base, HtmlPreviewMixin):
 
     def __repr__(self):
         return "<Achievements(id=%s, player_id=%s, html_data=%s)>" % (
-            self.id, self.player_id, self.html_preview()
+            self.id, 
+            self.player_id, 
+            self.html_preview()
         )
     
 
@@ -228,6 +259,8 @@ class PlayerMissingDataLog(Base):
 
     def __repr__(self):
         return "<PlayerMissingDataLog(id=%s, player_id=%s, data_type='%s')>" % (
-            self.id, self.player_id, self.data_type
+            self.id, 
+            self.player_id, 
+            self.data_type
         )
     
