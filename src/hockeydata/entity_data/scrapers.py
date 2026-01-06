@@ -69,7 +69,8 @@ class PlayerScraper(PlaywrightScraper):
         "achievements": "//section[@id='career-highlights']",
         "accept_cookies": "//button[contains(., 'AGREE')]",
         "player_facts":  "//section[@id='player-facts']",
-        "player_type": "//li[./span[contains(text(), 'Position')]]/text()",
+        "player_type": "//dt[contains(text(), 'Position')]"
+                       "/following-sibling::dd/text()",
         "stats_league": "//section[@id='player-statistics' "
                        "and not(contains(., 'No Data Found'))]",
         "stats_tournament": "//section[@id='tournament-statistics' "
@@ -95,8 +96,10 @@ class PlayerScraper(PlaywrightScraper):
             )
         self.scraped_data["player_uid"] = re.findall(
             PLAYER_UID_REGEX, self.url)[0]
-        self.scraped_data["player_type"] = self._scrape_data(
-            xpath_name="player_type"
+        self.scraped_data["player_type"] = cf.get_single_xpath_value(
+            sel=scrapy.Selector(text=self.page.content()),
+            xpath=self.PATHS["player_type"],
+            optional=False
             )
         self.scraped_data["player_facts"] = self._scrape_data(
             xpath_name="player_facts"
@@ -104,7 +107,7 @@ class PlayerScraper(PlaywrightScraper):
         self.scraped_data["achievements"] = self._scrape_data(
             xpath_name="achievements"
             )
-        self._get_player_stats()
+        self.scraped_data['stats'] = self._get_player_stats()
         logger.info(
             'Scraping of new player info at web adress: %s '
             'finished', self.url
@@ -122,13 +125,16 @@ class SkaterScraper(PlayerScraper):
     """
 
 
-    def _get_player_stats(self):
-        self.scraped_data["league"] = self._scrape_data(
+    def _get_player_stats(self) -> dict:
+        stats = dict()
+        stats["league"] = self._scrape_data(
             xpath_name="stats_league"
             )
-        self.scraped_data["tournament"] = self._scrape_data(
+        stats["tournament"] = self._scrape_data(
             xpath_name="stats_tournament" 
             )
+        
+        return stats
 
 
 class GoalieScraper(PlayerScraper):
@@ -138,30 +144,37 @@ class GoalieScraper(PlayerScraper):
 
 
     GOALIE_PATHS = {
-        "season_scroll": "//div[contains(@class,"       
-                         "'PlayerStatistics_selectorWrapper')]"
-                         "/div[./*[contains(@id," 
+        "season_scroll": "//div[./*[contains(@id," 
                          "'player-statistics-default-season')]]",
-        "season_selection": "//div[contains(@id,'default-season-selector')]"
-                            "/div",
+        "title_check": "//*[contains(@id,'player-statistics-default-season')]/"
+                        "following-sibling::div//*[contains(@class,"
+                        "'singleValue')]"
     }
 
     TYPE = {
         'regular': 'Regular Season (Complete Stats)', 
         'play_off': 'Postseason (Complete Stats)'
         }
+    
+    NAME_MAPPER = {
+        "stats_league": "league",
+        "stats_tournament": "tournament"
+    }
 
 
-    def _get_player_stats(self):
-        self._get_table_stats_wrapper(
+    def _get_player_stats(self) -> dict:
+        stats = dict()
+        stats["league"] = self._get_table_stats_wrapper(
             path_type="stats_league"
             )
-        self._get_table_stats_wrapper(
+        stats["tournament"] = self._get_table_stats_wrapper(
             path_type="stats_tournament" 
             )
         
+        return stats
         
-    def _get_table_stats_wrapper(self, path_type: str) -> None:
+        
+    def _get_table_stats_wrapper(self, path_type: str) -> dict|None:
         path = self.PATHS[path_type]
         data_present = cf.check_data_presence(
             self.page, path, path_type,
@@ -173,24 +186,28 @@ class GoalieScraper(PlayerScraper):
                 path_type
                 )
             return None
-        self._get_table_stats_wrapper_type(
+        stats = self._get_table_stats_wrapper_type(
             path_type=path_type
             )
+        
+        return stats
     
 
-    def _get_table_stats_wrapper_type(self, path_type: str) -> None:
+    def _get_table_stats_wrapper_type(self, path_type: str) -> dict:
         """wrapper method for downloading both regular and play off data for  
            one type of competition (league or tournament)
         """
 
-        self.scraped_data[path_type] = {}
+        stats = dict()
         for season_type in GoalieScraper.TYPE:
             self._select_season_type(
                 path_type=path_type, season_type=season_type
                 )
-            self.scraped_data[path_type][season_type] = self._scrape_data(
+            stats[season_type] = self._scrape_data(
                 xpath_name=path_type
                 )
+        
+        return stats
     
     
     def _select_season_type(self, path_type: str, season_type: str) -> None:
@@ -203,15 +220,11 @@ class GoalieScraper(PlayerScraper):
             + self.GOALIE_PATHS['season_scroll']
             )
         ps.click_on_button(self.page, button_path)
-        selection_path = (
-            self.PATHS[path_type]
-            + self.GOALIE_PATHS['season_selection']
-            + "[contains(text(), '" 
-            + self.TYPE[season_type]
-            + "')]"
+        self.page.keyboard.type(self.TYPE[season_type])
+        self.page.keyboard.press("Enter")
+        self.page.wait_for_selector(
+            self.GOALIE_PATHS["title_check"], timeout=10000
             )
-        ps.click_on_button(self.page, selection_path)
-
 
 
         

@@ -54,12 +54,13 @@ class PlayerHTMLInputter(HTMLInputter):
 
 
     def __init__(
-            self, db_session: Session, scraped_data: dict, scrape_id: int):
+            self, db_session: Session, scraped_data: dict, missing_data: dict, scrape_id: int):
         super().__init__(
             db_session=db_session, scrape_id=scrape_id
             )
         self.db_session = db_session
         self.scraped_data = scraped_data
+        self.missing_data = missing_data
         self.is_goalie = None
         self.player_uid = None 
         self.player_id = None
@@ -72,6 +73,7 @@ class PlayerHTMLInputter(HTMLInputter):
         self._input_player_facts_html()
         self._input_achievements_html()
         self._input_stats_htmls()
+        self._input_missing_data_logs()
         #to be deleted later
         self.db_session.commit()
         logger.info('Data for player %s succesfully inputed into storage DB.', self.player_id)
@@ -118,20 +120,21 @@ class PlayerHTMLInputter(HTMLInputter):
     def _input_stats_htmls(self):
         if self.is_goalie:
             stats_class = InputGoalieStatsHtml(
-                scraped_data=self.scraped_data, insert_db=self.insert_db,
+                scraped_data=self.scraped_data['stats'], 
+                insert_db=self.insert_db,
                 player_id=self.player_id
                 ) 
         else:
             stats_class = InputSkaterStatsHtml(
-                scraped_data=self.scraped_data, insert_db=self.insert_db,
+                scraped_data=self.scraped_data['stats'], 
+                insert_db=self.insert_db,
                 player_id=self.player_id
                 ) 
         stats_class._input_data()
 
 
-    def _input_missing_data_logs(
-            self, missing_data: list) -> None:
-        for data_type in missing_data:
+    def _input_missing_data_logs(self) -> None:
+        for data_type in self.missing_data:
             self.insert_db._input_data(
                 db.PlayerMissingDataLog, 
                 player_id=self.player_id, 
@@ -158,52 +161,28 @@ class InputGoalieStatsHtml(InputStatsHtml):
     
 
     def _input_data(self):
-        self.insert_db._input_data(
-            table=db.GoalieStats, 
-            player_id=self.player_id,
-            league_type="league", 
-            season_type="regular", 
-            html_data=self.scraped_data["stats_league"]["regular"]
-            )
-        self.insert_db._input_data(
-            table=db.GoalieStats, 
-            player_id=self.player_id,
-            league_type="league", 
-            season_type="play_off", 
-            html_data=self.scraped_data["stats_league"]["play_off"]
-            )
-        self.insert_db._input_data(
-            table=db.GoalieStats, 
-            player_id=self.player_id,
-            league_type="tournament", 
-            season_type="regular", 
-            html_data=self.scraped_data["stats_tournament"]["regular"]
-            )
-        self.insert_db._input_data(
-            table=db.GoalieStats, 
-            player_id=self.player_id,
-            league_type="tournament", 
-            season_type="play_off", 
-            html_data=self.scraped_data["stats_tournament"]["play_off"]
-            )
+        for competition_type in self.scraped_data:
+            for season_type in self.scraped_data[competition_type]:
+                self.insert_db._input_data(
+                    table=db.GoalieStats, 
+                    player_id=self.player_id,
+                    league_type=competition_type, 
+                    season_type=season_type, 
+                    html_data=self.scraped_data[competition_type][season_type]
+                    )
         
 
 class InputSkaterStatsHtml(InputStatsHtml):
     
 
     def _input_data(self):
-        self.insert_db._input_data(
-            table=db.SkaterStats, 
-            player_id=self.player_id,
-            league_type="league", 
-            html_data=self.scraped_data["league"]
-            )
-        self.insert_db._input_data(
-            table=db.SkaterStats, 
-            player_id=self.player_id,
-            league_type="tournament", 
-            html_data=self.scraped_data["tournament"]
-            )
+        for season_type in self.scraped_data:
+            self.insert_db._input_data(
+                table=db.GoalieStats, 
+                player_id=self.player_id,
+                season_type=season_type, 
+                html_data=self.scraped_data[season_type]
+                )
 
 
 
