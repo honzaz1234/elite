@@ -23,7 +23,7 @@ class UpdatePlayer:
         """method for establishing if the player is goalie or field player; important because of different statistical categories
         """
 
-        position = dict[GENERAL_INFO][POSITION]
+        position = dict[PLAYER_FACTS][POSITION]
         if position == "G":
             self.is_goalie =  True
         else:
@@ -36,8 +36,8 @@ class UpdatePlayer:
         new_dict = dict.copy()
         self._set_is_goalie(new_dict)
         player_info = UpdatePlayerInfo(is_goalie=self.is_goalie)
-        new_dict[GENERAL_INFO] = player_info._update_info_dict(
-            info_dict=new_dict[GENERAL_INFO])
+        new_dict[PLAYER_FACTS] = player_info._update_info_dict(
+            info_dict=new_dict[PLAYER_FACTS])
         player_stats = UpdatePlayerStats(is_goalie=self.is_goalie)
         new_dict[SEASON_STATS] = player_stats._update_stats_dict(
             dict_stats= new_dict[SEASON_STATS])
@@ -45,7 +45,7 @@ class UpdatePlayer:
         #new_dict[RELATIONS] = player_relation._update_relation_dict(
         #    relation_dict=new_dict[RELATIONS])
         logger.info(f"Player info dict for player "
-                    f"({new_dict[GENERAL_INFO][PLAYER_NAME]}) updated")
+                    f"({new_dict[PLAYER_FACTS][PLAYER_NAME]}) updated")
         return new_dict
     
 class UpdatePlayerInfo():
@@ -297,16 +297,18 @@ class UpdatePlayerInfo():
             draft_list=info_dict_updated[DRAFT_LIST])
         info_dict_updated[PLACE_DICT] = self._create_place_dict(
             place_string=info_dict_updated[BIRTH_PLACE_STRING])
-        info_dict_updated[CAP_HIT] = self._update_cap_hit(
-            cap_hit=info_dict_updated[CAP_HIT])
+#will be separate table with seasonal values
+#        info_dict_updated[CAP_HIT] = self._update_cap_hit(
+#            cap_hit=info_dict_updated[CAP_HIT])
         info_dict_updated[NHL_RIGHTS_UID] = self._get_nhl_rights_uid(
             nhl_rights=info_dict_updated[NHL_RIGHTS])
         info_dict_updated[SIGNED_NHL] = self._get_nhl_signed_status(
             nhl_rights=info_dict_updated[NHL_RIGHTS])
         info_dict_updated[BIRTH_DATE] = self._update_birth_date(
             date_string=info_dict_updated[BIRTH_DATE])
-        info_dict_updated[AGE] = self._update_age(
-            age=info_dict_updated[AGE])
+# redundant if birth date is present
+#        info_dict_updated[AGE] = self._update_age(
+#        age=info_dict_updated[AGE])
         info_dict_updated[PLAYER_UID] = int(info_dict_updated[PLAYER_UID])
         logger.debug(f"Player info dict updated: {info_dict_updated}")
         return info_dict_updated
