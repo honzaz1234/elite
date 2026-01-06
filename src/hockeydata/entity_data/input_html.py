@@ -19,7 +19,7 @@ class HTMLInputter():
         self.scrape_id = scrape_id
 
 
-    def input_data(self):
+    def input_data(self) -> None:
         pass
 
 
@@ -66,7 +66,7 @@ class PlayerHTMLInputter(HTMLInputter):
         self.player_id = None
 
 
-    def input_data(self):
+    def input_data(self) -> None:
         self._set_is_goalie()
         self._set_player_uid()
         self._input_player_log()
@@ -103,14 +103,14 @@ class PlayerHTMLInputter(HTMLInputter):
             )
 
 
-    def _input_player_facts_html(self):
+    def _input_player_facts_html(self) -> None:
         self.insert_db._input_data(
             table=db.PlayerFacts, player_id=self.player_id,
             html_data=self.scraped_data["player_facts"]
             )
         
 
-    def _input_achievements_html(self):
+    def _input_achievements_html(self) -> None:
         self.insert_db._input_data(
             table=db.Achievements, player_id=self.player_id,
             html_data=self.scraped_data["achievements"]
@@ -153,15 +153,17 @@ class InputStatsHtml():
         self.player_id = player_id
 
 
-    def _input_data(self):
+    def _input_data(self) -> None:
         pass
 
 
 class InputGoalieStatsHtml(InputStatsHtml):
     
 
-    def _input_data(self):
+    def _input_data(self) -> None:
         for competition_type in self.scraped_data:
+            if self.scraped_data[competition_type] is None:
+                continue
             for season_type in self.scraped_data[competition_type]:
                 self.insert_db._input_data(
                     table=db.GoalieStats, 
@@ -175,14 +177,17 @@ class InputGoalieStatsHtml(InputStatsHtml):
 class InputSkaterStatsHtml(InputStatsHtml):
     
 
-    def _input_data(self):
-        for season_type in self.scraped_data:
-            self.insert_db._input_data(
-                table=db.GoalieStats, 
-                player_id=self.player_id,
-                season_type=season_type, 
-                html_data=self.scraped_data[season_type]
-                )
+    def _input_data(self) -> None:
+        for competition_type in self.scraped_data:
+            if self.scraped_data[competition_type] is None:
+                continue
+            for competition_type in self.scraped_data:
+                self.insert_db._input_data(
+                    table=db.SkaterStats, 
+                    player_id=self.player_id,
+                    competition_type=competition_type, 
+                    html_data=self.scraped_data[competition_type]
+                    )
 
 
 
