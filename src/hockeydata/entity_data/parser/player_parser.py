@@ -47,7 +47,8 @@ class PlayerParser:
 
     def _parse_player_facts(self) -> None:
         facts_o = PlayerFactsParser(
-            facts_html=self.scraped_data[PLAYER_FACTS]
+            facts_html=self.scraped_data[PLAYER_FACTS],
+            player_uid=self.player_uid
             )
         self.parsed_data[PLAYER_FACTS] = facts_o.parse_data()
 
@@ -140,17 +141,19 @@ class PlayerFactsParser():
         "Status": [ACTIVE, "text()"],
     } 
     
-    def __init__(self, facts_html: bytes):
+    def __init__(self, facts_html: bytes, player_uid: int):
         """attribute: facts_html - part of the page html with player facts data
         """
 
         self.selector = scrapy.Selector(text=facts_html.decode("utf-8"))
+        self.player_uid = player_uid
 
 
     def parse_data(self) -> dict:
         """wrapper method for attaining all available info on player"""
         parsed_data = self._get_info_wrapper()
         parsed_data[PLAYER_NAME] = self._get_name()
+        parsed_data[PLAYER_UID] = self.player_uid
 
         return parsed_data
 
@@ -473,13 +476,19 @@ class StatsParser():
         return sub_dict
     
   
-    def onerow_factory(self, ind: int, table_type: str) -> 'OneRowStat':
+    def onerow_factory(
+            self, ind: int, table_type: str
+            ) -> 'OneRowStat':
 
         if self.type_player == 'G':
-            onerow_object = OneRowGoalieStat(ind=ind, selectors=self.sel_dict[table_type], default_selector=self.default_selector)
+            onerow_object = OneRowGoalieStat(
+                ind=ind, selectors=self.sel_dict[table_type]
+                )
 
         else:
-            onerow_object = OneRowSkaterStat(ind=ind, selectors=self.sel_dict[table_type], default_selector=self.default_selector)
+            onerow_object = OneRowSkaterStat(
+                ind=ind, selector=self.sel_dict[table_type]
+                )
             
         return onerow_object
     
@@ -547,8 +556,8 @@ class OneRowStat():
             "stats_goalie": "[position() >= 4 and position() <= 12]//text()",
             "stats_table_l": "//tbody//tr[",
             "stats_table_r": "]/td",
-            "url_league": "[3]//a/@href",
-            "url_team": "[2]//a/@href",
+            "url_league": "[3]/a/@href",
+            "url_team": "[2]/span/a/@href",
     }
 
     #regexes used to access team and league uid in url
@@ -560,24 +569,18 @@ class OneRowStat():
     #value in a row, where projected statistics for a season are mentioned
     PROJECTED = "Projected"
 
-    def __init__(
-            self, ind: int, selectors: dict|scrapy.Selector, 
-            default_selector: scrapy.Selector):
-        """path - xpath to acces specifix row in table with statistics
-           selector
-           selector - original selector of webpage of player
-        """
+    def __init__(self, ind: int):
 
-        self.default_selector = default_selector
-        self.selectors = selectors
-        self.path_to_row = self.PATHS["stats_table_l"] + str(ind) + self.PATHS["stats_table_r"]
+        self.path_to_row = (
+            self.PATHS["stats_table_l"] + str(ind) + self.PATHS["stats_table_r"]
+        )
     
 
     def _get_stat_dictionary(self) -> dict:
         """method for getting stat dictionary of one row of stat table"""
 
         dict_stat = {}
-        league = self._get_stat_atribute(key="league")
+        league = self._get_stat_atribute_wrapper(key="league", keep_list=False)
         if league is None:
 
             return {}
@@ -594,7 +597,9 @@ class OneRowStat():
         """method for getting league dictionary of one row of stat table"""
 
         league_dict = {}
-        team = self._get_stat_atribute_wrapper(key="team")
+        team = self._get_stat_atribute_wrapper(
+            key="team", keep_list=False
+            )
         if team is None or team == OneRowStat.PROJECTED:
             logger.debug(
                 "League dict equal to %s given the team name " 
@@ -612,10 +617,12 @@ class OneRowStat():
         """
 
         dict_team = {}
-        regular_stats, play_off_stats = self._get_stats(self)
-        leadership = self._get_stat_atribute_wrapper(key="leadership")
+        regular_stats, play_off_stats = self.get_stats()
+        leadership = self._get_stat_atribute_wrapper(
+            key="leadership", keep_list=False
+            )
         team_url = self._get_stat_atribute_wrapper(
-            key="url_team", keep_list=True, optional=False
+            key="url_team", keep_list=False, optional=False
             )
         dict_team[REGULAR_SEASON] = regular_stats
         dict_team[PLAY_OFF] = play_off_stats
@@ -625,7 +632,7 @@ class OneRowStat():
         return dict_team
     
 
-    def _get_stats(self):
+    def get_stats(self) -> tuple:
 
         pass
 
@@ -635,7 +642,7 @@ class OneRowStat():
 
         if league is not None:
             league_url = self._get_stat_atribute_wrapper(
-            key="url_league", keep_list=True, optional=False
+            key="url_league", keep_list=False, optional=False
             )
             logger.debug(f"League url extracted: {league_url}")
         else:
@@ -645,14 +652,14 @@ class OneRowStat():
 
 
     def _get_stat_atribute(
-            self, key: str, keep_list: bool=False,
+            self, key: str, sel: scrapy.Selector, keep_list: bool=False,
             optional: bool=True) -> list|str|int:
         """method for extracting one attribute from stat row (team, league, capitancy, season stats)
         """
 
         path_stat = self.path_to_row + OneRowStat.PATHS[key]
         stat_list = cf.get_list_xpath_values(
-            sel=self.default_selector,
+            sel=sel,
             xpath=path_stat,
             optional=optional
         )
@@ -669,7 +676,8 @@ class OneRowStat():
     
 
     def _get_stat_atribute_wrapper(
-            self, key: str, sel: scrapy.Selector, keep_list: bool=False, sel_key: str=None
+            self, key: str, keep_list: bool=False, sel_key: str=None, 
+            optional: bool=True
             ) -> list|str|int:
         """wrapper for method for extracting one attribute from stat row (team, league, capitancy, season stats)
             needed because structure of selectors differs between skaters and goalies
@@ -682,7 +690,12 @@ class OneRowSkaterStat(OneRowStat):
     """Child class containing methods specific to the scraping of skaters"""
     
 
-    def _get_stats(self) -> tuple:
+    def __init__(self, ind: int, selector: scrapy.Selector):
+        super().__init__(ind=ind)
+        self.selector = selector
+
+
+    def get_stats(self) -> tuple:
 
         play_off_stats = self._get_stat_atribute_wrapper(
             key="stats_playoff", keep_list=True
@@ -695,13 +708,14 @@ class OneRowSkaterStat(OneRowStat):
     
 
     def _get_stat_atribute_wrapper(
-            self, key: str, sel: scrapy.Selector, keep_list: bool=False
+            self, key: str,  keep_list: bool=False, optional: bool=True
             ) -> list|str|int:
         """wrapper for method for extracting one attribute from stat row (team, league, capitancy, season stats)
         """
 
-        sel = self.selectors
-        stat = self._get_stat_atribute(key=key, sel=sel, keep_list=keep_list)
+        stat = self._get_stat_atribute(
+            key=key, sel=self.selector, keep_list=keep_list, optional=optional
+            )
 
         return stat
     
@@ -711,7 +725,13 @@ class OneRowGoalieStat(OneRowStat):
     """
 
 
-    def _get_stats(self) -> tuple:
+    def __init__(self, ind: int, selectors: dict):
+        super().__init__(ind=ind)
+        self.selectors = selectors
+        self.default_selector = selectors['regular']
+
+
+    def get_stats(self) -> tuple:
 
         play_off_stats = self._get_stat_atribute_wrapper(
             key="stats_playoff", keep_list=True, sel_key="regular"
@@ -724,15 +744,18 @@ class OneRowGoalieStat(OneRowStat):
     
 
     def _get_stat_atribute_wrapper(
-            self, key: str, sel: scrapy.Selector, keep_list: bool=False, sel_key: str=None
+            self, key: str, keep_list: bool=False, sel_key: str=None,
+            optional: bool=True
             ) -> list|str|int:
         """wrapper for method for extracting one attribute from stat row (team, league, capitancy, season stats)
         """
 
         if sel_key is None:
-            sel_key = "regular"
+            sel_key = self.default_selector
         sel = self.selectors[sel_key]
-        stat = self._get_stat_atribute(key=key, sel=sel, keep_list=keep_list)
+        stat = self._get_stat_atribute(
+            key=key, sel=sel, keep_list=keep_list, optional=optional
+            )
 
         return stat
     
