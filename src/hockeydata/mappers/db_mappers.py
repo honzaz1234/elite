@@ -11,7 +11,7 @@ class GetDBID():
 
 
     def __init__(self, db_session):
-        self.query = dq.ParsedDbData(db_session=db_session)
+        self.query = dq.ParsedDBQuery(db_session=db_session)
 
 
     def get_player_id_team_season_mapper_dicts(
