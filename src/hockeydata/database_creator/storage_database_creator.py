@@ -134,24 +134,24 @@ class SkaterStats(Base, HtmlPreviewMixin):
 
     id = Column(Integer, primary_key=True)
     player_id = Column(Integer, ForeignKey('playerlogs.id'), nullable=False)
-    competetition_type = Column(String, nullable=False)
+    competition_type = Column(String, nullable=False)
     html_data = Column(LargeBinary, nullable=False)
 
 
     def __init__(
-            self, player_id: int, competetition_type: str, html_data: bytes):
+            self, player_id: int, competition_type: str, html_data: bytes):
         self.player_id = player_id
-        self.competetition_type = competetition_type
+        self.competition_type = competition_type
         self.html_data = html_data
 
 
     def __repr__(self):
         return (
-            "<SkaterStats(id=%s, player_id=%s, competetition_type=%s, "
+            "<SkaterStats(id=%s, player_id=%s, competition_type=%s, "
             "html_data=%s)>" % (
                 self.id, 
                 self.player_id, 
-                self.competetition_type, 
+                self.competition_type, 
              self.html_preview()
              )
         )
@@ -164,24 +164,24 @@ class GoalieStats(Base, HtmlPreviewMixin):
 
     id = Column(Integer, primary_key=True)
     player_id = Column(Integer, ForeignKey('playerlogs.id'), nullable=False)
-    competetition_type = Column(String, nullable=False)
+    competition_type = Column(String, nullable=False)
     season_type = Column(String, nullable=False)
     html_data = Column(LargeBinary, nullable=False)
 
 
     def __init__(
-            self, player_id: int, competetition_type: str, season_type: str, html_data: bytes):
+            self, player_id: int, competition_type: str, season_type: str, html_data: bytes):
         self.player_id = player_id
-        self.competetition_type = competetition_type
+        self.competition_type = competition_type
         self.season_type = season_type
         self.html_data = html_data
 
 
     def __repr__(self):
-        return "<GoalieStats(id=%s, player_id=%s, competetition_type=%s, season_type=%s, html_data=%s)>" % (
+        return "<GoalieStats(id=%s, player_id=%s, competition_type=%s, season_type=%s, html_data=%s)>" % (
             self.id,
             self.player_id,
-            self.competetition_type,
+            self.competition_type,
             self.season_type,
             self.html_preview(),
         )
