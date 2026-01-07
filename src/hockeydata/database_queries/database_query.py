@@ -6,12 +6,16 @@ from sqlalchemy.dialects import sqlite
 from sqlalchemy.orm import Session, Query
 
 from hockeydata.logger.logging_config import logger
-from hockeydata.entity_data.storage_db_getter.query_dict import QUERIES_INFO
+from database_queries.queries import QUERIES
+from database_queries.storage_queries import STORAGE_QUERIES
 from hockeydata.database_queries.string_db_mapper import MODEL_MAP
 
 
-class DbDataGetter():
+class DbData():
     
+
+    QUERIES = None
+
     
     def __init__(self, db_session: Session):
         self.db_session = db_session
@@ -118,3 +122,15 @@ class DbDataGetter():
     def _log_query(self, query):
         compiled_query = query.statement.compile(dialect=sqlite.dialect(), compile_kwargs={"literal_binds": True})
         logger.debug("Executed SQL: %s", str(compiled_query))
+
+
+class StorageDbData(DbData):
+
+
+    QUERIES = STORAGE_QUERIES
+
+
+class ParsedDbData(DbData):
+
+
+    QUERIES = QUERIES

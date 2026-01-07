@@ -3,7 +3,7 @@ import unicodedata
 from collections import Counter
 
 import hockeydata.database_creator.database_creator as db
-import hockeydata.database_queries.database_query as dq
+import database_queries.database_query as dq
 import hockeydata.mappers.team_mappers as team_map
 
 
@@ -11,7 +11,7 @@ class GetDBID():
 
 
     def __init__(self, db_session):
-        self.query = dq.DbDataGetter(db_session=db_session)
+        self.query = dq.ParsedDbData(db_session=db_session)
 
 
     def get_player_id_team_season_mapper_dicts(
