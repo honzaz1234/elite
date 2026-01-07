@@ -1,6 +1,6 @@
 import hockeydata.database_creator.database_creator as db
 import database_session.database_session as ds
-import hockeydata.database_queries.database_query as dq
+import database_queries.database_query as dq
 
 import unicodedata
 
@@ -21,13 +21,13 @@ DB_PATH = "./database/hockey_v15_test.db"
 session_o = ds.GetDatabaseSession(db_path=DB_PATH)
 session_o.set_up_connection()
 
-query_o = dq.DbDataGetter(db_session=session_o.session)
+query_o = dq.ParsedDBQuery(db_session=session_o.session)
 
 
 data = query_o.get_db_query_result("nhl_elite_names")
 name_dict = {tuple_[0]: tuple_[1] for tuple_ in data}
 
-query_o = dq.DbDataGetter(db_session=session_o.session)
+query_o = dq.ParsedDBQuery(db_session=session_o.session)
 
 data = query_o.get_db_query_result("nhl_elite_names")
 name_dict = {tuple_[0]: tuple_[1] for tuple_ in data}
