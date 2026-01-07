@@ -41,13 +41,18 @@ class LogInputter(HTMLInputter):
 
 
     def _input_log(self):
-        scrape_type_id = self.query._find_id_in_table(table=db.ScrapeType, scrape_type=self.scrape_type)
+        scrape_type_id = self.query._find_id_in_table(
+            table=db.ScrapeType, 
+            scrape_type=self.scrape_type
+            )
         self.player_id = self.insert_db._input_data(
             table=db.Scrape, 
             start_datetime=self.start_time,
             end_datetime=self.end_time,
             scrape_type_id=scrape_type_id
             )
+        #maybe delete later?
+        self.db_session.commit()
 
 
 class PlayerHTMLInputter(HTMLInputter):
@@ -76,7 +81,10 @@ class PlayerHTMLInputter(HTMLInputter):
         self._input_missing_data_logs()
         #to be deleted later
         self.db_session.commit()
-        logger.info('Data for player %s succesfully inputed into storage DB.', self.player_id)
+        logger.info(
+            'Data for player %s succesfully inputed into storage DB.', 
+            self.player_uid
+            )
     
 
     def _set_is_goalie(self) -> None:
@@ -168,7 +176,7 @@ class InputGoalieStatsHtml(InputStatsHtml):
                 self.insert_db._input_data(
                     table=db.GoalieStats, 
                     player_id=self.player_id,
-                    league_type=competition_type, 
+                    competition_type=competition_type, 
                     season_type=season_type, 
                     html_data=self.scraped_data[competition_type][season_type]
                     )
