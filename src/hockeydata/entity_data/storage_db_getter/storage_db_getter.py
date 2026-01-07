@@ -120,7 +120,7 @@ class BaseDataGetter(DataGetter):
 class HTMLDataGetter(DataGetter):
 
 
-    DB_QUERY = "storage_player_facts"
+    DB_QUERY = "player_facts"
 
 
     def __init__(
@@ -141,7 +141,7 @@ class HTMLDataGetter(DataGetter):
 class PlayerFactsGetter(HTMLDataGetter):
 
 
-    DB_QUERY = "storage_player_facts"
+    DB_QUERY = "player_facts"
 
 
     def _save_info(self, row: tuple) -> None:
@@ -152,7 +152,7 @@ class PlayerFactsGetter(HTMLDataGetter):
 class AchievementsGetter(HTMLDataGetter):
 
 
-    DB_QUERY = "storage_achievements"
+    DB_QUERY = "achievements"
 
 
     def _save_info(self, row: tuple) -> None:
@@ -163,7 +163,7 @@ class AchievementsGetter(HTMLDataGetter):
 class SkaterStatsGetter(HTMLDataGetter):
 
 
-    DB_QUERY = "storage_skater_stats"
+    DB_QUERY = "skater_stats"
 
 
     def _save_info(self, row: tuple) -> None:
@@ -174,7 +174,7 @@ class SkaterStatsGetter(HTMLDataGetter):
 class GoalieStatsGetter(HTMLDataGetter):
 
 
-    DB_QUERY = "storage_skater_stats"
+    DB_QUERY = "goalie_stats"
 
 
     def _save_info(self, row: tuple) -> None:

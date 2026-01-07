@@ -3,7 +3,7 @@ import hockeydata.database_creator.storage_database_creator as storage_db
 
 
 STORAGE_QUERIES = {
-    "storage_player_base_info": {
+    "player_base_info": {
         "base_table": storage_db.Scrape,
         "selected_cols": [
             storage_db.PlayerLog.player_uid,
@@ -25,7 +25,7 @@ STORAGE_QUERIES = {
         "filters": [
             ]
     },
-    "storage_player_facts": {
+    "player_facts": {
         "base_table": storage_db.Scrape,
         "selected_cols": [
             storage_db.PlayerLog.player_uid,
@@ -46,7 +46,7 @@ STORAGE_QUERIES = {
         "filters": [
             ]
     },
-    "storage_achievements": {
+    "achievements": {
         "base_table": storage_db.Scrape,
         "selected_cols": [
             storage_db.PlayerLog.player_uid,
@@ -67,7 +67,7 @@ STORAGE_QUERIES = {
         "filters": [
             ]
     },
-    "storage_skater_stats": {
+    "skater_stats": {
         "base_table": storage_db.Scrape,
         "selected_cols": [
             storage_db.PlayerLog.player_uid,
