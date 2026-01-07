@@ -11,7 +11,7 @@ from database_queries.storage_queries import STORAGE_QUERIES
 from hockeydata.database_queries.string_db_mapper import MODEL_MAP
 
 
-class DbData():
+class DBQuery():
     
 
     QUERIES = None
@@ -124,13 +124,13 @@ class DbData():
         logger.debug("Executed SQL: %s", str(compiled_query))
 
 
-class StorageDbData(DbData):
+class StorageDBQuery(DBQuery):
 
 
     QUERIES = STORAGE_QUERIES
 
 
-class ParsedDbData(DbData):
+class ParsedDBQuery(DBQuery):
 
 
     QUERIES = QUERIES

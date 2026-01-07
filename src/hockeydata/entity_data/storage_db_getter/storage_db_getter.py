@@ -1,5 +1,5 @@
 import hockeydata.database_creator.storage_database_creator as storage_db
-from database_queries.database_query import StorageDbData
+from database_queries.database_query import StorageDBQuery
 
 from sqlalchemy.orm import Session
 
@@ -10,7 +10,7 @@ class StorageDBDataGetter():
     def __init__(
             self, db_session: Session, scrape_ids: list, player_uids: list, is_goalie: bool):
         
-        self.db_query = StorageDbData(db_session=db_session)
+        self.db_query = StorageDBQuery(db_session=db_session)
         if is_goalie:
             self.data = {
                 uid: {
@@ -50,7 +50,7 @@ class StorageDBDataGetter():
             )
 
 
-        self.db_query = StorageDbData(db_session=db_session)
+        self.db_query = StorageDBQuery(db_session=db_session)
         self.facts_getter = PlayerFactsGetter(
             db_query=self.db_query, data=self.data, scrape_ids=scrape_ids, player_uids=player_uids
             )
@@ -74,7 +74,7 @@ class DataGetter():
     DB_QUERY = ""
 
 
-    def __init__(self, db_query: StorageDbData, filters: list, data: dict):
+    def __init__(self, db_query: StorageDBQuery, filters: list, data: dict):
             self.db_query = db_query
             self.filters = filters
             self.data = data
@@ -100,7 +100,7 @@ class BaseDataGetter(DataGetter):
     DB_QUERY = ""
 
 
-    def __init__(self, db_query: StorageDbData, data: dict):
+    def __init__(self, db_query: StorageDBQuery, data: dict):
         filters = [
                 db_query._get_list_filter(
                     table_column=storage_db.Scrape.id, 
@@ -124,7 +124,7 @@ class HTMLDataGetter(DataGetter):
 
 
     def __init__(
-            self, db_query: StorageDbData, data: dict, scrape_ids: list, player_uids: list):
+            self, db_query: StorageDBQuery, data: dict, scrape_ids: list, player_uids: list):
         filters = [
                 db_query._get_list_filter(
                     table_column=storage_db.Scrape.id, 
