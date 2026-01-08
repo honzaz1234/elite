@@ -1,5 +1,5 @@
 import hockeydata.database_creator.storage_database_creator as storage_db
-from database_queries.database_query import StorageDBQuery
+from hockeydata.database_queries.database_query import StorageDBQuery
 
 from sqlalchemy.orm import Session
 
@@ -45,12 +45,10 @@ class StorageDBDataGetter():
                 }
                 for uid in player_uids
             }
-        stats_getter = SkaterStatsGetter(
-                db_query=self.db_query, data=self.data, scrape_ids=scrape_ids, player_uids=player_uids
-            )
+            stats_getter = SkaterStatsGetter(
+                    db_query=self.db_query, data=self.data, scrape_ids=scrape_ids, player_uids=player_uids
+                )
 
-
-        self.db_query = StorageDBQuery(db_session=db_session)
         self.facts_getter = PlayerFactsGetter(
             db_query=self.db_query, data=self.data, scrape_ids=scrape_ids, player_uids=player_uids
             )
@@ -178,10 +176,8 @@ class GoalieStatsGetter(HTMLDataGetter):
 
 
     def _save_info(self, row: tuple) -> None:
-        player_uid, league_type, season_type, html_data = row
-        if league_type not in self.data[player_uid]:
-            self.data[player_uid] = {}
-        self.data[player_uid]['stats'][league_type][season_type] = html_data
+        player_uid, competition_type, season_type, html_data = row
+        self.data[player_uid]['stats'][competition_type][season_type] = html_data
 
 
 
