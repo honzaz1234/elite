@@ -1,4 +1,3 @@
-import hockeydata.database_creator.database_creator as db
 import hockeydata.database_creator.storage_database_creator as storage_db
 
 

@@ -1,8 +1,7 @@
 import hockeydata.database_creator.database_creator as db
-import hockeydata.database_creator.storage_database_creator as storage_db
 
 
-QUERIES = {
+PARSED_QUERIES = {
     "nhl_season_players": {
         "base_table": db.PlayerStats,
         "selected_cols": [
@@ -292,28 +291,5 @@ QUERIES = {
         "filters": [
             (db.Player.name.isnot(None))
         ]
-    },
-    "goalie_stats": {
-        "base_table": storage_db.Scrape,
-        "selected_cols": [
-            storage_db.PlayerLog.player_uid,
-            storage_db.GoalieStats.league_type,
-            storage_db.GoalieStats.season_type,
-            storage_db.GoalieStats.html_data,
-            ],
-        "joins": [
-            {
-                "table": storage_db.PlayerLog, 
-                "conn": storage_db.PlayerLog.scrape_id == storage_db.Scrape.id, 
-                "type": "inner"
-            },
-            {
-                "table": storage_db.GoalieStats, 
-                "conn": storage_db.GoalieStats.player_id == storage_db.PlayerLog.id, 
-                "type": "inner"
-            },
-        ],
-        "filters": [
-            ]
-    },
+    }
 }

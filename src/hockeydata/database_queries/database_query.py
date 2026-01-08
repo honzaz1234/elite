@@ -6,8 +6,8 @@ from sqlalchemy.dialects import sqlite
 from sqlalchemy.orm import Session, Query
 
 from hockeydata.logger.logging_config import logger
-from database_queries.queries import QUERIES
-from database_queries.storage_queries import STORAGE_QUERIES
+from hockeydata.database_queries.queries import PARSED_QUERIES
+from hockeydata.database_queries.storage_queries import STORAGE_QUERIES
 from hockeydata.database_queries.string_db_mapper import MODEL_MAP
 
 
@@ -25,7 +25,7 @@ class DBQuery():
             self, query_name: str, filters: list=None, distinct=False,
               query_file_path: str=None) -> list:
         if query_file_path is None:
-            query_info = QUERIES_INFO[query_name]
+            query_info = self.QUERIES[query_name]
         else:
             query_info = self._get_query_info_from_file(
                 file_path=query_file_path, query_name=query_name
@@ -133,4 +133,4 @@ class StorageDBQuery(DBQuery):
 class ParsedDBQuery(DBQuery):
 
 
-    QUERIES = QUERIES
+    QUERIES = PARSED_QUERIES
