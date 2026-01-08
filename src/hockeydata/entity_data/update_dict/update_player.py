@@ -465,7 +465,8 @@ class UpdatePlayerStats:
             TEAM_UID_REGEX, new_team_dict[TEAM_URL])[0]
         new_team_dict[TEAM_UID] = int(team_id)
         new_team_dict[LEADERSHIP] = self.update_leadership(
-                new_team_dict[LEADERSHIP])
+                new_team_dict[LEADERSHIP]
+                )
         for season_type in [REGULAR_SEASON, PLAY_OFF]:
             if season_type not in new_team_dict:
                 continue
