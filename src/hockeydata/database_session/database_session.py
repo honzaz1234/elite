@@ -86,14 +86,15 @@ class GetParseDBSession(GetDatabaseSession):
         self.start_session()
         are_seasons_filled = self.check_is_table_empty(table=self.db_source.Season)
         if are_seasons_filled==False:
-            self.add_data_to_season_table()
+            self.add_data_to_tables()
 
 
-    def add_data_to_season_table(self) -> None:
+    def add_data_to_tables(self) -> None:
         self.add_seasons_to_seasons_table()
         self.add_years_to_seasons_table()
      #   self.add_data_to_stadium_mapper_table()
       #  self.add_data_to_reference_tables()
+        self.add_data_to_status_type_table()
         self.session.commit()
         logger.debug("Season, Year, Stadium Mapper and Reference Table values"
                      "added to the db.")
@@ -120,7 +121,10 @@ class GetParseDBSession(GetDatabaseSession):
         stadium_mapper_insert = []
         for row in stadium_mapper:
             stadium_mapper_insert.append(row)
-        self.session.bulk_insert_mappings(self.db_source.StadiumMapper, stadium_mapper_insert)
+        self.session.bulk_insert_mappings(
+            self.db_source.StadiumMapper, 
+            stadium_mapper_insert
+            )
 
 
     def add_data_to_reference_tables(
@@ -137,7 +141,22 @@ class GetParseDBSession(GetDatabaseSession):
         for row in reference_table_mapper:
             reference_table_insert.append(row)
         self.session.bulk_insert_mappings(
-            self.db_source.StadiumMapper, reference_table_insert)
+            self.db_source.StadiumMapper, 
+            reference_table_insert
+            )
+        
+
+    def add_data_to_status_type_table(self) -> None:
+        status_types_insert  = [
+            "uid_insert", 
+            "complete_insert", 
+            "empty_update", 
+            "update"
+            ]
+        self.session.bulk_insert_mappings(
+            self.db_source.StatusType, 
+            status_types_insert
+            )
 
 
 class GetScrapeDBSession(GetDatabaseSession):

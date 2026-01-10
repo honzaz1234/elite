@@ -1633,6 +1633,45 @@ class FirstNameMapper(Base):
             )
     
 
+class InsertPlayerLog(Base):
+
+    __tablename__ = "insert_players_logs"
+
+    id = Column(Integer, primary_key=True)
+    player_uid = Column(Integer, nullable=False)
+    player_id = Column(Integer, nullable=False)
+    time = Column(DateTime, nullable=False)
+    status_type_id = Column(ForeignKey("status_types.id"), nullable=False)
+
+    def __init__(self, player_uid, player_id, time, status):
+        self.player_uid = player_uid
+        self.player_id = player_id
+        self.time = time
+        self.status = status
+
+    def __repr__(self):
+        return (
+            f"({self.id}, {self.player_uid}, {self.player_id}, {self.time}, "
+            f"{self.status})"
+            )
+    
+
+class StatusType(Base):
+
+    __tablename__ = "status_types"
+
+    id = Column(Integer, primary_key=True)
+    status_type = Column(String, nullable=False)
+
+    def __init__(self, status_type):
+        self.player_uid = status_type
+
+    def __repr__(self):
+        return (
+            f"({self.id}, {self.status_type})"
+            )
+    
+
 
     
 
