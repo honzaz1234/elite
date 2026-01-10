@@ -1,4 +1,5 @@
 import hockeydata.common_functions as cf
+import hockeydata.database_session.database_session as db_session
 import hockeydata.gamedata.input_dict.input_game_dict as input_game
 import hockeydata.gamedata.report_getter as report_getter
 import hockeydata.gamedata.update_dict.update_game as update_game
@@ -24,54 +25,43 @@ from hockeydata.decorators import repeat_request_until_success, time_execution
 from hockeydata.errors import GameDataError
 from hockeydata.logger.logging_config import logger
 from  hockeydata.database_creator.database_creator import *
-from hockeydata.database_session.database_session import GetDatabaseSession
+
+from typing import Literal
 
 
 
 class Manage():
 
 
-    DONE_FILE = None
-    LINK_FILE = None
     REGEX_UID = None
+    SCRAPE_MANAGER = None
+    PARSE_MANAGER = None
+    INPUT_MANAGER = None
+    SCRAPE_DICT = None 
+    UPDATE_DICT = None
+    INPUT_DICT = None
+    GETDBID = None
     TYPE = None
 
 
     def __init__(
-            self, session_o: GetDatabaseSession, done_folder_path: str, 
-            links_folder_path: str):
-        done_folder_path = done_folder_path + self.DONE_FILE
-        links_folder_path = links_folder_path + self.LINK_FILE
-        self.db_session = session_o.session
-        self.done_path = done_folder_path
-        self.url_list_path = links_folder_path
-        self.done_file = None
-        self.url_file = None
+            self, scrape_session: db_session.GetScrapeDBSession, 
+            parse_session: db_session.GetParseDBSession, uids):
+        self.scrape_session = scrape_session.session
+        self.parse_session = parse_session.session
         self.urls = None
         self.update_dict = None
         self.input_dict = None
-        self.scrape_id = session_o.create_scrape_table_entry(type_=self.TYPE)
+        self.scrape_id = None
 
 
     def set_up_management(self):
-        self._load_done_file()
+        self._load_uid_status_mapper()
         self._load_url_file()
         
 
-    def _load_done_file(self) -> None:
-        if not os.path.exists(self.done_path):
-            logger.info(
-                "Creating %s done file at path: %s", 
-                self.TYPE, self.done_path
-                )
-            self.done_file = self._create_done_file()
-        else:
-            logger.info(
-                "Opening %s  done file at path: %s", 
-                self.TYPE, self.done_path
-                )
-            with open(self.done_path) as f:
-                self.done_file = json.load(f)
+    def _load_uid_status_mapper(self) -> None:
+        self.uid_status_mapper =  self.GETDBID.get_parsed_data_statuses()
 
 
     def _create_done_file(self) -> None:
@@ -166,7 +156,7 @@ class Manage():
     def scrape_and_input_into_db(self, url: str) -> None:
             scraped_dict = self.scrape(url)
             updated_dict = (
-                self.update_dict
+                self.UPDATE_DICT
                 .update_dict(scraped_dict)
                 )
             self.input_dict.input_dict(dict=updated_dict)
@@ -181,30 +171,66 @@ class Manage():
         logger.info("Data %s saved to Google Drive.", self.TYPE)
 
 
+class ManageScrape():
+
+
+    TYPE = None
+    GETDBID = None
+
+
+    def __init__(self, scrape_session: db_session.GetScrapeDBSession, 
+                 urls: list=None):
+        self.scrape_session = scrape_session.session
+        self.scrape_id = None
+        self.uids = None
+        self.urls = None
+        self.scraped_uids = None
+
+
+    def set_up_scrape(self):
+        self._set_scrape_id()
+        self._load_scraped_uids()
+
+
+    def _set_scrape_id(self) -> None:
+        self.scrape_id = self.scrape_session.create_scrape_table_entry(
+            type_=self.TYPE
+            )
+
+
+    def _load_scraped_uids(self) -> None:
+        self.scraped_uids =  self.GETDBID.get_scraped_ids(
+            uids=self.uids
+            )
+
+
+    def get_uids_from_urls(self) -> None:
+
+
 class ManagePlayer(Manage):
 
 
-    DONE_FILE = "done_players.json"
-    LINK_FILE =  "players.json"
+    UPDATE_DICT = update_player.UpdatePlayer()
     REGEX_UID = "([0-9]+)"
     TYPE = "Player"
 
 
     def __init__(
             self, session_o: GetDatabaseSession, done_folder_path: str, 
-            links_folder_path: str):
+            links_folder_path: str, 
+            scope: Literal['insert', 'update', 'all']='all'):
         super().__init__(
             session_o=session_o, 
             done_folder_path=done_folder_path, links_folder_path=links_folder_path
             )
         self.playwright_session = ps.PlaywrightSetUp()
-        self.update_dict = update_player.UpdatePlayer()
         self.input_dict = input_player_dict.InputPlayerDict(
             db_session=self.db_session, scrape_id=self.scrape_id
             )
         self.get_urls = get_url.LeagueUrlDownload(
             page=self.playwright_session.page
             )
+        self.scope = scope
             
         
     def add_from_leagues_to_db(self, seasons_to_get: dict={}) -> None:
