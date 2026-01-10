@@ -111,4 +111,15 @@ STORAGE_QUERIES = {
         "filters": [
             ]
     },
+    "done_players": {
+        "base_table": storage_db.PlayerLog,
+        "selected_cols": [
+            storage_db.PlayerLog.player_uid,
+            ],
+        "joins": [
+        ],
+        "filters": [
+
+        ]
+    },
 }

@@ -291,5 +291,23 @@ PARSED_QUERIES = {
         "filters": [
             (db.Player.name.isnot(None))
         ]
-    }
+    },
+    "done_players": {
+        "base_table": db.InsertPlayerLog,
+        "selected_cols": [
+            db.InsertPlayerLog.player_uid,
+            db.StatusType.status_type,
+            db.InsertPlayerLog.time,
+            ],
+        "joins": [
+            {
+                "table": db.StatusType,
+                "conn": db.InsertPlayerLog.status_type_id == db.StatusType.id,
+                "type": "inner"
+            },
+        ],
+        "filters": [
+
+        ]
+    },
 }
