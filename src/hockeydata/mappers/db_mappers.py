@@ -1,3 +1,4 @@
+import pandas as pd
 import unicodedata
 
 from collections import Counter
@@ -12,6 +13,9 @@ class GetDBID():
 
     def __init__(self, db_session):
         self.query = dq.ParsedDBQuery(db_session=db_session)
+
+
+class GetGameDBID(GetDBID):
 
 
     def get_player_id_team_season_mapper_dicts(
@@ -52,8 +56,6 @@ class GetDBID():
         ascii_name = "".join(c for c in normalized if not unicodedata.combining(c))
 
         return ascii_name
-
-
 
 
     def get_all_player_season_data(
@@ -254,3 +256,49 @@ class GetDBID():
             table_mapper[type_name] = id
 
         return table_mapper
+    
+
+
+class GetEntityDBID(GetDBID):
+
+
+    PARSED_LOG_TABLE_UID_COL = None
+    SCRAPED_LOG_TABLE_UID_COL = None
+    DONE_QUERY_NAME = None
+
+
+    def get_parsed_data_statuses(self, uids: list=None) -> dict:
+        if uids is not None:
+            filter_ = self.PARSED_LOG_TABLE_UID_COL.in_(uids)
+        else:
+            filter_ = None
+        results = self.query.get_db_query_result(
+            query_name=self.DONE_QUERY_NAME,
+            filters=filter_
+            )
+        results_df = pd.DataFrame(results)
+        results_df.columns = ['uid', 'status', 'time']
+        results_df = results_df.sort_values(by="time", ascending=False)
+        results_df = results_df.drop_duplicates(subset=['uid'])
+
+        return dict(zip(results_df["uid"], results_df["status"]))
+    
+
+    def get_scraped_ids(self, uids: list=None) -> set:
+        if uids is not None:
+            filter_ = self.SCRAPED_LOG_TABLE_UID_COL.in_(uids)
+        else:
+            filter_ = None
+        results = self.query.get_db_query_result(
+            query_name=self.DONE_QUERY_NAME,
+            filters=filter_
+            )
+        
+        return set([t[0] for t in results])
+
+
+class GetPlayerDBID(GetEntityDBID):
+
+
+    LOG_TABLE_UID_COL = db.InsertPlayerLog.player_uid
+    DONE_QUERY_NAME = "players_done"
