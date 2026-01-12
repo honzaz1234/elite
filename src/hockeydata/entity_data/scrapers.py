@@ -177,7 +177,9 @@ class GoalieScraper(PlayerScraper):
     def _get_table_stats_wrapper(self, path_type: str) -> dict|None:
         path = self.PATHS[path_type]
         data_present = cf.check_data_presence(
-            self.page, path, path_type,
+            self.page, 
+            path, 
+            path_type,
             self.missing_data
             )
         if not data_present:
@@ -223,7 +225,8 @@ class GoalieScraper(PlayerScraper):
         self.page.keyboard.type(self.TYPE[season_type])
         self.page.keyboard.press("Enter")
         self.page.wait_for_selector(
-            self.GOALIE_PATHS["title_check"], timeout=10000
+            self.GOALIE_PATHS["title_check"], 
+            timeout=10000
             )
 
 
