@@ -28,15 +28,18 @@ class DBQuery():
             query_info = self.QUERIES[query_name]
         else:
             query_info = self._get_query_info_from_file(
-                file_path=query_file_path, query_name=query_name
+                file_path=query_file_path, 
+                query_name=query_name
                 )
         for type_ in ["joins", "filters"]:
             if type_ not in query_info:
                 query_info[type_] = None
-        query = self._get_db_query(base_table=query_info["base_table"],
-                                 selected_cols=query_info["selected_cols"],
-                                 joins=query_info["joins"],
-                                 filters=query_info["filters"])
+        query = self._get_db_query(
+            base_table=query_info["base_table"],
+            selected_cols=query_info["selected_cols"],
+            joins=query_info["joins"],
+            filters=query_info["filters"]
+            )
         if filters:
             for f in filters:
                 query = query.filter(f)
