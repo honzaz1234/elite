@@ -1,3 +1,4 @@
+from xml.dom.minidom import parseString
 import hockeydata.common_functions as cf
 import hockeydata.database_session.database_session as db_session
 import hockeydata.gamedata.input_dict.input_game_dict as input_game
@@ -5,7 +6,7 @@ import hockeydata.gamedata.report_getter as report_getter
 import hockeydata.gamedata.update_dict.update_game as update_game
 import hockeydata.google_tools as google
 import hockeydata.entity_data.scraper.league_scraper as league_scraper
-import hockeydata.entity_data.scraper.player_scraper as player_scraper
+import hockeydata.entity_data.scrapers as scraper
 import hockeydata.entity_data.scraper.team_scraper as team_scraper
 import hockeydata.entity_data.get_urls.get_urls as get_url
 import hockeydata.entity_data.update_dict.update_league as update_league
@@ -62,19 +63,6 @@ class Manage():
 
     def _load_uid_status_mapper(self) -> None:
         self.uid_status_mapper =  self.GETDBID.get_parsed_data_statuses()
-
-
-    def _create_done_file(self) -> None:
-        logger.info(
-            "Creating %s done file at path: %s", 
-            self.TYPE, self.done_path
-            )
-        self.done_file = []
-        self._save_done_file()
-        logger.info(
-            "%s done file at path: %s created.", 
-            self.TYPE, self.done_path
-            )
 
 
     def _save_done_file(self) -> None:
@@ -174,37 +162,99 @@ class Manage():
 class ManageScrape():
 
 
-    TYPE = None
     GETDBID = None
+    REGEX_UID = None
+    TYPE = None
 
 
     def __init__(self, scrape_session: db_session.GetScrapeDBSession, 
-                 urls: list=None):
+                 urls: list=None, rescrape: bool=False):
         self.scrape_session = scrape_session.session
         self.scrape_id = None
-        self.uids = None
+        self.uids = dict()
         self.urls = None
         self.scraped_uids = None
+        self.rescrape = rescrape
+        self.scrape_log = list()
 
 
-    def set_up_scrape(self):
+    def set_up_scrape(self) -> None:
+        logger.info("Setting up scrape...")
         self._set_scrape_id()
-        self._load_scraped_uids()
+        self._get_uids_from_urls()
+        if self.rescrape:
+            logger.info(
+                "self.rescrape set to True, already scraped data will"
+                " be rescraped."
+                )
+            self._load_scraped_uids()
+            self._filter_out_new_uids()
+        else:
+            logger.info(
+                "self.rescrape set to False, already scraped data will"
+                "not  be rescraped."
+                )
+        logger.info("Scrape set up.")
+
+
+    def scrape_data(self) -> None:
+        for uid in self.uids:
+            try:
+                self.scrape_entity_data(url=self.uids[uid])
+                self.scrape_log.append({"uid": uid})
+            #add custom exception
+            except Exception as e:
+                error_message = (
+                    "Scraped failed for uid %s: %s",
+                    uid, e
+                )
+                self.session.bulk_insert_mappings(
+                    self.db_source.Season, self.scrape_log
+                    )
+                cf.log_and_raise(error_message, Exception)
+
+
+    def scrape_entity_data(self, url: str) -> None:
+        pass
+
 
 
     def _set_scrape_id(self) -> None:
         self.scrape_id = self.scrape_session.create_scrape_table_entry(
             type_=self.TYPE
             )
-
+        logger.info("Starting scrape n. %s...", self.scrape_id)
 
     def _load_scraped_uids(self) -> None:
         self.scraped_uids =  self.GETDBID.get_scraped_ids(
             uids=self.uids
             )
+        logger.info("%s scraped UIDs loaded. ", len(self.scraped_uids))
 
 
-    def get_uids_from_urls(self) -> None:
+    def _get_uids_from_urls(self) -> dict:
+        for url in self.urls:
+            try:
+                uid = re.findall(self.REGEX_UID, url)[0]
+                self.uids[uid] = url
+            #add exception
+            except Exception as e:
+                error_message = (
+                    f"URL is in a wrong format: {url}"       
+                )
+                cf.log_and_raise(error_message, ValueError)
+        logger.info("%s UIDs extracted from URLs.", len(self.urls))
+
+
+    def _filter_out_new_uids(self) -> None:
+        keep_uids = list(set(self.uids.keys()) - set(self.scraped_uids))
+        self.uids = {
+            uid: url 
+            for uid, url in self.uids.items() 
+            if uid in keep_uids
+            }
+        logger.info("UIDs for already scraped players filtered out. %s UIDs "
+                    " left to scrape.", len(self.uids))
 
 
 class ManagePlayer(Manage):
