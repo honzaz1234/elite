@@ -27,11 +27,13 @@ class PlaywrightSetUp():
         self.blocked_list = []
         self.initiate_sync_playwright()
 
+
     def initiate_sync_playwright(self):
         self.p = sync_api.sync_playwright().start()
         self.browser = self.p.chromium.launch(headless=False)
         self.page = self.browser.new_page()
         self.page.route("**/*", self.intercept_requests)
+
 
     def intercept_requests(self, route, request):
         if request.resource_type in PlaywrightSetUp.FORBIDDEN_TYPES:
