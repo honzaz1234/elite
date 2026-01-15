@@ -1,7 +1,9 @@
 import re
 import scrapy
 
+from abc import ABC, abstractmethod
 from playwright.sync_api import Page
+from typing import Any, Optional
 
 import hockeydata.common_functions as cf
 import hockeydata.entity_data.playwright_setup.playwright_setup as ps
@@ -10,14 +12,24 @@ from hockeydata.constants import PLAYER_UID_REGEX
 from hockeydata.logger.logging_config import logger
 
 
-class PlaywrightScraper:
+class PlaywrightScraper(ABC):
     """Parent Class for downloading information from individual dynamic
        webpages;
        includes one method which wraps around methods from classes for downloading specific types (Players, Teams and Leagues)
     """
 
 
-    PATHS = None
+    @property
+    @classmethod
+    @abstractmethod
+    def CHECK_ARRIVAL_XPATH_KEY(cls):
+        pass
+
+    @property
+    @classmethod
+    @abstractmethod
+    def PATHS(cls):
+        pass
 
 
     def __init__(self, url: str, page: Page):
@@ -30,12 +42,18 @@ class PlaywrightScraper:
 
         self.url = url
         self.page = page
-        self.scraped_data = {}
-        self.missing_data = []   
+        self.scraped_data = {}  
 
 
-    def get_data(self, **kwargs) -> dict:
-        pass
+    def go_to_page(self):
+        ps.go_to_page_wait_selector(
+            page=self.page, url=self.url,
+            sel_wait=self.PATHS[self.CHECK_ARRIVAL_XPATH_KEY]
+            )
+        ps.click_optional_button(
+            page=self.page, sel_click=self.PATHS["accept_cookies"],
+            button_type="Accept Cookies", wait_time=5000
+            )
 
 
     def _scrape_data(self, xpath_name: str) -> str|None:
@@ -44,7 +62,7 @@ class PlaywrightScraper:
             self.PATHS[xpath_name]
             )  
         if not scraped_data:
-            self.missing_data.append(xpath_name)
+            self.scraped_data['missing_data'].append(xpath_name)
             logger.info(
                 "Data type %s not present on the player page.", xpath_name
                 )
@@ -53,6 +71,11 @@ class PlaywrightScraper:
             logger.info("Data type %s succesfully scraped.", xpath_name) 
 
             return scraped_data.get().encode("utf-8")
+        
+    
+    @abstractmethod
+    def get_data(self) -> dict:
+        pass
 
 
 class PlayerScraper(PlaywrightScraper):
@@ -65,6 +88,9 @@ class PlayerScraper(PlaywrightScraper):
     """
 
 
+    CHECK_ARRIVAL_XPATH_KEY = "player_facts"
+    
+    
     PATHS = {
         "achievements": "//section[@id='career-highlights']",
         "accept_cookies": "//button[contains(., 'AGREE')]",
@@ -77,16 +103,16 @@ class PlayerScraper(PlaywrightScraper):
                            "and not(contains(., 'No Data Found'))]",
     }
 
-
-    def go_to_page(self):
-        ps.go_to_page_wait_selector(
-            page=self.page, url=self.url,
-            sel_wait=self.PATHS["player_facts"]
-            )
-        ps.click_optional_button(
-            page=self.page, sel_click=self.PATHS["accept_cookies"],
-            button_type="Accept Cookies", wait_time=5000
-            )
+    def __init__(self, url: str, page: Page):
+        super().__init__(url=url, page=page)
+        self.scraped_data: dict[str, Optional[Any]] = {
+                "player_uid": None,
+                "player_type": None,
+                "player_facts": None,
+                "achievements": None,
+                "stats": None,
+                "missing_data": []
+            }
 
 
     def get_data(self):
@@ -112,8 +138,9 @@ class PlayerScraper(PlaywrightScraper):
             'Scraping of new player info at web adress: %s '
             'finished', self.url
             )
-        
 
+
+    @abstractmethod
     def _get_player_stats(self):
         pass
 
@@ -180,7 +207,7 @@ class GoalieScraper(PlayerScraper):
             self.page, 
             path, 
             path_type,
-            self.missing_data
+            self.scraped_data['missing_data']
             )
         if not data_present:
             logger.info(
