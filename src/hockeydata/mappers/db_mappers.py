@@ -295,6 +295,11 @@ class GetEntityDBID(GetDBID):
             )
         
         return set([t[0] for t in results])
+    
+
+    def input_scraped_uids(self, uids: list) -> None:
+        pass
+        
 
 
 class GetPlayerDBID(GetEntityDBID):
