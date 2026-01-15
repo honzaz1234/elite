@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from datetime import datetime
 from sqlalchemy.orm import Session
 
@@ -7,7 +8,7 @@ from hockeydata.database_insert.db_insert import DatabaseMethods, Query
 from hockeydata.logger.logging_config import logger
 
 
-class HTMLInputter():
+class HTMLInputter(ABC):
     """Parent class for handling inputting downloaded html files into storage  
        DB
     """
@@ -19,6 +20,7 @@ class HTMLInputter():
         self.scrape_id = scrape_id
 
 
+    @abstractmethod
     def input_data(self) -> None:
         pass
 
@@ -40,7 +42,7 @@ class LogInputter(HTMLInputter):
         self.scrape_type = scrape_type
 
 
-    def _input_log(self):
+    def input_data(self):
         scrape_type_id = self.query._find_id_in_table(
             table=db.ScrapeType, 
             scrape_type=self.scrape_type
@@ -79,7 +81,6 @@ class PlayerHTMLInputter(HTMLInputter):
         self._input_achievements_html()
         self._input_stats_htmls()
         self._input_missing_data_logs()
-        #to be deleted later
         self.db_session.commit()
         logger.info(
             'Data for player %s succesfully inputed into storage DB.', 
@@ -105,22 +106,26 @@ class PlayerHTMLInputter(HTMLInputter):
 
     def _input_player_log(self):
         self.player_id = self.insert_db._input_data(
-            table=db.PlayerLog, player_uid=self.player_uid,
+            table=db.PlayerLog, 
+            player_uid=self.player_uid,
             is_goalie=self.is_goalie,
-            scrape_id=self.scrape_id
+            scrape_id=self.scrape_id,
+            time_scraped=self.scraped_data['time_scraped']
             )
 
 
     def _input_player_facts_html(self) -> None:
         self.insert_db._input_data(
-            table=db.PlayerFacts, player_id=self.player_id,
+            table=db.PlayerFacts, 
+            player_id=self.player_id,
             html_data=self.scraped_data["player_facts"]
             )
         
 
     def _input_achievements_html(self) -> None:
         self.insert_db._input_data(
-            table=db.Achievements, player_id=self.player_id,
+            table=db.Achievements, 
+            player_id=self.player_id,
             html_data=self.scraped_data["achievements"]
             )
         
@@ -161,6 +166,7 @@ class InputStatsHtml():
         self.player_id = player_id
 
 
+    @abstractmethod
     def _input_data(self) -> None:
         pass
 
