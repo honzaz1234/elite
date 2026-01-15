@@ -100,7 +100,12 @@ class PlayerLog(Base):
     player_uid = Column(Integer, nullable=False)
     scrape_id = Column(Integer, ForeignKey('scrapes.id'), nullable=False)
     is_goalie = Column(Boolean, nullable=False)
-    time = Column(DateTime, default=lambda: datetime.now(), nullable=False)
+    time_scraped = Column(DateTime, nullable=False)
+    time_inserted = Column(
+        DateTime, 
+        default=lambda: datetime.now(), 
+        nullable=False
+        )
 
 
     __table_args__ = (
@@ -108,21 +113,25 @@ class PlayerLog(Base):
     )
 
 
-    def __init__(self, player_uid: int, scrape_id: int, is_goalie: bool):
+    def __init__(
+            self, player_uid: int, scrape_id: int, is_goalie: bool, time_scraped: datetime):
         self.player_uid = player_uid
         self.scrape_id = scrape_id
         self.is_goalie = is_goalie
+        self.time_scraped = time_scraped
+        self.time_inserted = None
 
 
     def __repr__(self):
         return (
             "<Player(id=%s, player_uid='%s', scrape_id='%s', is_goalie=%s, "
-            "time=%s)>"  % (
+            "time_scraped=%s, time_inserted=%s)>" % (
                 self.id, 
                 self.player_uid, 
                 self.scrape_id, 
                 self.is_goalie, 
-                self.time
+                self.time_scraped,
+                self.time_inserted
                 )
         )
     
