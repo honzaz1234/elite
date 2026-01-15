@@ -1,12 +1,19 @@
-from xml.dom.minidom import parseString
+import math
+import multiprocessing 
+
+
+from abc import ABC, abstractmethod
+from datetime import datetime
+from __future__ import annotations
+from typing import Any, Generator, Optional, Literal
+
+
 import hockeydata.common_functions as cf
-import hockeydata.database_session.database_session as db_session
 import hockeydata.gamedata.input_dict.input_game_dict as input_game
 import hockeydata.gamedata.report_getter as report_getter
 import hockeydata.gamedata.update_dict.update_game as update_game
 import hockeydata.google_tools as google
 import hockeydata.entity_data.scraper.league_scraper as league_scraper
-import hockeydata.entity_data.scrapers as scraper
 import hockeydata.entity_data.scraper.team_scraper as team_scraper
 import hockeydata.entity_data.get_urls.get_urls as get_url
 import hockeydata.entity_data.update_dict.update_league as update_league
@@ -21,14 +28,15 @@ import json
 import os
 import re
 
+
 from hockeydata.constants import *
+from hockeydata.database_creator.database_creator import *
+from hockeydata.database_session.database_session import GetParseDBSession, GetScrapeDBSession
 from hockeydata.decorators import repeat_request_until_success, time_execution
+from hockeydata.entity_data.input_html import HTMLInputter, LogInputter, PlayerHTMLInputter
+from hockeydata.entity_data.scrapers import PlayerScraper, PlaywrightScraper
 from hockeydata.errors import GameDataError
 from hockeydata.logger.logging_config import logger
-from  hockeydata.database_creator.database_creator import *
-
-from typing import Literal
-
 
 
 class Manage():
@@ -46,14 +54,13 @@ class Manage():
 
 
     def __init__(
-            self, scrape_session: db_session.GetScrapeDBSession, 
-            parse_session: db_session.GetParseDBSession, uids):
-        self.scrape_session = scrape_session.session
+            self, parse_session: GetParseDBSession):
         self.parse_session = parse_session.session
         self.urls = None
         self.update_dict = None
         self.input_dict = None
         self.scrape_id = None
+        self.uid_status_mapper = None
 
 
     def set_up_management(self):
@@ -159,80 +166,134 @@ class Manage():
         logger.info("Data %s saved to Google Drive.", self.TYPE)
 
 
-class ManageScrape():
+def scrape_worker(
+        args: tuple[str, dict[int, str], type[ScraperManager]]) -> list[Any]:
+    db_path, url_mapper, scraper_class  = args
+
+    scraper_manager = scraper_class(
+        db_path=db_path,
+        url_mapper=url_mapper
+    )
+    scraper_manager.initiate_playwright_session()
+    scraped_data = scraper_manager.scrape_data()
+
+    return scraped_data
 
 
-    GETDBID = None
-    REGEX_UID = None
-    TYPE = None
+class ScraperManager(ABC):
 
 
-    def __init__(self, scrape_session: db_session.GetScrapeDBSession, 
-                 urls: list=None, rescrape: bool=False):
-        self.scrape_session = scrape_session.session
-        self.scrape_id = None
-        self.uids = dict()
-        self.urls = None
-        self.scraped_uids = None
-        self.rescrape = rescrape
-        self.scrape_log = list()
+    @property
+    @classmethod
+    @abstractmethod
+    def SCRAPE_CLASS(cls) -> type[PlaywrightScraper]:
+        pass
 
 
-    def set_up_scrape(self) -> None:
-        logger.info("Setting up scrape...")
-        self._set_scrape_id()
-        self._get_uids_from_urls()
-        if self.rescrape:
-            logger.info(
-                "self.rescrape set to True, already scraped data will"
-                " be rescraped."
-                )
-            self._load_scraped_uids()
-            self._filter_out_new_uids()
-        else:
-            logger.info(
-                "self.rescrape set to False, already scraped data will"
-                "not  be rescraped."
-                )
-        logger.info("Scrape set up.")
+    def __init__(self, db_path: str, url_mapper: dict[str]=None):
+        self.db_path = db_path
+        playwright_session = ps.PlaywrightSetUp()
+        self.page = playwright_session.page
+        self.url_mapper = url_mapper
 
 
-    def scrape_data(self) -> None:
-        for uid in self.uids:
+    def initiate_playwright_session(self) -> None:
+        playwright = ps.PlaywrightSetUp()
+        self.page = playwright.page
+        logger.debug("Playwright session succesfully initiated.")
+
+
+    def scrape_data(self) -> list[dict]:
+        scraped_entities = []
+        for uid in self.url_mapper:
             try:
-                self.scrape_entity_data(url=self.uids[uid])
-                self.scrape_log.append({"uid": uid})
+                scraped_entity = self.scrape_entity_data(
+                    url=self.url_mapper[uid]
+                    )
             #add custom exception
             except Exception as e:
                 error_message = (
                     "Scraped failed for uid %s: %s",
                     uid, e
                 )
-                self.session.bulk_insert_mappings(
-                    self.db_source.Season, self.scrape_log
-                    )
+            #    self.session.bulk_insert_mappings(
+            #        self.db_source.Season, self.scrape_log
+            #        )
                 cf.log_and_raise(error_message, Exception)
+            scraped_entities.append(scraped_entity)
+        
+        return scraped_entities
 
 
-    def scrape_entity_data(self, url: str) -> None:
+    @abstractmethod
+    def scrape_entity_data(self, url: str) -> dict:
+        scraper = self.SCRAPE_CLASS(url=url, page=self.page)
+        scraper.get_data()
+
+        return scraper.scraped_data
+
+
+class PlayerScraperManager(ScraperManager):
+
+
+    SCRAPE_CLASS = PlayerScraper
+
+
+class MultiScrapeManager(ABC):
+
+
+    @property
+    @classmethod
+    @abstractmethod
+    def REGEX_UID(cls):
+        pass
+
+    @property
+    @classmethod
+    @abstractmethod
+    def SCRAPER_MANAGER(cls) -> type[ScraperManager]:
         pass
 
 
+    def __init__(self, db_path: str, max_workers: int=4, urls: list=None,
+                rescrape: bool=False):
+        self.db_path = db_path
+        self.max_workers = max_workers
+        self.urls = urls
+        self.uids: dict[int, str]=dict()
+        self.rescrape = rescrape
+        self.chunk_size = None
+        self._set_chunk_size()
+        self.start_time = None
+        self.end_time = None
 
-    def _set_scrape_id(self) -> None:
-        self.scrape_id = self.scrape_session.create_scrape_table_entry(
-            type_=self.TYPE
+            
+    def set_up_manager(self):
+        self._get_uid_to_url_mapper()
+        if self.rescrape:
+            logger.info(
+                "self.rescrape set to True, already scraped data will"
+                " be rescraped."
+                )
+        else:
+            self._load_scraped_uids()
+            self._filter_out_new_uids()
+            logger.info(
+                "self.rescrape set to False, already scraped data will"
+                "not  be rescraped."
+                )
+        logger.debug("Scrape set up.")
+
+    def _set_chunk_size(self) -> None:
+        self.chunk_size = math.ceil(len(self.urls) / self.max_workers)
+        logger.info(
+            'Scrape will be divided between %s chunks of size %s', 
+            self.max_workers,
+            self.chunk_size
             )
-        logger.info("Starting scrape n. %s...", self.scrape_id)
-
-    def _load_scraped_uids(self) -> None:
-        self.scraped_uids =  self.GETDBID.get_scraped_ids(
-            uids=self.uids
-            )
-        logger.info("%s scraped UIDs loaded. ", len(self.scraped_uids))
 
 
-    def _get_uids_from_urls(self) -> dict:
+    def _get_uid_to_url_mapper(self) -> dict:
         for url in self.urls:
             try:
                 uid = re.findall(self.REGEX_UID, url)[0]
@@ -244,6 +305,14 @@ class ManageScrape():
                 )
                 cf.log_and_raise(error_message, ValueError)
         logger.info("%s UIDs extracted from URLs.", len(self.urls))
+    
+
+    def _load_scraped_uids(self) -> None:
+        session = db_mapper.GetEntityDBID(db_path=self.db_path)
+        self.scraped_uids =  session.get_scraped_ids(
+            uids=self.uids
+            )
+        logger.info("%s scraped UIDs loaded. ", len(self.scraped_uids))
 
 
     def _filter_out_new_uids(self) -> None:
@@ -255,6 +324,163 @@ class ManageScrape():
             }
         logger.info("UIDs for already scraped players filtered out. %s UIDs "
                     " left to scrape.", len(self.uids))
+
+
+    def scrape_data_with_multiple_processes(self) -> list:
+        self._set_start_time()
+        mapper_chunks = list(self._chunk_uids())
+        args = [
+            (self.db_path, mapper_chunk, self.SCRAPER_MANAGER)
+            for mapper_chunk in mapper_chunks
+        ]
+
+        with multiprocessing.Pool(processes=self.max_workers) as pool:
+            scraped_entities_nested = pool.map(scrape_worker, args)
+        self._set_end_time()
+        scraped_entities = [
+            entity for sublist in scraped_entities_nested 
+            for entity in sublist
+            ]
+
+        return scraped_entities
+    
+
+    def _set_start_time(self) -> None:
+        self.start_time = datetime.now()
+        logger.debug("Scrape started at %s", self.start_time)
+
+
+    def _set_end_time(self) -> None:
+        self.end_time = datetime.now()
+        logger.debug("Scrape ended at %s", self.end_time)
+    
+
+    def _chunk_uids(self) -> Generator[dict[str, int], None, None]:
+        keys = list(self.uids.keys())
+        for i in range(0, len(keys), self.chunk_size):
+            chunk_keys = keys[i:i + self.chunk_size]
+            yield {k: self.uids[k] for k in chunk_keys}
+
+
+class MultiScrapeManager(ABC):
+
+
+    REGEX_UID = "([0-9]+)"
+    SCRAPER_MANAGER = ScraperManager
+
+
+class ScrapeInsertManager(ABC):
+
+
+    @property
+    @classmethod
+    @abstractmethod
+    def INSERT_CLASS(cls) -> type[HTMLInputter]:
+        pass
+
+
+    @property
+    @classmethod
+    @abstractmethod
+    def TYPE(cls):
+        pass
+
+
+    def __init__(
+            self, db_path: str, data: list[dict], start_time: datetime, end_time: datetime):
+        self.db_path =  db_path
+        self.data = data
+        self.scrape_session: Optional[GetScrapeDBSession] = None
+        self.scrape_id: Optional[int] = None
+        self.data_inserter = self.INSERT_CLASS(data=data)
+        self.start_time = start_time
+        self.end_time = end_time
+
+
+    def initiate_db_session(self) -> None:
+        get_session = GetScrapeDBSession(db_path=self.db_path)
+        self.scrape_session = get_session.session
+        logger.debug(
+            "DB session at path %s succesfully initiated.", 
+            self.db_path
+            )
+
+
+    def _set_scrape_id(self) -> None:
+        self.scrape_id = self.scrape_session.create_scrape_table_entry(
+            type_=self.TYPE
+            )
+        logger.info("Starting scrape n. %s...", self.scrape_id)
+
+
+    def input_data(self) -> None:
+        self._set_scrape_id()
+        self._input_all_data()
+
+
+    def _input_all_data(self) -> None:
+        for entity_dict in self.data:
+            data_inserter = self.INSERT_CLASS(data=entity_dict)
+            data_inserter.input_data()
+
+
+    def input_log(self) -> None:
+        log_inputter = LogInputter(
+            db_session=self.scrape_session,
+            scrape_id=self.scrape_id,
+            start_time=self.start_time,
+            end_time=self.end_time,
+            scrape_type=self.TYPE
+        )
+        log_inputter.input_data()
+
+
+class PlayerScrapeInsertManager(ScrapeInsertManager):
+
+
+    INSERT_CLASS = PlayerHTMLInputter
+    TYPE = "player"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class ManagePlayer(Manage):
