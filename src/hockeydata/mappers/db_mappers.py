@@ -8,14 +8,14 @@ import database_queries.database_query as dq
 import hockeydata.mappers.team_mappers as team_map
 
 
-class GetDBID():
+class GetDBMapper():
 
 
     def __init__(self, db_session):
         self.query = dq.ParsedDBQuery(db_session=db_session)
 
 
-class GetGameDBID(GetDBID):
+class GetGameDBMapper(GetDBMapper):
 
 
     def get_player_id_team_season_mapper_dicts(
@@ -60,10 +60,9 @@ class GetGameDBID(GetDBID):
 
     def get_all_player_season_data(
             self, selected_seasons: list) -> dict:
-        seasons_filter = [self.query._get_list_filter(
-            table_column=db.Season.season,
-            values=selected_seasons
-            )]                                      
+        seasons_filter = [
+            db.Season.season.in_(selected_seasons)
+            ]                                      
         player_results = self.query.get_db_query_result(
             query_name="nhl_season_players", 
             filters=seasons_filter,
@@ -151,10 +150,9 @@ class GetGameDBID(GetDBID):
     def get_nhl_elite_mapper(
             self, selected_seasons: list=None) -> dict:
         if selected_seasons:
-            seasons_filter = [self.query._get_list_filter(
-                table_column=db.Season.season,
-                values=selected_seasons
-                )]
+            seasons_filter = [
+                db.Season.season.in_(selected_seasons)
+                ]
         else:
               seasons_filter = None                                    
         results = self.query.get_db_query_result(
@@ -259,7 +257,7 @@ class GetGameDBID(GetDBID):
     
 
 
-class GetEntityDBID(GetDBID):
+class GetEntityDBMapper(GetDBMapper):
 
 
     PARSED_LOG_TABLE_UID_COL = None
@@ -284,7 +282,7 @@ class GetEntityDBID(GetDBID):
         return dict(zip(results_df["uid"], results_df["status"]))
     
 
-    def get_scraped_ids(self, uids: list=None) -> set:
+    def get_scraped_uids(self, uids: list=None) -> set:
         if uids is not None:
             filter_ = self.SCRAPED_LOG_TABLE_UID_COL.in_(uids)
         else:
@@ -302,7 +300,7 @@ class GetEntityDBID(GetDBID):
         
 
 
-class GetPlayerDBID(GetEntityDBID):
+class GetPlayerDBMapper(GetEntityDBMapper):
 
 
     LOG_TABLE_UID_COL = db.InsertPlayerLog.player_uid
