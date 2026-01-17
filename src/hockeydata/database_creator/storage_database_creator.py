@@ -2,7 +2,6 @@ from sqlalchemy import Boolean, Column, Integer, LargeBinary, String, DateTime, 
 from sqlalchemy.orm import declarative_base
 from datetime import datetime
 
-
 Base = declarative_base()
 
 
@@ -65,29 +64,27 @@ class ScrapeType(Base):
 
 class PlayerURL(Base):
 
+
     __tablename__ = 'player_urls'
 
 
     id = Column(Integer, primary_key=True)
-    player_url = Column(String, nullable=False)
-    player_uid = Column(Integer, nullable=False)
+    url = Column(String, nullable=False, unique=True)
+    scrape_id = Column(Integer, ForeignKey('scrapes.id'), nullable=False)
+    season_id = Column(Integer, ForeignKey('seasons.id'), nullable=False)
+    league_id = Column(Integer, ForeignKey('league_infos.id'), nullable=False)
 
 
-    __table_args__ = (
-        UniqueConstraint('player_url', 'player_uid', name='uq_player_urls_all_columns'),
-    )
-
-
-    def __init__(self, player_url: str, player_uid: int):
-        self.player_url = player_url
-        self.player_uid = player_uid
+    def __init__(self, url: str, scrape_id: int):
+        self.url = url
+        self.scrape_id = scrape_id
 
 
     def __repr__(self):
-        return "<PlayerURL(id=%s, player_uid=%s, url='%s')>" % (
+        return "<PlayerURL(id=%s, url='%s', scrape_id='%s')>" % (
             self.id, 
-            self.player_uid, 
-            self.player_url
+            self.url,
+            self.scrape_id
         )
     
 
@@ -273,3 +270,50 @@ class PlayerMissingDataLog(Base):
             self.data_type
         )
     
+
+class LeagueInfo(Base):
+
+    __tablename__ = "league_infos"
+
+
+    id = Column(Integer, primary_key=True)
+    elite_name = Column(String, nullable=False)
+    url_appendix = Column(String, nullable=False)
+    uid = Column(String, nullable=False)
+
+
+    __table_args__ = (
+        UniqueConstraint(
+            'elite_name', 'url_appendix', 'uid',
+            name='uq_league_infos_all_columns'
+        ),
+    )
+
+
+    def __init__(self, elite_name: str, url_appendix: str, uid: str):
+        self.elite_name = elite_name
+        self.url_appendix = url_appendix
+        self.uid = uid
+
+
+    def __repr__(self):
+        return "<PlayerMissingDataLog(id=%s, elite_name=%s, url_appendix='%s', uid='%s')>" % (
+            self.id, 
+            self.elite_name, 
+            self.url_appendix,
+            self.uid
+        )
+    
+
+class Season(Base):
+
+    __tablename__ = "seasons"
+
+    id = Column("id", Integer, primary_key=True)
+    season = Column("season", String, nullable=False, unique=True)
+
+    def __init__(self, season):
+        self.season = season
+
+    def __repr__(self):
+        return f"({self.id, self.season})"
