@@ -13,12 +13,12 @@ links_folder_path = "./data/links/"
 
 db_path = "./database/hockey_v17_test.db"
 
-#connection to database is managed by class GetDatabaseSession
+#connection to database is managed by class DatabaseSession
 #which takes one parameter with the path to the existing DB
 #or path where the new DB should be created in case that it does not
 #already exist at a given location
 
-session_o = ds.GetDatabaseSession(db_path=db_path)
+session_o = ds.DatabaseSession(db_path=db_path)
 
 
 #before scraping itself method set_up_connection must be called which sets up

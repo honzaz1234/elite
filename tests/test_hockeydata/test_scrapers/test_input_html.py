@@ -5,7 +5,7 @@ from deepdiff import DeepDiff
 from pathlib import Path
 from sqlalchemy import text
 
-from database_session.database_session import GetScrapeDBSession
+from database_session.database_session import ScrapeDBSession
 from hockeydata.entity_data.input_html import PlayerHTMLInputter
 from pathlib import Path
 
@@ -29,7 +29,7 @@ PLAYER_UID = {
 def test_storage_db_session():
     current_dir = Path(__file__).parent
     db_path = current_dir / "data/test_storage_db.db" 
-    session_o = GetScrapeDBSession(db_path=str(db_path))
+    session_o = ScrapeDBSession(db_path=str(db_path))
     session_o.start_session()
     yield session_o.session
     session_o.session.close()
@@ -162,7 +162,6 @@ def get_player_dict(db_session, player_id: int):
         player_dict["skater_stats"] = [dict(row) for row in skater_stats]
 
     return player_dict
-
 
 
 def get_player_table_dict(db_session, player_id: int):

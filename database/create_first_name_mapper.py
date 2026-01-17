@@ -18,7 +18,7 @@ def remove_diacritics(text):
 DB_PATH = "./database/hockey_v15_test.db"
 
 
-session_o = ds.GetDatabaseSession(db_path=DB_PATH)
+session_o = ds.DatabaseSession(db_path=DB_PATH)
 session_o.set_up_connection()
 
 query_o = dq.ParsedDBQuery(db_session=session_o.session)

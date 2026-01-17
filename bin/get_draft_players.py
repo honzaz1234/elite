@@ -20,7 +20,7 @@ with open('./data/other/draft_urls.json', 'r') as f:
     urls = json.load(f)
 urls = urls["players"]
 
-session_o = ds.GetDatabaseSession(db_path=db_path)
+session_o = ds.DatabaseSession(db_path=db_path)
 
 
 session_o.set_up_connection()
