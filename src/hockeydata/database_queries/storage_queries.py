@@ -111,15 +111,34 @@ STORAGE_QUERIES = {
         "filters": [
             ]
     },
-    "done_players": {
-        "base_table": storage_db.PlayerLog,
+    "player_uids": {
+        "base_table": storage_db.Scrape,
         "selected_cols": [
             storage_db.PlayerLog.player_uid,
             ],
         "joins": [
+            {
+            "table": storage_db.PlayerLog, 
+            "conn": storage_db.PlayerLog.scrape_id == storage_db.Scrape.id, 
+            "type": "inner"
+            },
         ],
         "filters": [
-
+        ]
+    },
+    "player_urls": {
+        "base_table": storage_db.Scrape,
+        "selected_cols": [
+            storage_db.PlayerURL.url,
+            ],
+        "joins": [
+            {
+            "table": storage_db.PlayerLog, 
+            "conn": storage_db.PlayerURL.scrape_id == storage_db.Scrape.id, 
+            "type": "inner"
+            },
+        ],
+        "filters": [
         ]
     },
 }
