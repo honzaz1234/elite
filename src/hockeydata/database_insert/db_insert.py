@@ -1,7 +1,4 @@
-from hockeydata.constants import *
-from hockeydata.decorators import sql_executor
-from  hockeydata.database_insert import logger
-
+from abc import ABC, abstractmethod
 from sqlalchemy import update
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
@@ -9,9 +6,23 @@ from sqlalchemy.sql.dml import Insert
 from sqlalchemy.sql.schema import Table
 
 
+from hockeydata.constants import *
+from hockeydata.database_creator.database_config import STORAGE_TABLE_CONFIG
+from hockeydata.database_creator.database_config import TABLE_CONFIG
+from hockeydata.decorators import sql_executor
+from  hockeydata.database_insert import logger
+
+
 class DatabaseMethods():
 
     """class containg operations for dealing with the data in the database"""
+
+
+    @property
+    @classmethod
+    @abstractmethod
+    def INDEX_CONFIG(cls) -> dict:
+        pass
 
 
     def __init__(self, db_session: Session):
@@ -131,9 +142,13 @@ class DatabaseMethods():
     
 
     def insert_update_or_ignore_on_conflict(
-            self, table: Table, data: dict, update=False, 
-            index_cols=[], return_id=False) -> int|None:
-        insert_query = self._get_insert_query(table, data, update, index_cols)
+            self, table: Table, data: dict, update: bool=False, return_id=False) -> int|None:
+        index_cols = self.INDEX_CONFIG[table]
+        insert_query = self._get_insert_query(
+            table=table, 
+            data=data, update=update, 
+            index_cols=index_cols
+            )
         if return_id:
             insert_query = insert_query.returning(table.id)
         result = self.db_session.execute(insert_query)
@@ -142,7 +157,6 @@ class DatabaseMethods():
             if row:
                 return row[0]
             else:
-                # If row was NOT inserted/updated (e.g. "do nothing"), fetch manually
                 return self.query._find_id_in_table(
                     table, **{col: data[col] for col in index_cols}
                     )
@@ -151,18 +165,26 @@ class DatabaseMethods():
     
 
     def insert_update_or_ignore_on_conflict_bulk(
-            self, table: Table, data: list, update=False, 
-            index_cols=[]) -> None:
+            self, table: Table, data: list, update=False) -> None:
         if data == []:
             logger.info(
                 'No data to be updated in %s available.',
                 table.__tablename__
                         )
             return
-        insert_query = self._get_insert_query(table, data, update, index_cols)
+        insert_query = self._get_insert_query(
+            table=table, 
+            data=data, 
+            update=update, 
+            index_cols=self.INDEX_CONFIG[table]
+            )
         self.db_session.execute(insert_query)
 
+
+    def get_index_cols(self, table_name: str) -> list:
+        return self.INDEX_CONFIG[table_name]
     
+
     def _get_insert_query(
             self, table: Table, data: list|dict, update: bool, 
             index_cols: list) -> Insert:
@@ -182,6 +204,18 @@ class DatabaseMethods():
                 )
 
         return insert_query
+    
+
+class ParsedDatabaseMethods(DatabaseMethods):
+
+
+    INDEX_CONFIG = TABLE_CONFIG
+
+
+class StorageDatabaseMethods(DatabaseMethods):
+
+
+    INDEX_CONFIG = STORAGE_TABLE_CONFIG
 
 
 class Query():
