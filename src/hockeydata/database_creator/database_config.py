@@ -1,8 +1,8 @@
 import hockeydata.database_creator.database_creator as db
+import hockeydata.database_creator.storage_database_creator as storage_db
 
 
 TABLE_CONFIG = {
-    "reference": {
         db.Match: {
             "index_update": [
                 db.Match.match_id.name,
@@ -142,8 +142,6 @@ TABLE_CONFIG = {
         db.Season: {
         "index_update": [db.Season.season.name],
         },
-    },
-    "mappers": {
         db.NHLEliteNameMapper: {
         "index_update": [
             db.NHLEliteNameMapper.player_id.name,
@@ -161,5 +159,60 @@ TABLE_CONFIG = {
             ],
         },
     }
-}
 
+
+STORAGE_TABLE_CONFIG = {
+        storage_db.Season: {
+            "index_update": [storage_db.Season.season.name],
+        },
+        storage_db.ScrapeType: {
+            "index_update": [storage_db.ScrapeType.scrape_type.name],
+        },
+        storage_db.LeagueInfo: {
+            "index_update": [
+                storage_db.LeagueInfo.elite_name.name,
+                storage_db.LeagueInfo.url_appendix.name,
+                storage_db.LeagueInfo.uid.name,
+            ],
+        },
+        storage_db.Scrape: {
+            "index_update": [
+                storage_db.Scrape.start_datetime.name,
+                storage_db.Scrape.scrape_type_id.name,
+            ],
+        },
+        storage_db.PlayerURL: {
+            "index_update": [storage_db.PlayerURL.url.name],
+        },
+        storage_db.PlayerLog: {
+            "index_update": [
+                storage_db.PlayerLog.scrape_id.name,
+                storage_db.PlayerLog.player_uid.name,
+            ],
+        },
+        storage_db.SkaterStats: {
+            "index_update": [
+                storage_db.SkaterStats.player_id.name,
+                storage_db.SkaterStats.competition_type.name,
+            ],
+        },
+        storage_db.GoalieStats: {
+            "index_update": [
+                storage_db.GoalieStats.player_id.name,
+                storage_db.GoalieStats.competition_type.name,
+                storage_db.GoalieStats.season_type.name,
+            ],
+        },
+        storage_db.PlayerFacts: {
+            "index_update": [storage_db.PlayerFacts.player_id.name],
+        },
+        storage_db.Achievements: {
+            "index_update": [storage_db.Achievements.player_id.name],
+        },
+        storage_db.PlayerMissingDataLog: {
+            "index_update": [
+                storage_db.PlayerMissingDataLog.player_id.name,
+                storage_db.PlayerMissingDataLog.data_type.name,
+            ],
+        }
+}
