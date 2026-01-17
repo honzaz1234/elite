@@ -81,11 +81,6 @@ class DBQuery():
         
             return query.outerjoin(join["table"], join["conn"])
 
-    
-    def _get_list_filter(self, table_column: Column, values: list):
-
-        return table_column.in_(values)
-    
 
     def _get_query_info_from_file(
             self, file_path: str, query_name: str) -> dict:
