@@ -1,21 +1,56 @@
 import pandas as pd
 import unicodedata
 
+
+from abc import ABC, abstractmethod
 from collections import Counter
+from sqlalchemy.orm.attributes import InstrumentedAttribute
+from typing import Optional
+
 
 import hockeydata.database_creator.database_creator as db
+import hockeydata.database_creator.storage_database_creator as storage_db
 import database_queries.database_query as dq
 import hockeydata.mappers.team_mappers as team_map
 
 
-class GetDBMapper():
+from database_queries.database_query import DBQuery, ParsedDBQuery, StorageDBQuery
+from hockeydata.logger.logging_config import logger
+
+
+class DBMapper(ABC):
+
+
+    @property
+    @classmethod
+    @abstractmethod
+    def QUERY_CLASS(cls) -> type[DBQuery]:
+        pass
 
 
     def __init__(self, db_session):
-        self.query = dq.ParsedDBQuery(db_session=db_session)
+        self.query = self.QUERY_CLASS(db_session=db_session)
 
 
-class GetGameDBMapper(GetDBMapper):
+    def get_results_with_mandatory_list_filter(
+        self, query_name: str, filter_col: InstrumentedAttribute, 
+        filter_data: Optional[list]) -> list:
+        if filter_data is not None:
+            filter_ = filter_col.in_(filter_data)
+        else:
+            filter_ = None
+        results = self.query.get_db_query_result(
+            query_name=query_name,
+            filters=filter_
+            )
+        
+        return results
+
+
+class GameDBMapper(DBMapper):
+
+
+    QUERY_CLASS = ParsedDBQuery
 
 
     def get_player_id_team_season_mapper_dicts(
@@ -254,25 +289,35 @@ class GetGameDBMapper(GetDBMapper):
             table_mapper[type_name] = id
 
         return table_mapper
-    
 
 
-class GetEntityDBMapper(GetDBMapper):
+class ParseDBMapper(DBMapper):
 
 
-    PARSED_LOG_TABLE_UID_COL = None
-    SCRAPED_LOG_TABLE_UID_COL = None
-    DONE_QUERY_NAME = None
+    @property
+    @classmethod
+    @abstractmethod
+    def DONE_QUERY_NAME(cls) -> str:
+        pass
+
+
+    @property
+    @classmethod
+    @abstractmethod
+    def UID_COL(cls) -> str:
+        pass
+
+
+
+    QUERY_CLASS = ParsedDBQuery
+
 
 
     def get_parsed_data_statuses(self, uids: list=None) -> dict:
-        if uids is not None:
-            filter_ = self.PARSED_LOG_TABLE_UID_COL.in_(uids)
-        else:
-            filter_ = None
-        results = self.query.get_db_query_result(
+        results = self.get_results_with_mandatory_list_filter(
             query_name=self.DONE_QUERY_NAME,
-            filters=filter_
+            filter_col=self.UID_COL,
+            filter_data=uids
             )
         results_df = pd.DataFrame(results)
         results_df.columns = ['uid', 'status', 'time']
@@ -280,28 +325,67 @@ class GetEntityDBMapper(GetDBMapper):
         results_df = results_df.drop_duplicates(subset=['uid'])
 
         return dict(zip(results_df["uid"], results_df["status"]))
+
+
+class StorageDBMapper(DBMapper):
+
+
+    QUERY_CLASS = StorageDBQuery
+    SCRAPE_ID_COL = storage_db.Scrape.id
+
+
+    @property
+    @classmethod
+    @abstractmethod
+    def UID_QUERY(cls) -> str:
+        pass
+
+    @property
+    @classmethod
+    @abstractmethod
+    def UID_COL(cls) -> str:
+        pass
+
+    @property
+    @classmethod
+    @abstractmethod
+    def URL_QUERY(cls) -> str:
+        pass
     
 
     def get_scraped_uids(self, uids: list=None) -> set:
-        if uids is not None:
-            filter_ = self.SCRAPED_LOG_TABLE_UID_COL.in_(uids)
-        else:
-            filter_ = None
-        results = self.query.get_db_query_result(
-            query_name=self.DONE_QUERY_NAME,
-            filters=filter_
+        results = self.get_results_with_mandatory_list_filter(
+            query_name=self.UID_QUERY,
+            filter_col=self.UID_COL,
+            filter_data=uids
             )
-        
+        logger.info("%s scraped UIDs loaded. ", len(results))
+
         return set([t[0] for t in results])
     
 
-    def input_scraped_uids(self, uids: list) -> None:
-        pass
+    def get_urls(self, scrape_ids: list=None) -> list:
+        results = self.get_results_with_mandatory_list_filter(
+            query_name=self.URL_QUERY,
+            filter_col=self.SCRAPE_ID_COL,
+            filter_data=scrape_ids
+            )
+        logger.info(
+            "%s scraped URLS loaded from following scrapes: %s. ", 
+            len(results),
+            scrape_ids
+            )
         
+        return set([t[0] for t in results])
 
 
-class GetPlayerDBMapper(GetEntityDBMapper):
+    def input_scraped_uids(self, uids: list) -> None:
+        pass        
 
 
-    LOG_TABLE_UID_COL = db.InsertPlayerLog.player_uid
-    DONE_QUERY_NAME = "players_done"
+class PlayerStorageDBMapper(StorageDBMapper):
+
+
+    UID_COL = storage_db.PlayerLog.player_uid
+    UID_QUERY = "player_uids"
+    URL_QUERY = "player_urls"
