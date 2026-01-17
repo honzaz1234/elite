@@ -26,21 +26,16 @@ class EntityDataGetter(ABC):
         pass
 
 
-    def __init__(self, db_query: StorageDBQuery, filters: list, data: dict, 
-                 scrape_ids: list, uids: list):
+    def __init__(self, db_query: StorageDBQuery, data: dict, 
+                 scrape_ids: list, uids: Optional[list]=None):
             self.db_query = db_query
-            self.filters = filters
             self.data = data
             self.filters = [
-                db_query._get_list_filter(
-                    table_column=storage_db.Scrape.id, 
-                    values=scrape_ids
-                    ),
-                db_query._get_list_filter(
-                    table_column=self.TABLE_COLUMN,
-                    values=uids
-                    )
+                storage_db.Scrape.id.in_(scrape_ids)
             ]
+            if uids is not None:
+                uid_filter = self.TABLE_COLUMN.in_(uids)
+                self.filters.append(uid_filter)
 
 
     def get_data(self) -> None:
@@ -49,11 +44,11 @@ class EntityDataGetter(ABC):
             filters=self.filters
             )
         for row in raw_data:
-            self._save_info(row=row)
+            self.save_info(row=row)
 
 
     @abstractmethod
-    def _save_info(self, row: tuple) -> None:
+    def save_info(self, row: tuple) -> None:
         pass
 
 
@@ -63,13 +58,25 @@ class PlayerDataGetter(EntityDataGetter):
     TABLE_COLUMN = storage_db.PlayerLog.player_uid
 
 
+    def __init__(self, db_query: StorageDBQuery, data: dict, 
+                scrape_ids: list, uids: list, is_goalie: str):
+        super().__init__(
+            db_query=db_query, 
+            data=data, 
+            scrape_ids=scrape_ids, 
+            uids=uids
+            )
+        is_goalie_filter = storage_db.PlayerLog.is_goalie.is_(is_goalie)
+        self.filters.append(is_goalie_filter)
+
+
 class BaseDataGetter(PlayerDataGetter):
 
 
     DB_QUERY = "player_base_info"
 
 
-    def _save_info(self, row: tuple) -> None:
+    def save_info(self, row: tuple) -> None:
         player_uid, is_goalie, player_url = row
         self.data[player_uid] = {}
         self.data[player_uid]["is_goalie"] = is_goalie
@@ -82,7 +89,7 @@ class PlayerFactsGetter(PlayerDataGetter):
     DB_QUERY = "player_facts"
 
 
-    def _save_info(self, row: tuple) -> None:
+    def save_info(self, row: tuple) -> None:
         player_uid, html_data = row
         self.data[player_uid]["player_facts"] = html_data
 
@@ -93,7 +100,7 @@ class AchievementsGetter(PlayerDataGetter):
     DB_QUERY = "achievements"
 
 
-    def _save_info(self, row: tuple) -> None:
+    def save_info(self, row: tuple) -> None:
         player_uid, html_data = row
         self.data[player_uid]["achievements"] = html_data
 
@@ -104,7 +111,7 @@ class SkaterStatsGetter(PlayerDataGetter):
     DB_QUERY = "skater_stats"
 
 
-    def _save_info(self, row: tuple) -> None:
+    def save_info(self, row: tuple) -> None:
         player_uid, league_type, html_data = row
         self.data[player_uid]['stats'][league_type] = html_data
 
@@ -115,7 +122,7 @@ class GoalieStatsGetter(PlayerDataGetter):
     DB_QUERY = "goalie_stats"
 
 
-    def _save_info(self, row: tuple) -> None:
+    def save_info(self, row: tuple) -> None:
         player_uid, competition_type, season_type, html_data = row
         self.data[player_uid]['stats'][competition_type][season_type] = html_data
 
@@ -130,8 +137,19 @@ class StorageDBDataGetter(ABC):
         self.uids = uids
 
 
+    @abstractmethod
+    def get_data(self) -> dict:
+        pass
+
+
 class PlayerStorageDBDataGetter(StorageDBDataGetter):
 
+
+    @property
+    @classmethod
+    @abstractmethod
+    def IS_GOALIE(cls) -> bool:
+        pass
 
     @property
     @classmethod
@@ -145,21 +163,24 @@ class PlayerStorageDBDataGetter(StorageDBDataGetter):
             db_query=self.db_query, 
             data=self.data, 
             scrape_ids=self.scrape_ids, 
-            player_uids=self.uids
+            player_uids=self.uids,
+            is_goalie = self.IS_GOALIE
             )
         facts_getter.get_data()
         achievements_getter = AchievementsGetter(
             db_query=self.db_query, 
             data=self.data, 
             scrape_ids=self.scrape_ids, 
-            player_uids=self.uids
+            player_uids=self.uids,
+            is_goalie = self.IS_GOALIE
             )
         achievements_getter.get_data()
         stats_getter = self.STATS_GETTER(
                     db_query=self.db_query, 
                     data=self.data, 
                     scrape_ids=self.scrape_ids, 
-                    player_uids=self.uids
+                    player_uids=self.uids,
+                    is_goalie = self.IS_GOALIE
                 )
         stats_getter.get_data()
 
@@ -169,7 +190,9 @@ class PlayerStorageDBDataGetter(StorageDBDataGetter):
 class SkaterStorageDBDataGetter(PlayerStorageDBDataGetter):
 
 
+        IS_GOALIE = False
         STATS_GETTER = SkaterStatsGetter
+
 
         def __init__(
             self, db_session: Session, scrape_ids: list, uids: list):
@@ -194,6 +217,7 @@ class SkaterStorageDBDataGetter(PlayerStorageDBDataGetter):
 class GoalieStorageDBDataGetter(PlayerStorageDBDataGetter):
 
 
+        IS_GOALIE = True
         STATS_GETTER = GoalieStatsGetter
 
 
@@ -221,14 +245,3 @@ class GoalieStorageDBDataGetter(PlayerStorageDBDataGetter):
                 }
                 for uid in uids
             }
-
-
-
-
-
-
-
-        
-
-
-
