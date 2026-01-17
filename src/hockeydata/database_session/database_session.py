@@ -15,6 +15,8 @@ import hockeydata.entity_data.get_urls.get_urls as league_url
 
 from hockeydata.constants import *
 from hockeydata.database_insert.db_insert import DatabaseMethods
+from hockeydata.database_insert.db_insert import  ParsedDatabaseMethods
+from hockeydata.database_insert.db_insert import  StorageDatabaseMethods
 from hockeydata.logger.logging_config import logger
 
 
@@ -30,13 +32,14 @@ class DatabaseSession(ABC):
     @property
     @classmethod
     @abstractmethod
-    def DB_SOURCE(cls) -> type[ModuleType]:
+    def DB_CONTROL(cls) -> type[DatabaseMethods]:
         pass
+
 
     @property
     @classmethod
     @abstractmethod
-    def TABLE_CONFIG(cls) -> type[ModuleType]:
+    def DB_SOURCE(cls) -> type[ModuleType]:
         pass
 
 
@@ -101,7 +104,7 @@ class DatabaseSession(ABC):
         seasons_insert = []
         for season in season_list:
             seasons_insert.append({"season": season})
-        db_control = DatabaseMethods(db_session=self.session)
+        db_control = self.DB_CONTROL(db_session=self.session)
         db_control.insert_update_or_ignore_on_conflict_bulk(
             table=self.DB_SOURCE.Season,
             data=seasons_insert,
@@ -115,7 +118,7 @@ class DatabaseSession(ABC):
         years_insert = []
         for year in years:
             years_insert.append({"season": year})
-        db_control = DatabaseMethods(db_session=self.session)
+        db_control = self.DB_CONTROL(db_session=self.session)
         db_control.insert_update_or_ignore_on_conflict_bulk(
             table=self.DB_SOURCE.Season,
             data=years_insert,
@@ -129,6 +132,7 @@ class ParseDBSession(DatabaseSession):
        of games and hockey entitites (players, leagues, teams)"""
     
 
+    DB_CONTROL = ParsedDatabaseMethods
     DB_SOURCE = db
     
 
@@ -161,7 +165,7 @@ class ParseDBSession(DatabaseSession):
         stadium_mapper_insert = []
         for row in stadium_mapper:
             stadium_mapper_insert.append(row)
-        db_control = DatabaseMethods(db_session=self.session)
+        db_control = self.DB_CONTROL(db_session=self.session)
         db_control.insert_update_or_ignore_on_conflict_bulk(
             table=db.StadiumMapper,
             data=stadium_mapper_insert,
@@ -182,7 +186,7 @@ class ParseDBSession(DatabaseSession):
         reference_table_insert = []
         for row in reference_table_mapper:
             reference_table_insert.append(row)
-        db_control = DatabaseMethods(db_session=self.session)
+        db_control = self.DB_CONTROL(db_session=self.session)
         db_control.insert_update_or_ignore_on_conflict_bulk(
             table=db.StadiumMapper,
             data=reference_table_insert,
@@ -197,7 +201,7 @@ class ParseDBSession(DatabaseSession):
             {"status_type": "empty_update"}, 
             {"status_type": "update"}
             ]
-        db_control = DatabaseMethods(db_session=self.session)
+        db_control = self.DB_CONTROL(db_session=self.session)
         db_control.insert_update_or_ignore_on_conflict_bulk(
             table=db.StatusType,
             data=status_types_insert,
@@ -210,6 +214,7 @@ class ScrapeDBSession(DatabaseSession):
        HTML data of games and hockey entitites (players, leagues, teams)"""
     
 
+    DB_CONTROL = StorageDatabaseMethods
     DB_SOURCE = storage_db
     SCRAPE_TYPES = ["game", "player", "league", "team"]
 
@@ -238,7 +243,7 @@ class ScrapeDBSession(DatabaseSession):
         scrape_type_insert = []
         for scrape_type in self.SCRAPE_TYPES:
             scrape_type_insert.append({"scrape_type": scrape_type})
-        db_control = DatabaseMethods(db_session=self.session)
+        db_control = self.DB_CONTROL(db_session=self.session)
         db_control.insert_update_or_ignore_on_conflict_bulk(
             table=storage_db.ScrapeType,
             data=scrape_type_insert,
@@ -247,7 +252,7 @@ class ScrapeDBSession(DatabaseSession):
 
 
     def create_scrape_table_entry(self, type_: str) -> int:
-        db_control = DatabaseMethods(db_session=self.session)
+        db_control = self.DB_CONTROL(db_session=self.session)
         self.scrape_id = db_control._input_data(
             table=storage_db.Scrape, 
             type=type_,
