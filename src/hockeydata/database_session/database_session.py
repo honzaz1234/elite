@@ -12,7 +12,9 @@ import hockeydata.database_creator.storage_database_creator as storage_db
 import hockeydata.database_insert.db_insert  as db_insert
 import hockeydata.entity_data.get_urls.get_urls as league_url
 
+
 from hockeydata.constants import *
+from hockeydata.database_insert.db_insert import DatabaseMethods
 from hockeydata.logger.logging_config import logger
 
 
@@ -29,6 +31,12 @@ class DatabaseSession(ABC):
     @classmethod
     @abstractmethod
     def DB_SOURCE(cls) -> type[ModuleType]:
+        pass
+
+    @property
+    @classmethod
+    @abstractmethod
+    def TABLE_CONFIG(cls) -> type[ModuleType]:
         pass
 
 
@@ -50,6 +58,11 @@ class DatabaseSession(ABC):
             "New DB session initiated with db at %s", 
             self.database_path
                     )
+        
+
+    @abstractmethod
+    def add_data_to_tables(self) -> None:
+        pass
 
 
     def clear_all_tables(self) -> None:
@@ -80,6 +93,35 @@ class DatabaseSession(ABC):
     def close_session(self) -> None:
         self.session.close()
         logger.debug("DB session closed.")
+
+
+    def add_seasons_to_seasons_table(self) -> None:
+        league_getter = league_url.LeagueUrlDownload()
+        season_list = league_getter.create_season_list(1886, 2024)
+        seasons_insert = []
+        for season in season_list:
+            seasons_insert.append({"season": season})
+        db_control = DatabaseMethods(db_session=self.session)
+        db_control.insert_update_or_ignore_on_conflict_bulk(
+            table=self.DB_SOURCE.Season,
+            data=seasons_insert,
+            update=False
+            )
+        self.session.bulk_insert_mappings(self.DB_SOURCE.Season, seasons_insert)
+
+
+    def add_years_to_seasons_table(self) -> None:
+        years = [*range(1886, 2025, 1)]
+        years_insert = []
+        for year in years:
+            years_insert.append({"season": year})
+        db_control = DatabaseMethods(db_session=self.session)
+        db_control.insert_update_or_ignore_on_conflict_bulk(
+            table=self.DB_SOURCE.Season,
+            data=years_insert,
+            update=False,
+            )
+        self.session.bulk_insert_mappings(self.DB_SOURCE.Season, years_insert)
 
 
 class ParseDBSession(DatabaseSession):
@@ -115,30 +157,15 @@ class ParseDBSession(DatabaseSession):
                      "added to the db.")
 
 
-    def add_seasons_to_seasons_table(self) -> None:
-        league_getter = league_url.LeagueUrlDownload()
-        season_list = league_getter.create_season_list(1886, 2024)
-        seasons_insert = []
-        for season in season_list:
-            seasons_insert.append({"season": season})
-        self.session.bulk_insert_mappings(self.DB_SOURCE.Season, seasons_insert)
-
-
-    def add_years_to_seasons_table(self) -> None:
-        years = [*range(1886, 2025, 1)]
-        years_insert = []
-        for year in years:
-            years_insert.append({"season": year})
-        self.session.bulk_insert_mappings(self.DB_SOURCE.Season, years_insert)
-
-
     def add_data_to_stadium_mapper_table(self, stadium_mapper: list) -> None:
         stadium_mapper_insert = []
         for row in stadium_mapper:
             stadium_mapper_insert.append(row)
-        self.session.bulk_insert_mappings(
-            db.StadiumMapper, 
-            stadium_mapper_insert
+        db_control = DatabaseMethods(db_session=self.session)
+        db_control.insert_update_or_ignore_on_conflict_bulk(
+            table=db.StadiumMapper,
+            data=stadium_mapper_insert,
+            update=False
             )
 
 
@@ -155,22 +182,26 @@ class ParseDBSession(DatabaseSession):
         reference_table_insert = []
         for row in reference_table_mapper:
             reference_table_insert.append(row)
-        self.session.bulk_insert_mappings(
-            db.StadiumMapper, 
-            reference_table_insert
+        db_control = DatabaseMethods(db_session=self.session)
+        db_control.insert_update_or_ignore_on_conflict_bulk(
+            table=db.StadiumMapper,
+            data=reference_table_insert,
+            update=False
             )
         
 
     def add_data_to_status_type_table(self) -> None:
         status_types_insert  = [
-            "uid_insert", 
-            "complete_insert", 
-            "empty_update", 
-            "update"
+            {"status_type": "uid_insert"}, 
+            {"status_type": "complete_insert"}, 
+            {"status_type": "empty_update"}, 
+            {"status_type": "update"}
             ]
-        self.session.bulk_insert_mappings(
-            db.StatusType, 
-            status_types_insert
+        db_control = DatabaseMethods(db_session=self.session)
+        db_control.insert_update_or_ignore_on_conflict_bulk(
+            table=db.StatusType,
+            data=status_types_insert,
+            update=False
             )
 
 
@@ -196,20 +227,28 @@ class ScrapeDBSession(DatabaseSession):
             self.add_scrape_types_to_scrape_types_table()
 
 
+    def add_data_to_tables(self) -> None:
+        self.add_seasons_to_seasons_table()
+        self.add_years_to_seasons_table()
+        self.add_scrape_types_to_scrape_types_table()
+        self.session.commit()
+
+
     def add_scrape_types_to_scrape_types_table(self) -> None:
         scrape_type_insert = []
         for scrape_type in self.SCRAPE_TYPES:
             scrape_type_insert.append({"scrape_type": scrape_type})
-        self.session.bulk_insert_mappings(
-            storage_db.ScrapeType, 
-            scrape_type_insert
+        db_control = DatabaseMethods(db_session=self.session)
+        db_control.insert_update_or_ignore_on_conflict_bulk(
+            table=storage_db.ScrapeType,
+            data=scrape_type_insert,
+            update=False
             )
-        self.session.commit()
 
 
     def create_scrape_table_entry(self, type_: str) -> int:
-        insert_o = db_insert.DatabaseMethods(db_session=self.session)
-        self.scrape_id = insert_o._input_data(
+        db_control = DatabaseMethods(db_session=self.session)
+        self.scrape_id = db_control._input_data(
             table=storage_db.Scrape, 
             type=type_,
             time_start=datetime.now()
