@@ -162,57 +162,79 @@ TABLE_CONFIG = {
 
 
 STORAGE_TABLE_CONFIG = {
-        storage_db.Season: {
-            "index_update": [storage_db.Season.season.name],
-        },
-        storage_db.ScrapeType: {
-            "index_update": [storage_db.ScrapeType.scrape_type.name],
-        },
-        storage_db.LeagueInfo: {
-            "index_update": [
-                storage_db.LeagueInfo.elite_name.name,
-                storage_db.LeagueInfo.url_appendix.name,
-                storage_db.LeagueInfo.uid.name,
-            ],
-        },
-        storage_db.Scrape: {
-            "index_update": [
-                storage_db.Scrape.start_datetime.name,
-                storage_db.Scrape.scrape_type_id.name,
-            ],
-        },
-        storage_db.PlayerURL: {
-            "index_update": [storage_db.PlayerURL.url.name],
-        },
-        storage_db.PlayerLog: {
-            "index_update": [
-                storage_db.PlayerLog.scrape_id.name,
-                storage_db.PlayerLog.player_uid.name,
-            ],
-        },
-        storage_db.SkaterStats: {
-            "index_update": [
-                storage_db.SkaterStats.player_id.name,
-                storage_db.SkaterStats.competition_type.name,
-            ],
-        },
-        storage_db.GoalieStats: {
-            "index_update": [
-                storage_db.GoalieStats.player_id.name,
-                storage_db.GoalieStats.competition_type.name,
-                storage_db.GoalieStats.season_type.name,
-            ],
-        },
-        storage_db.PlayerFacts: {
-            "index_update": [storage_db.PlayerFacts.player_id.name],
-        },
-        storage_db.Achievements: {
-            "index_update": [storage_db.Achievements.player_id.name],
-        },
-        storage_db.PlayerMissingDataLog: {
-            "index_update": [
-                storage_db.PlayerMissingDataLog.player_id.name,
-                storage_db.PlayerMissingDataLog.data_type.name,
-            ],
-        }
+    storage_db.Season: {
+        "index_update": [storage_db.Season.season],
+    },
+    storage_db.ScrapeType: {
+        "index_update": [storage_db.ScrapeType.scrape_type],
+    },
+    storage_db.LeagueInfo: {
+        "index_update": [
+            storage_db.LeagueInfo.elite_name,
+            storage_db.LeagueInfo.uid,
+            storage_db.LeagueInfo.first_season,
+            storage_db.LeagueInfo.last_season,
+        ],
+    },
+    storage_db.Scrape: {
+        "index_update": [
+            storage_db.Scrape.start_datetime,
+            storage_db.Scrape.scrape_type_id,
+        ],
+    },
+    storage_db.PlayerURL: {
+        "index_update": [storage_db.PlayerURL.url],
+    },
+    storage_db.PlayerLog: {
+        "index_update": [
+            storage_db.PlayerLog.scrape_id,
+            storage_db.PlayerLog.uid,
+        ],
+    },
+    storage_db.SkaterStats: {
+        "index_update": [
+            storage_db.SkaterStats.player_id,
+            storage_db.SkaterStats.competition_type,
+        ],
+    },
+    storage_db.GoalieStats: {
+        "index_update": [
+            storage_db.GoalieStats.player_id,
+            storage_db.GoalieStats.competition_type,
+            storage_db.GoalieStats.season_type,
+        ],
+    },
+    storage_db.PlayerFacts: {
+        "index_update": [storage_db.PlayerFacts.player_id],
+    },
+    storage_db.PlayerAchievements: {
+        "index_update": [storage_db.PlayerAchievements.player_id],
+    },
+    storage_db.PlayerMissingDataLog: {
+        "index_update": [
+            storage_db.PlayerMissingDataLog.player_id,
+            storage_db.PlayerMissingDataLog.data_type,
+        ],
+    },
+    storage_db.LeagueLog: {
+        "index_update": [
+            storage_db.LeagueLog.scrape_id,
+            storage_db.LeagueLog.league_id,
+        ],
+    },
+    storage_db.LeagueName: {
+        "index_update": [storage_db.LeagueName.html_data],
+    },
+    storage_db.LeagueAchievement: {
+        "index_update": [storage_db.LeagueAchievement.html_data],
+    },
+    storage_db.LeagueSeason: {
+        "index_update": [storage_db.LeagueSeason.html_data],
+    },
+    storage_db.LeagueMissingDataLog: {
+        "index_update": [
+            storage_db.LeagueMissingDataLog.league_id,
+            storage_db.LeagueMissingDataLog.data_type,
+        ],
+    },
 }
