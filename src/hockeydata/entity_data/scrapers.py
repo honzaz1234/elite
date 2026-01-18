@@ -115,7 +115,7 @@ class PlayerScraper(PlaywrightScraper):
             }
 
 
-    def get_data(self):
+    def get_data(self) -> dict:
         logger.info(
             'Scraping of new player info at web adress: %s '
             'started', self.url
@@ -138,6 +138,8 @@ class PlayerScraper(PlaywrightScraper):
             'Scraping of new player info at web adress: %s '
             'finished', self.url
             )
+        
+        return self.scraped_data
 
 
     @abstractmethod
