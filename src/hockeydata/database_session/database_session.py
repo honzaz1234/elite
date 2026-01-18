@@ -1,8 +1,11 @@
+import re
+
 from abc import ABC, abstractmethod
 from datetime import datetime
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql.schema import Table
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.sql.schema import MetaData, Table
 from types import ModuleType
 
 
@@ -17,6 +20,7 @@ from hockeydata.constants import *
 from hockeydata.database_insert.db_insert import DatabaseMethods
 from hockeydata.database_insert.db_insert import  ParsedDatabaseMethods
 from hockeydata.database_insert.db_insert import  StorageDatabaseMethods
+from hockeydata.entity_data.get_urls.league_uids import LEAGUE_UIDS
 from hockeydata.logger.logging_config import logger
 
 
@@ -45,14 +49,17 @@ class DatabaseSession(ABC):
 
     def __init__(self, db_path: str):
         self.database_path = db_path
-        self.engine = None
-        self.session = None
-        self.meta_data = None
-        self.scrape_id = None
+        self.engine: Engine = None
+        self.session: Session = None
+        self.db_control: DatabaseMethods = None
+        self.meta_data: MetaData = None
+        self.scrape_id: int = None
 
 
     def start_session(self) -> None:
-        self.engine = create_engine("sqlite:///" + self.database_path, echo=False)
+        self.engine = create_engine(
+            "sqlite:///" + self.database_path, echo=False
+            )
         self.DB_SOURCE.Base.metadata.create_all(bind=self.engine)
         DBSession = sessionmaker(bind=self.engine)
         self.session = DBSession()
@@ -62,6 +69,10 @@ class DatabaseSession(ABC):
             self.database_path
                     )
         
+
+    def set_up_db_control(self) -> None:
+        self.db_control = self.DB_CONTROL(db_session=self.session) 
+
 
     @abstractmethod
     def add_data_to_tables(self) -> None:
@@ -104,8 +115,8 @@ class DatabaseSession(ABC):
         seasons_insert = []
         for season in season_list:
             seasons_insert.append({"season": season})
-        db_control = self.DB_CONTROL(db_session=self.session)
-        db_control.insert_update_or_ignore_on_conflict_bulk(
+        self.db_control = self.DB_CONTROL(db_session=self.session)
+        self.db_control.insert_update_or_ignore_on_conflict_bulk(
             table=self.DB_SOURCE.Season,
             data=seasons_insert,
             update=False
@@ -118,8 +129,8 @@ class DatabaseSession(ABC):
         years_insert = []
         for year in years:
             years_insert.append({"season": year})
-        db_control = self.DB_CONTROL(db_session=self.session)
-        db_control.insert_update_or_ignore_on_conflict_bulk(
+        self.db_control = self.DB_CONTROL(db_session=self.session)
+        self.db_control.insert_update_or_ignore_on_conflict_bulk(
             table=self.DB_SOURCE.Season,
             data=years_insert,
             update=False,
@@ -143,6 +154,7 @@ class ParseDBSession(DatabaseSession):
     def set_up_connection(self) -> None:
         logger.info("New parsing session started")
         self.start_session()
+        self.set_up_db_control()
         are_seasons_filled = self.check_is_table_empty(
             table=db.Season
             )
@@ -153,6 +165,7 @@ class ParseDBSession(DatabaseSession):
     def add_data_to_tables(self) -> None:
         self.add_seasons_to_seasons_table()
         self.add_years_to_seasons_table()
+        #add after the data is at least almost complete
      #   self.add_data_to_stadium_mapper_table()
       #  self.add_data_to_reference_tables()
         self.add_data_to_status_type_table()
@@ -165,8 +178,8 @@ class ParseDBSession(DatabaseSession):
         stadium_mapper_insert = []
         for row in stadium_mapper:
             stadium_mapper_insert.append(row)
-        db_control = self.DB_CONTROL(db_session=self.session)
-        db_control.insert_update_or_ignore_on_conflict_bulk(
+        self.db_control = self.DB_CONTROL(db_session=self.session)
+        self.db_control.insert_update_or_ignore_on_conflict_bulk(
             table=db.StadiumMapper,
             data=stadium_mapper_insert,
             update=False
@@ -186,9 +199,9 @@ class ParseDBSession(DatabaseSession):
         reference_table_insert = []
         for row in reference_table_mapper:
             reference_table_insert.append(row)
-        db_control = self.DB_CONTROL(db_session=self.session)
-        db_control.insert_update_or_ignore_on_conflict_bulk(
-            table=db.StadiumMapper,
+        self.db_control = self.DB_CONTROL(db_session=self.session)
+        self.db_control.insert_update_or_ignore_on_conflict_bulk(
+            table=table,
             data=reference_table_insert,
             update=False
             )
@@ -201,8 +214,8 @@ class ParseDBSession(DatabaseSession):
             {"status_type": "empty_update"}, 
             {"status_type": "update"}
             ]
-        db_control = self.DB_CONTROL(db_session=self.session)
-        db_control.insert_update_or_ignore_on_conflict_bulk(
+        self.db_control = self.DB_CONTROL(db_session=self.session)
+        self.db_control.insert_update_or_ignore_on_conflict_bulk(
             table=db.StatusType,
             data=status_types_insert,
             update=False
@@ -226,6 +239,7 @@ class ScrapeDBSession(DatabaseSession):
     def set_up_connection(self) -> None:
         logger.info("New scraping session started")
         self.start_session()
+        self.set_up_db_control()
         scrape_types_filled = self.check_is_table_empty(
             table=storage_db.ScrapeType)
         if not scrape_types_filled:
@@ -243,17 +257,34 @@ class ScrapeDBSession(DatabaseSession):
         scrape_type_insert = []
         for scrape_type in self.SCRAPE_TYPES:
             scrape_type_insert.append({"scrape_type": scrape_type})
-        db_control = self.DB_CONTROL(db_session=self.session)
-        db_control.insert_update_or_ignore_on_conflict_bulk(
+        self.db_control = self.DB_CONTROL(db_session=self.session)
+        self.db_control.insert_update_or_ignore_on_conflict_bulk(
             table=storage_db.ScrapeType,
             data=scrape_type_insert,
             update=False
             )
+        
 
+    def add_league_info_to_league_info_table(self) -> None:
+        insert_info = []
+        for league_name in LEAGUE_UIDS:
+            uid = re.findall('\/[.+]$',LEAGUE_UIDS[league_name])
+            insert_info.append(
+                {
+                    "elite_name": league_name, 
+                    "uid": uid
+                    }
+            )
+        self.db_control.insert_update_or_ignore_on_conflict_bulk(
+            table=storage_db.ScrapeType,
+            data=insert_info,
+            update=False
+            )
+        
 
     def create_scrape_table_entry(self, type_: str) -> int:
-        db_control = self.DB_CONTROL(db_session=self.session)
-        self.scrape_id = db_control._input_data(
+        self.db_control = self.DB_CONTROL(db_session=self.session)
+        self.scrape_id = self.db_control._input_data(
             table=storage_db.Scrape, 
             type=type_,
             time_start=datetime.now()
