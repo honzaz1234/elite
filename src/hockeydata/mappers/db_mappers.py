@@ -5,7 +5,6 @@ import unicodedata
 from abc import ABC, abstractmethod
 from collections import Counter
 from sqlalchemy.orm.attributes import InstrumentedAttribute
-from typing import Optional
 
 
 import hockeydata.database_creator.database_creator as db
@@ -34,7 +33,7 @@ class DBMapper(ABC):
 
     def get_results_with_mandatory_list_filter(
         self, query_name: str, filter_col: InstrumentedAttribute, 
-        filter_data: Optional[list]) -> list:
+        filter_data: list|None) -> list:
         if filter_data is not None:
             filter_ = filter_col.in_(filter_data)
         else:

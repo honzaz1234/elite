@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm import Session
-from typing import Optional
 
 
 import hockeydata.database_creator.storage_database_creator as storage_db
@@ -27,7 +26,7 @@ class EntityDataGetter(ABC):
 
 
     def __init__(self, db_query: StorageDBQuery, data: dict, 
-                 scrape_ids: list, uids: Optional[list]=None):
+                 scrape_ids: list, uids: list|None = None):
             self.db_query = db_query
             self.data = data
             self.filters = [
@@ -132,7 +131,7 @@ class StorageDBDataGetter(ABC):
 
     def __init__(self, db_session: Session, scrape_ids: list, uids: list):
         self.db_query = StorageDBQuery(db_session=db_session)
-        self.data: Optional[object] = None
+        self.data: dict|None = None
         self.scrape_ids = scrape_ids
         self.uids = uids
 

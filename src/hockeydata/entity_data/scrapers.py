@@ -3,7 +3,7 @@ import scrapy
 
 from abc import ABC, abstractmethod
 from playwright.sync_api import Page
-from typing import Any, Optional
+from typing import Any
 
 import hockeydata.common_functions as cf
 import hockeydata.entity_data.playwright_setup.playwright_setup as ps
@@ -105,7 +105,7 @@ class PlayerScraper(PlaywrightScraper):
 
     def __init__(self, url: str, page: Page):
         super().__init__(url=url, page=page)
-        self.scraped_data: dict[str, Optional[Any]] = {
+        self.scraped_data: dict[str, Any|None] = {
                 "player_uid": None,
                 "player_type": None,
                 "player_facts": None,
