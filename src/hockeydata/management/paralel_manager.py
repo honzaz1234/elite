@@ -46,8 +46,6 @@ class MultiManager(ABC):
         self.max_workers = max_workers
         self.data = data
         self.chunk_size = None
-        self.start_time = None
-        self.end_time = None
 
 
     @abstractmethod
@@ -65,16 +63,6 @@ class MultiManager(ABC):
             )
 
 
-    def _set_start_time(self) -> None:
-        self.start_time = datetime.now()
-        logger.debug("Started at %s", self.start_time)
-
-
-    def _set_end_time(self) -> None:
-        self.end_time = datetime.now()
-        logger.debug("Ended at %s", self.end_time)
-
-
     def _chunk_uids(self) -> Generator[dict[str, int], None, None]:
         keys = list(self.data.keys())
         for i in range(0, len(keys), self.chunk_size):
@@ -88,7 +76,7 @@ class MultiParseManager(MultiManager):
     @property
     @classmethod
     @abstractmethod
-    def GET_DB_MAPPER(cls) -> type[StorageDBDataGetter]:
+    def DB_MAPPER(cls) -> type[StorageDBDataGetter]:
         pass
 
     STORAGE_DB_GETTER = type[StorageDBDataGetter]
@@ -135,7 +123,7 @@ class MultiScrapeManager(MultiManager):
     @property
     @classmethod
     @abstractmethod
-    def GET_DB_MAPPER(cls) -> type[StorageDBDataGetter]:
+    def DB_MAPPER(cls) -> type[StorageDBDataGetter]:
         pass
 
 
@@ -160,7 +148,6 @@ class MultiScrapeManager(MultiManager):
 
 
     def scrape_data_with_multiple_processes(self) -> list:
-        self._set_start_time()
         mapper_chunks = list(self._chunk_uids())
         args = [
             (self.db_path, mapper_chunk, self.SCRAPER_MANAGER)
@@ -181,6 +168,6 @@ class MultiScrapeManager(MultiManager):
 class PlayerMultiScrapeManager(MultiScrapeManager):
 
 
-    GET_DB_MAPPER = PlayerStorageDBMapper
+    DB_MAPPER = PlayerStorageDBMapper
     REGEX_UID = "([0-9]+)"
     SCRAPER_MANAGER = PlayerScraperManager

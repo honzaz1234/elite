@@ -15,9 +15,11 @@ class HTMLInputter(ABC):
 
 
     def __init__(
-            self, db_session: Session, scrape_id: int):
+            self, db_session: Session):
+        self.db_session = db_session
         self.insert_db = DatabaseMethods(db_session=db_session)
-        self.scrape_id = scrape_id
+        self.query = Query(db_session=db_session)
+        self.scrape_id: int|None = None
 
 
     @abstractmethod
@@ -25,32 +27,16 @@ class HTMLInputter(ABC):
         pass
 
 
-class LogInputter(HTMLInputter):
-
-
-    def __init__(
-            self, db_session: Session, scrape_id: int, 
-            start_time: datetime, end_time: datetime, scrape_type: str
-            ):
-        super().__init__(
-            db_session=db_session, scrape_id=scrape_id
-            )
-        self.query = Query(db_session=db_session)
-        self.db_session = db_session
-        self.start_time = start_time
-        self.end_time = end_time
-        self.scrape_type = scrape_type
-
-
-    def input_data(self):
+    def input_scrape_log(self, scrape_type: str, start_time: datetime, 
+                         end_time: datetime) -> None:
         scrape_type_id = self.query._find_id_in_table(
             table=db.ScrapeType, 
-            scrape_type=self.scrape_type
+            scrape_type=scrape_type
             )
-        self.player_id = self.insert_db._input_data(
+        self.scrape_id = self.insert_db._input_data(
             table=db.Scrape, 
-            start_datetime=self.start_time,
-            end_datetime=self.end_time,
+            start_datetime=start_time,
+            end_datetime=end_time,
             scrape_type_id=scrape_type_id
             )
         #maybe delete later?
@@ -61,11 +47,8 @@ class PlayerHTMLInputter(HTMLInputter):
 
 
     def __init__(
-            self, db_session: Session, scraped_data: dict, missing_data: dict, scrape_id: int):
-        super().__init__(
-            db_session=db_session, scrape_id=scrape_id
-            )
-        self.db_session = db_session
+            self, db_session: Session, scraped_data: dict, missing_data: dict):
+        super().__init__(db_session=db_session)
         self.scraped_data = scraped_data
         self.missing_data = missing_data
         self.is_goalie = None
