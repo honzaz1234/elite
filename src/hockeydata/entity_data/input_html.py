@@ -43,23 +43,44 @@ class HTMLInputter(ABC):
         self.db_session.commit()
 
 
-class PlayerHTMLInputter(HTMLInputter):
+class HTMLEntityInputter(HTMLInputter):
+    """Parent class for handling inputting downloaded html files into storage  
+       DB
+    """
 
 
     def __init__(
-            self, db_session: Session, scraped_data: dict, missing_data: dict):
+            self, db_session: Session, scraped_data: dict):
         super().__init__(db_session=db_session)
         self.scraped_data = scraped_data
-        self.missing_data = missing_data
+        self.db_id = None
+
+
+    @abstractmethod
+    def _input_log(self) -> None:
+        pass
+
+
+    @abstractmethod
+    def _input_missing_data_logs(self) -> None:
+        pass
+
+
+class PlayerHTMLInputter(HTMLEntityInputter):
+
+
+    def __init__(
+            self, db_session: Session, scraped_data: dict):
+        super().__init__(
+            db_session=db_session, 
+            scraped_data=scraped_data
+            )
         self.is_goalie = None
-        self.player_uid = None 
-        self.player_id = None
 
 
     def input_data(self) -> None:
         self._set_is_goalie()
-        self._set_player_uid()
-        self._input_player_log()
+        self._input_log()
         self._input_player_facts_html()
         self._input_achievements_html()
         self._input_stats_htmls()
@@ -67,7 +88,7 @@ class PlayerHTMLInputter(HTMLInputter):
         self.db_session.commit()
         logger.info(
             'Data for player %s succesfully inputed into storage DB.', 
-            self.player_uid
+            self.scraped_data["uid"]
             )
     
 
@@ -83,14 +104,10 @@ class PlayerHTMLInputter(HTMLInputter):
             self.is_goalie = False
 
 
-    def _set_player_uid(self) -> None:
-        self.player_uid = self.scraped_data["player_uid"]
-
-
-    def _input_player_log(self):
-        self.player_id = self.insert_db._input_data(
+    def _input_log(self):
+        self.db_id = self.insert_db._input_data(
             table=db.PlayerLog, 
-            player_uid=self.player_uid,
+            uid=self.scraped_data["uid"],
             is_goalie=self.is_goalie,
             scrape_id=self.scrape_id,
             time_scraped=self.scraped_data['time_scraped']
@@ -100,15 +117,15 @@ class PlayerHTMLInputter(HTMLInputter):
     def _input_player_facts_html(self) -> None:
         self.insert_db._input_data(
             table=db.PlayerFacts, 
-            player_id=self.player_id,
+            player_id=self.db_id,
             html_data=self.scraped_data["player_facts"]
             )
         
 
     def _input_achievements_html(self) -> None:
         self.insert_db._input_data(
-            table=db.Achievements, 
-            player_id=self.player_id,
+            table=db.PlayerAchievements, 
+            player_id=self.db_id,
             html_data=self.scraped_data["achievements"]
             )
         
@@ -118,22 +135,22 @@ class PlayerHTMLInputter(HTMLInputter):
             stats_class = InputGoalieStatsHtml(
                 scraped_data=self.scraped_data['stats'], 
                 insert_db=self.insert_db,
-                player_id=self.player_id
+                player_id=self.db_id
                 ) 
         else:
             stats_class = InputSkaterStatsHtml(
                 scraped_data=self.scraped_data['stats'], 
                 insert_db=self.insert_db,
-                player_id=self.player_id
+                player_id=self.db_id
                 ) 
         stats_class._input_data()
 
 
     def _input_missing_data_logs(self) -> None:
-        for data_type in self.missing_data:
+        for data_type in self.scraped_data["missing_data"]:
             self.insert_db._input_data(
                 db.PlayerMissingDataLog, 
-                player_id=self.player_id, 
+                player_id=self.db_id, 
                 data_type=data_type
             )
 
@@ -146,7 +163,7 @@ class InputStatsHtml():
             player_id: int):
         self.scraped_data = scraped_data
         self.insert_db = insert_db
-        self.player_id = player_id
+        self.db_id = player_id
 
 
     @abstractmethod
@@ -164,7 +181,7 @@ class InputGoalieStatsHtml(InputStatsHtml):
             for season_type in self.scraped_data[competition_type]:
                 self.insert_db._input_data(
                     table=db.GoalieStats, 
-                    player_id=self.player_id,
+                    player_id=self.db_id,
                     competition_type=competition_type, 
                     season_type=season_type, 
                     html_data=self.scraped_data[competition_type][season_type]
@@ -181,10 +198,91 @@ class InputSkaterStatsHtml(InputStatsHtml):
             for competition_type in self.scraped_data:
                 self.insert_db._input_data(
                     table=db.SkaterStats, 
-                    player_id=self.player_id,
+                    player_id=self.db_id,
                     competition_type=competition_type, 
                     html_data=self.scraped_data[competition_type]
                     )
+                
+
+class LeagueHTMLInputter(HTMLEntityInputter):
+
+
+    def input_data(self) -> None:
+        self._input_log()
+        self.update_season_range()
+        self._input_league_name_html()
+        self._input_achievements_html()
+        self._input_stats_htmls()
+        self._input_missing_data_logs()
+        self.db_session.commit()
+        logger.info(
+            'Data for league %s succesfully inputed into storage DB.', 
+            self.scraped_data["uid"]
+            )
+        
+
+    def _input_log(self) -> None:
+        query = Query(db_session=self.db_session)
+        league_id = query._find_id_in_table(
+            table=db.LeagueInfo,
+            uid=self.scraped_data["uid"]
+            )
+        self.db_id = self.insert_db._input_data(
+            table=db.LeagueLog, 
+            league_id=league_id,
+            scrape_id=self.scrape_id,
+            time_scraped=self.scraped_data['time_scraped']
+            )
+        
+
+    def update_season_range(self) -> None:
+        self.insert_db._update_data(
+            table=db.LeagueInfo,
+            where_col=db.LeagueInfo.uid,
+            where_val=self.scraped_data["uid"],
+            first_season=self.scraped_data["season_range"]["first_season"],
+            last_season=self.scraped_data["season_range"]["last_season"],
+            last_update=datetime.now()
+            )
+
+
+    def _input_league_name_html(self) -> None:
+        self.insert_db._input_data(
+            table=db.LeagueName, 
+            player_id=self.db_id,
+            html_data=self.scraped_data["player_facts"]
+            )
+        
+
+    def _input_achievements_html(self) -> None:
+        self.insert_db._input_data(
+            table=db.LeagueAchievement, 
+            player_id=self.db_id,
+            html_data=self.scraped_data["achievements"]
+            )
+        
+
+    def _input_stats_htmls(self) -> None:
+        insert_list = []
+        for season in self.scraped_data["stats"]:
+            dict_ = {
+                "html_data": self.scraped_data["stats"][season]
+            }
+            insert_list.append(dict_)
+        self.insert_db.insert_update_or_ignore_on_conflict_bulk(
+            table=db.LeagueSeason,
+            data=insert_list,
+            update=False
+            )
+        
+
+    def _input_missing_data_logs(self) -> None:
+        for data_type in self.scraped_data["missing_data"]:
+            self.insert_db._input_data(
+                db.LeagueMissingDataLog, 
+                player_id=self.db_id, 
+                data_type=data_type
+                )
 
 
 
