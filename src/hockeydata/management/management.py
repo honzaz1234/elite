@@ -1,11 +1,12 @@
-import math
-import multiprocessing 
+import json
+import re
 
 
 from abc import ABC, abstractmethod
 from datetime import datetime
 from __future__ import annotations
-from typing import Any, Generator, Optional, Literal
+from sqlalchemy.orm import Session
+from typing import Literal
 
 
 import hockeydata.common_functions as cf
@@ -24,22 +25,21 @@ import hockeydata.entity_data.input_dict.input_player_dict as input_player_dict
 import hockeydata.entity_data.input_dict.input_team_dict as input_team_dict
 import hockeydata.entity_data.playwright_setup.playwright_setup as ps
 import hockeydata.mappers.db_mappers as db_mapper
-import json
-import os
-import re
 
 
 from hockeydata.constants import *
 from hockeydata.database_creator.database_creator import *
-from hockeydata.database_session.database_session import GetParseDBSession, GetScrapeDBSession
+from hockeydata.database_session.database_session import DatabaseSession, ParseDBSession, ScrapeDBSession
+from hockeydata.entity_data.input_html import HTMLInputter, PlayerHTMLInputter
+from hockeydata.management.paralel_manager import PlayerMultiScrapeManager, MultiScrapeManager
 from hockeydata.decorators import repeat_request_until_success, time_execution
-from hockeydata.entity_data.input_html import HTMLInputter, LogInputter, PlayerHTMLInputter
+from hockeydata.mappers.db_mappers import StorageDBMapper, PlayerStorageDBMapper
 from hockeydata.entity_data.scrapers import PlayerScraper, PlaywrightScraper
 from hockeydata.errors import GameDataError
 from hockeydata.logger.logging_config import logger
 
-
-class Manage():
+        
+class Manager(ABC):
 
 
     REGEX_UID = None
@@ -53,131 +53,192 @@ class Manage():
     TYPE = None
 
 
-    def __init__(
-            self, parse_session: GetParseDBSession):
-        self.parse_session = parse_session.session
-        self.urls = None
-        self.update_dict = None
-        self.input_dict = None
-        self.scrape_id = None
-        self.uid_status_mapper = None
+    @property
+    @classmethod
+    @abstractmethod
+    def DB_INSERTER(cls) -> type[HTMLInputter]:
+        pass
 
+    @property
+    @classmethod
+    @abstractmethod
+    def SESSION_CLASS(cls) -> type[DatabaseSession]:
+        pass
+
+
+    def __init__(self):
+        self.db_session: Session = None
+        self.scrape_id: int = None
+        self.start_time: datetime = None
+        self.end_time: datetime = None
+
+
+    def set_session(self, db_path: str) -> None:
+        self.db_session = self.get_session(
+            db_path=db_path,
+            session_type=self.SESSION_CLASS
+            )    
+
+
+    def get_session(
+            self, db_path: str, 
+            session_type: type[ScrapeDBSession|ParseDBSession]):
+        session = session_type(db_path=db_path)
+        session.set_up_connection()
+
+        return session.session
+    
+
+    @abstractmethod
+    def set_up(self, db_path: str):
+        pass
+        
 
     def set_up_management(self):
         self._load_uid_status_mapper()
-        self._load_url_file()
         
 
     def _load_uid_status_mapper(self) -> None:
         self.uid_status_mapper =  self.GETDBID.get_parsed_data_statuses()
 
 
-    def _save_done_file(self) -> None:
-        logger.info(
-            "Saving %s done file at path: %s...", 
-            self.TYPE, self.done_path
-            )
-        if self.done_file is not None:
-            with open(self.done_path, 'w') as f:
-                json.dump(self.done_file, f)
+    def _input_all_data(self, data: list[dict]) -> None:
+        data_inserter = self.DB_INSERTER(data=entity_dict)
+        data_inserter.input_scrape_log(
+            scrape_type=self.TYPE,
+            start_time=self.start_time,
+            end_time=self.end_time
+        )
+        for entity_dict in data:
+            data_inserter.input_data()
+
+
+    def _set_start_time(self) -> None:
+        self.start_time = datetime.now()
+        logger.debug("Started at %s", self.start_time)
+
+
+    def _set_end_time(self) -> None:
+        self.end_time = datetime.now()
+        logger.debug("Ended at %s", self.end_time)
+
+
+class EntityScrapeManager(Manager):
+
+
+    @property
+    @classmethod
+    @abstractmethod
+    def PARALEL_MANAGER(cls) -> type[MultiScrapeManager]:
+        pass
+
+    @property
+    @classmethod
+    @abstractmethod
+    def MAPPER(cls) -> type[StorageDBMapper]:
+        pass
+
+    @property
+    @classmethod
+    @abstractmethod
+    def TYPE(cls):
+        pass
+
+
+    SESSION_CLASS = ScrapeDBSession
+
+
+    def __init__(self):
+        super().__init__()
+        self.uid_url_mapper: dict[str|int, str] = None
+
+
+    def set_up(
+            self, db_path: str, scrape_ids: list, 
+            rescrape: bool) -> None:
+        self.set_session(db_path=db_path)
+        urls = self.get_urls(scrape_ids=scrape_ids)
+        self._get_uid_to_url_mapper(urls=urls)
+        if not rescrape:
             logger.info(
-                "%s done file saved at path: %s.", self.TYPE, self.url_list_path
+                "Rescrape set to True, already scraped data will"
+                " be rescraped."
+                )
+            scraped_uids = self._load_scraped_uids(
+                uids=self.uid_url_mapper.keys()
+                )
+            self._filter_out_new_uids(
+                scraped_uids=scraped_uids
                 )
         else:
-            logger.info("Done file is equal to None, therefore data was not "
-                        "saved.")
-
-
-    def _load_url_file(self) -> None:
-        if not os.path.exists(self.url_list_path):
             logger.info(
-                "%s creating URL file at path: %s...", 
-                self.TYPE, self.url_list_path
+                "Rescrape set to False, already scraped data will"
+                "not  be rescraped."
                 )
-            self._create_url_file()
-        else:
-            logger.info("Opening %s URL file at path: %s", 
-                        self.TYPE, self.url_list_path
-                        )
-            with open(self.url_list_path) as f:
-                self.urls = json.load(f)
 
 
-    def _create_url_file(self) -> None:
-        self.urls = {}
-        self._save_url_file()
-        logger.info(
-            "%s URL file at path: %s created.", self.TYPE, self.url_list_path
-            )
+    def get_urls(self, scrape_ids: list) -> list:
+        mapper = self.MAPPER(db_session=self.db_session)
+
+        return mapper.get_urls(scrape_ids=scrape_ids)
 
 
-    def _save_url_file(self) -> None:
-        logger.info(
-            "Saving %s URL file at path: %s ...", 
-            self.TYPE, self.url_list_path
-            )
-        if self.urls is not None:
-            with open(self.url_list_path, 'w') as f:
-                json.dump(self.urls, f)
-            logger.info("%s URL file saved at path: %s.", 
-                        self.TYPE, self.url_list_path
-                        )
-        else:
-            logger.info("URL file is equal to None, therefore data was not "
-                        "saved.")
-
-
-    def scrape_input_into_db_wrapper(self, url: str) -> None:
-        uid = self.get_uid(url=url)
-        if uid in self.done_file:
-            
-            return
-        try:
-            self.scrape_and_input_into_db(url=url)
-        except Exception as e:
-            with open(self.done_path, 'w') as f:
-                json.dump(self.done_file, f)
-            raise e
-        self.done_file.append(uid)
-
-
-    def get_uid(self, url: str) -> str:
-        uid = int(re.findall(self.REGEX_UID, url)[0])
-
-        return uid
-
-
-    @time_execution
-    def scrape_and_input_into_db(self, url: str) -> None:
-            scraped_dict = self.scrape(url)
-            updated_dict = (
-                self.UPDATE_DICT
-                .update_dict(scraped_dict)
+    def _get_uid_to_url_mapper(self, urls: list) -> None:
+        for url in urls:
+            try:
+                uid = re.findall(self.REGEX_UID, url)[0]
+                self.uid_url_mapper[uid] = url
+            #add exception
+            except Exception as e:
+                error_message = (
+                    f"URL is in a wrong format: {url}"       
                 )
-            self.input_dict.input_dict(dict=updated_dict)
+                cf.log_and_raise(error_message, ValueError)
+        logger.info("%s UIDs extracted from URLs.", len(urls))
 
 
-    def save_data_to_google_drive(self):
-        logger.info("Saving %s data to Google Drive...", self.TYPE)
-        google_manage = google.GoogleManager()
-        google_manage.upload_files_to_drive(
-            files_include=[self.DONE_FILE, self.LINK_FILE]
+    def _load_scraped_uids(self, uids: list) -> set:
+        db_mapper = self.MAPPER(db_session=self.db_session)
+        scraped_uids =  db_mapper.get_scraped_uids(
+            uids=uids
             )
-        logger.info("Data %s saved to Google Drive.", self.TYPE)
+        logger.info("%s scraped UIDs loaded. ", len(scraped_uids))
+
+        return scraped_uids
 
 
-def scrape_worker(
-        args: tuple[str, dict[int, str], type[ScraperManager]]) -> list[Any]:
-    db_path, url_mapper, scraper_class  = args
+    def _filter_out_new_uids(
+            self, scraped_uids: set) -> None:
+        keep_uids = list(set(self.uid_url_mapper.keys()) - scraped_uids)
+        self.uid_url_mapper = {
+            uid: url 
+            for uid, url in self.uid_url_mapper.items() 
+            if uid in keep_uids
+            }
+        logger.info("UIDs for already scraped players filtered out. %s UIDs "
+                    " left to scrape.", len(self.data))
+        
 
-    scraper_manager = scraper_class(
-        db_path=db_path,
-        url_mapper=url_mapper
-    )
-    scraper_manager.initiate_playwright_session()
-    scraped_data = scraper_manager.scrape_data()
+    def scrape_data(self, max_workers: int=None) -> list[dict]:
+        self._set_start_time()
+        paralel_manager = self.PARALEL_MANAGER(
+            db_session=self.db_session,
+            max_workers=max_workers,
+            data=self.uid_url_mapper
+            )
+        scraped_data = paralel_manager.scrape_data_with_multiple_processes()
+        self._set_end_time()
 
-    return scraped_data
+        return scraped_data
+
+
+class PlayerScrapeManager(EntityScrapeManager):
+
+
+    DB_INSERTER = PlayerHTMLInputter
+    PARALEL_MANAGER = PlayerMultiScrapeManager
+    MAPPER = PlayerStorageDBMapper
+    TYPE = "players"
 
 
 class ScraperManager(ABC):
@@ -190,11 +251,16 @@ class ScraperManager(ABC):
         pass
 
 
-    def __init__(self, db_path: str, url_mapper: dict[str]=None):
-        self.db_path = db_path
+    def __init__(self, url_mapper: dict[str]=None):
         playwright_session = ps.PlaywrightSetUp()
         self.page = playwright_session.page
         self.url_mapper = url_mapper
+
+
+    def process(self) -> list[dict]:
+        self.initiate_playwright_session()
+
+        return self.scrape_data()
 
 
     def initiate_playwright_session(self) -> None:
@@ -216,7 +282,7 @@ class ScraperManager(ABC):
                     "Scraped failed for uid %s: %s",
                     uid, e
                 )
-            #    self.session.bulk_insert_mappings(
+            #    self.db_session.bulk_insert_mappings(
             #        self.db_source.Season, self.scrape_log
             #        )
                 cf.log_and_raise(error_message, Exception)
@@ -225,13 +291,13 @@ class ScraperManager(ABC):
         return scraped_entities
 
 
-    @abstractmethod
     def scrape_entity_data(self, url: str) -> dict:
         scraper = self.SCRAPE_CLASS(url=url, page=self.page)
+        scraper.go_to_page(check_xpath=scraper.PATHS["landing_check"])
         scraper.get_data()
 
-        return scraper.scraped_data
-
+        return scraper.get_data()
+    
 
 class PlayerScraperManager(ScraperManager):
 
@@ -239,207 +305,10 @@ class PlayerScraperManager(ScraperManager):
     SCRAPE_CLASS = PlayerScraper
 
 
-class MultiScrapeManager(ABC):
 
 
-    @property
-    @classmethod
-    @abstractmethod
-    def REGEX_UID(cls):
-        pass
-
-    @property
-    @classmethod
-    @abstractmethod
-    def SCRAPER_MANAGER(cls) -> type[ScraperManager]:
-        pass
 
 
-    def __init__(self, db_path: str, max_workers: int=4, urls: list=None,
-                rescrape: bool=False):
-        self.db_path = db_path
-        self.max_workers = max_workers
-        self.urls = urls
-        self.uids: dict[int, str]=dict()
-        self.rescrape = rescrape
-        self.chunk_size = None
-        self._set_chunk_size()
-        self.start_time = None
-        self.end_time = None
-
-            
-    def set_up_manager(self):
-        self._get_uid_to_url_mapper()
-        if self.rescrape:
-            logger.info(
-                "self.rescrape set to True, already scraped data will"
-                " be rescraped."
-                )
-        else:
-            self._load_scraped_uids()
-            self._filter_out_new_uids()
-            logger.info(
-                "self.rescrape set to False, already scraped data will"
-                "not  be rescraped."
-                )
-        logger.debug("Scrape set up.")
-
-    def _set_chunk_size(self) -> None:
-        self.chunk_size = math.ceil(len(self.urls) / self.max_workers)
-        logger.info(
-            'Scrape will be divided between %s chunks of size %s', 
-            self.max_workers,
-            self.chunk_size
-            )
-
-
-    def _get_uid_to_url_mapper(self) -> dict:
-        for url in self.urls:
-            try:
-                uid = re.findall(self.REGEX_UID, url)[0]
-                self.uids[uid] = url
-            #add exception
-            except Exception as e:
-                error_message = (
-                    f"URL is in a wrong format: {url}"       
-                )
-                cf.log_and_raise(error_message, ValueError)
-        logger.info("%s UIDs extracted from URLs.", len(self.urls))
-    
-
-    def _load_scraped_uids(self) -> None:
-        session = db_mapper.GetEntityDBID(db_path=self.db_path)
-        self.scraped_uids =  session.get_scraped_ids(
-            uids=self.uids
-            )
-        logger.info("%s scraped UIDs loaded. ", len(self.scraped_uids))
-
-
-    def _filter_out_new_uids(self) -> None:
-        keep_uids = list(set(self.uids.keys()) - set(self.scraped_uids))
-        self.uids = {
-            uid: url 
-            for uid, url in self.uids.items() 
-            if uid in keep_uids
-            }
-        logger.info("UIDs for already scraped players filtered out. %s UIDs "
-                    " left to scrape.", len(self.uids))
-
-
-    def scrape_data_with_multiple_processes(self) -> list:
-        self._set_start_time()
-        mapper_chunks = list(self._chunk_uids())
-        args = [
-            (self.db_path, mapper_chunk, self.SCRAPER_MANAGER)
-            for mapper_chunk in mapper_chunks
-        ]
-
-        with multiprocessing.Pool(processes=self.max_workers) as pool:
-            scraped_entities_nested = pool.map(scrape_worker, args)
-        self._set_end_time()
-        scraped_entities = [
-            entity for sublist in scraped_entities_nested 
-            for entity in sublist
-            ]
-
-        return scraped_entities
-    
-
-    def _set_start_time(self) -> None:
-        self.start_time = datetime.now()
-        logger.debug("Scrape started at %s", self.start_time)
-
-
-    def _set_end_time(self) -> None:
-        self.end_time = datetime.now()
-        logger.debug("Scrape ended at %s", self.end_time)
-    
-
-    def _chunk_uids(self) -> Generator[dict[str, int], None, None]:
-        keys = list(self.uids.keys())
-        for i in range(0, len(keys), self.chunk_size):
-            chunk_keys = keys[i:i + self.chunk_size]
-            yield {k: self.uids[k] for k in chunk_keys}
-
-
-class MultiScrapeManager(ABC):
-
-
-    REGEX_UID = "([0-9]+)"
-    SCRAPER_MANAGER = ScraperManager
-
-
-class ScrapeInsertManager(ABC):
-
-
-    @property
-    @classmethod
-    @abstractmethod
-    def INSERT_CLASS(cls) -> type[HTMLInputter]:
-        pass
-
-
-    @property
-    @classmethod
-    @abstractmethod
-    def TYPE(cls):
-        pass
-
-
-    def __init__(
-            self, db_path: str, data: list[dict], start_time: datetime, end_time: datetime):
-        self.db_path =  db_path
-        self.data = data
-        self.scrape_session: Optional[GetScrapeDBSession] = None
-        self.scrape_id: Optional[int] = None
-        self.data_inserter = self.INSERT_CLASS(data=data)
-        self.start_time = start_time
-        self.end_time = end_time
-
-
-    def initiate_db_session(self) -> None:
-        get_session = GetScrapeDBSession(db_path=self.db_path)
-        self.scrape_session = get_session.session
-        logger.debug(
-            "DB session at path %s succesfully initiated.", 
-            self.db_path
-            )
-
-
-    def _set_scrape_id(self) -> None:
-        self.scrape_id = self.scrape_session.create_scrape_table_entry(
-            type_=self.TYPE
-            )
-        logger.info("Starting scrape n. %s...", self.scrape_id)
-
-
-    def input_data(self) -> None:
-        self._set_scrape_id()
-        self._input_all_data()
-
-
-    def _input_all_data(self) -> None:
-        for entity_dict in self.data:
-            data_inserter = self.INSERT_CLASS(data=entity_dict)
-            data_inserter.input_data()
-
-
-    def input_log(self) -> None:
-        log_inputter = LogInputter(
-            db_session=self.scrape_session,
-            scrape_id=self.scrape_id,
-            start_time=self.start_time,
-            end_time=self.end_time,
-            scrape_type=self.TYPE
-        )
-        log_inputter.input_data()
-
-
-class PlayerScrapeInsertManager(ScrapeInsertManager):
-
-
-    INSERT_CLASS = PlayerHTMLInputter
-    TYPE = "player"
 
 
 
@@ -492,7 +361,7 @@ class ManagePlayer(Manage):
 
 
     def __init__(
-            self, session_o: GetDatabaseSession, done_folder_path: str, 
+            self, session_o: DatabaseSession, done_folder_path: str, 
             links_folder_path: str, 
             scope: Literal['insert', 'update', 'all']='all'):
         super().__init__(
@@ -651,7 +520,7 @@ class ManageTeam(Manage):
 
 
     def __init__(
-            self, session_o: GetDatabaseSession, done_folder_path: str, 
+            self, session_o: DatabaseSession, done_folder_path: str, 
             links_folder_path: str):
         super().__init__(
             session_o=session_o, 
@@ -734,7 +603,7 @@ class ManageLeague(Manage):
 
 
     def __init__(
-            self, session_o: GetDatabaseSession, done_folder_path: str, 
+            self, session_o: DatabaseSession, done_folder_path: str, 
             links_folder_path: str):
         super().__init__(
             session_o=session_o, 
@@ -786,7 +655,7 @@ class ManageLeague(Manage):
         return uid
 
 
-class ManageGame(Manage):
+class ManageGame(Manager):
 
 
     DONE_FILE = "done_games.json"
@@ -795,14 +664,14 @@ class ManageGame(Manage):
 
 
     def __init__(
-            self, session_o: GetDatabaseSession, done_folder_path: str, links_folder_path: str, update_on_conflict: bool):
+            self, session_o: DatabaseSession, done_folder_path: str, links_folder_path: str, update_on_conflict: bool):
         super().__init__(
             session_o=session_o, done_folder_path=done_folder_path,
             links_folder_path=links_folder_path)
         self.season_ranges_path = links_folder_path + "/season_ranges.json"
         self.season_ranges = None
         self.report_id_getter_o = report_getter.ReportIDGetter()
-        self.mapper_o = db_mapper.GetDBID(self.db_session)
+        self.mapper_o = db_mapper.DBMapper(self.db_session)
         self.input_mapper_o = input_game.InputEliteNHLmapper(self.db_session)
         self.update_on_conflict = update_on_conflict
 
