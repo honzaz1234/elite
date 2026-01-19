@@ -143,11 +143,11 @@ class DatabaseMethods():
 
     def insert_update_or_ignore_on_conflict(
             self, table: Table, data: dict, update: bool=False, return_id=False) -> int|None:
-        index_cols = self.INDEX_CONFIG[table]
+
         insert_query = self._get_insert_query(
             table=table, 
             data=data, update=update, 
-            index_cols=index_cols
+            index_cols=self.INDEX_CONFIG[table]["index_update"]
             )
         if return_id:
             insert_query = insert_query.returning(table.id)
@@ -176,7 +176,7 @@ class DatabaseMethods():
             table=table, 
             data=data, 
             update=update, 
-            index_cols=self.INDEX_CONFIG[table]
+            index_cols=self.INDEX_CONFIG[table]["index_update"]
             )
         self.db_session.execute(insert_query)
 
