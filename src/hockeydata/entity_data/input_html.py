@@ -249,15 +249,15 @@ class LeagueHTMLInputter(HTMLEntityInputter):
     def _input_league_name_html(self) -> None:
         self.insert_db._input_data(
             table=db.LeagueName, 
-            player_id=self.db_id,
-            html_data=self.scraped_data["player_facts"]
+            league_id=self.db_id,
+            html_data=self.scraped_data["league_name"]
             )
         
 
     def _input_achievements_html(self) -> None:
         self.insert_db._input_data(
             table=db.LeagueAchievement, 
-            player_id=self.db_id,
+            league_id=self.db_id,
             html_data=self.scraped_data["achievements"]
             )
         
@@ -266,7 +266,8 @@ class LeagueHTMLInputter(HTMLEntityInputter):
         insert_list = []
         for season in self.scraped_data["stats"]:
             dict_ = {
-                "html_data": self.scraped_data["stats"][season]
+                "html_data": self.scraped_data["stats"][season],
+                "league_id": self.db_id
             }
             insert_list.append(dict_)
         self.insert_db.insert_update_or_ignore_on_conflict_bulk(
@@ -280,7 +281,7 @@ class LeagueHTMLInputter(HTMLEntityInputter):
         for data_type in self.scraped_data["missing_data"]:
             self.insert_db._input_data(
                 db.LeagueMissingDataLog, 
-                player_id=self.db_id, 
+                league_id=self.db_id, 
                 data_type=data_type
                 )
 
