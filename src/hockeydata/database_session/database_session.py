@@ -1,7 +1,7 @@
 import re
 
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import date, datetime
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -121,7 +121,6 @@ class DatabaseSession(ABC):
             data=seasons_insert,
             update=False
             )
-        self.session.bulk_insert_mappings(self.DB_SOURCE.Season, seasons_insert)
 
 
     def add_years_to_seasons_table(self) -> None:
@@ -135,7 +134,6 @@ class DatabaseSession(ABC):
             data=years_insert,
             update=False,
             )
-        self.session.bulk_insert_mappings(self.DB_SOURCE.Season, years_insert)
 
 
 class ParseDBSession(DatabaseSession):
@@ -148,7 +146,7 @@ class ParseDBSession(DatabaseSession):
     
 
     def __init__(self, db_path):
-        super().__init__(db_path=db_path, db_source=db)
+        super().__init__(db_path=db_path)
     
 
     def set_up_connection(self) -> None:
@@ -233,7 +231,7 @@ class ScrapeDBSession(DatabaseSession):
 
 
     def __init__(self, db_path):
-        super().__init__(db_path=db_path, db_source=storage_db)
+        super().__init__(db_path=db_path)
 
 
     def set_up_connection(self) -> None:
@@ -241,15 +239,17 @@ class ScrapeDBSession(DatabaseSession):
         self.start_session()
         self.set_up_db_control()
         scrape_types_filled = self.check_is_table_empty(
-            table=storage_db.ScrapeType)
+            table=storage_db.ScrapeType
+            )
         if not scrape_types_filled:
-            self.add_scrape_types_to_scrape_types_table()
+            self.add_data_to_tables()
 
 
     def add_data_to_tables(self) -> None:
         self.add_seasons_to_seasons_table()
         self.add_years_to_seasons_table()
         self.add_scrape_types_to_scrape_types_table()
+        self.add_league_info_to_league_info_table()
         self.session.commit()
 
 
@@ -268,15 +268,16 @@ class ScrapeDBSession(DatabaseSession):
     def add_league_info_to_league_info_table(self) -> None:
         insert_info = []
         for league_name in LEAGUE_UIDS:
-            uid = re.findall('\/[.+]$',LEAGUE_UIDS[league_name])
+            uid = re.findall('league\/(.+)$',LEAGUE_UIDS[league_name])[0]
             insert_info.append(
                 {
                     "elite_name": league_name, 
-                    "uid": uid
+                    "uid": uid,
+                    "last_update": datetime.now()
                     }
             )
         self.db_control.insert_update_or_ignore_on_conflict_bulk(
-            table=storage_db.ScrapeType,
+            table=storage_db.LeagueInfo,
             data=insert_info,
             update=False
             )
