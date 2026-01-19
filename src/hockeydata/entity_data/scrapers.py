@@ -319,7 +319,7 @@ class LeagueScraper(PlaywrightScraper):
     def __init__(self, url: str, page: Page):
         super().__init__(url=url, page=page)
         self.scraped_data: dict[str, Any|None] = {
-                "uid"
+                "uid": None,
                 "league_name": None,
                 "achievements": None,
                 "seasons": None,
