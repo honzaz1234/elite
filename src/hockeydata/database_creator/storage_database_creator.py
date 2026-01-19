@@ -22,7 +22,11 @@ class Scrape(Base):
     id = Column(Integer, primary_key=True)
     start_datetime = Column(DateTime, nullable=False)
     end_datetime = Column(DateTime, nullable=True)
-    scrape_type_id = Column(Integer, ForeignKey('scrape_types.id'), nullable=False)
+    scrape_type_id = Column(
+        Integer, 
+        ForeignKey('scrape_types.id'), 
+        nullable=False
+        )
 
 
     def __init__(
@@ -47,7 +51,7 @@ class ScrapeType(Base):
     __tablename__ = 'scrape_types'
 
     id = Column(Integer, primary_key=True)
-    scrape_type = Column(String, nullable=False)
+    scrape_type = Column(String, nullable=False, unique=True)
 
 
     def __init__(self, scrape_type: str):
@@ -75,16 +79,21 @@ class PlayerURL(Base):
     league_id = Column(Integer, ForeignKey('league_infos.id'), nullable=False)
 
 
-    def __init__(self, url: str, scrape_id: int):
+    def __init__(
+            self, url: str, scrape_id: int, season_id: int, league_id: int):
         self.url = url
         self.scrape_id = scrape_id
+        self.season_id = season_id
+        self.league_id = league_id
 
 
     def __repr__(self):
-        return "<PlayerURL(id=%s, url='%s', scrape_id='%s')>" % (
+        return "<PlayerURL(id=%s, url='%s', scrape_id='%s', season_id=%s, league_id=%s)>" % (
             self.id, 
             self.url,
-            self.scrape_id
+            self.scrape_id,
+            self.season_id,
+            self.league_id
         )
     
 
@@ -94,7 +103,7 @@ class PlayerLog(Base):
 
 
     id = Column(Integer, primary_key=True)
-    player_uid = Column(Integer, nullable=False)
+    uid = Column(Integer, nullable=False)
     scrape_id = Column(Integer, ForeignKey('scrapes.id'), nullable=False)
     is_goalie = Column(Boolean, nullable=False)
     time_scraped = Column(DateTime, nullable=False)
@@ -106,13 +115,14 @@ class PlayerLog(Base):
 
 
     __table_args__ = (
-        UniqueConstraint('scrape_id', 'player_uid', name='uq_playerlogs_scrape_id_player_uid'),
+        UniqueConstraint('scrape_id', 'uid', name='uq_playerlogs_scrape_id_uid'),
     )
 
 
     def __init__(
-            self, player_uid: int, scrape_id: int, is_goalie: bool, time_scraped: datetime):
-        self.player_uid = player_uid
+            self, uid: int, scrape_id: int, is_goalie: bool, 
+            time_scraped: datetime):
+        self.uid = uid
         self.scrape_id = scrape_id
         self.is_goalie = is_goalie
         self.time_scraped = time_scraped
@@ -121,10 +131,10 @@ class PlayerLog(Base):
 
     def __repr__(self):
         return (
-            "<Player(id=%s, player_uid='%s', scrape_id='%s', is_goalie=%s, "
+            "<Player(id=%s, uid='%s', scrape_id='%s', is_goalie=%s, "
             "time_scraped=%s, time_inserted=%s)>" % (
                 self.id, 
-                self.player_uid, 
+                self.uid, 
                 self.scrape_id, 
                 self.is_goalie, 
                 self.time_scraped,
@@ -203,7 +213,7 @@ class PlayerFacts(Base):
     html_data = Column(LargeBinary)  
 
 
-    def __init__(self, player_id: int, html_data: str):
+    def __init__(self, player_id: int, html_data: bytes):
         self.player_id = player_id
         self.html_data = html_data
 
@@ -217,9 +227,9 @@ class PlayerFacts(Base):
         )
 
 
-class Achievements(Base, HtmlPreviewMixin):
+class PlayerAchievements(Base, HtmlPreviewMixin):
 
-    __tablename__ = 'achievements'
+    __tablename__ = 'player_achievements'
 
 
     id = Column(Integer, primary_key=True)
@@ -271,6 +281,48 @@ class PlayerMissingDataLog(Base):
         )
     
 
+class LeagueLog(Base):
+
+    __tablename__ = 'league_logs'
+
+
+    id = Column(Integer, primary_key=True)
+    scrape_id = Column(Integer, ForeignKey('scrapes.id'), nullable=False)
+    league_id = Column(Integer, ForeignKey('league_infos.id'), nullable=False)
+    time_scraped = Column(DateTime, nullable=False)
+    time_inserted = Column(
+        DateTime, 
+        default=lambda: datetime.now(), 
+        nullable=False
+        )
+
+
+    __table_args__ = (
+        UniqueConstraint('scrape_id', 'league_id', name='uq_playerlogs_scrape_id_league_id'),
+    )
+
+
+    def __init__(
+            self, league_id: int, scrape_id: int, time_scraped: datetime):
+        self.league_id = league_id
+        self.scrape_id = scrape_id
+        self.time_scraped = time_scraped
+        self.time_inserted = None
+
+
+    def __repr__(self):
+        return (
+            "<Player(id=%s, league_id='%s', scrape_id='%s', "
+            "time_scraped=%s, time_inserted=%s)>" % (
+                self.id, 
+                self.league_id, 
+                self.scrape_id, 
+                self.time_scraped,
+                self.time_inserted
+                )
+        )
+    
+
 class LeagueInfo(Base):
 
     __tablename__ = "league_infos"
@@ -278,30 +330,29 @@ class LeagueInfo(Base):
 
     id = Column(Integer, primary_key=True)
     elite_name = Column(String, nullable=False)
-    url_appendix = Column(String, nullable=False)
-    uid = Column(String, nullable=False)
+    uid = Column(String, nullable=False, unique=True)
+    first_season = Column(String)
+    last_season = Column(String)
+    last_update = Column(DateTime, nullable=False)
 
 
-    __table_args__ = (
-        UniqueConstraint(
-            'elite_name', 'url_appendix', 'uid',
-            name='uq_league_infos_all_columns'
-        ),
-    )
-
-
-    def __init__(self, elite_name: str, url_appendix: str, uid: str):
+    def __init__(
+            self, elite_name: str, uid: str, last_update: datetime, first_season: str|None = None, last_season: str|None = None):
         self.elite_name = elite_name
-        self.url_appendix = url_appendix
         self.uid = uid
+        self.first_season = first_season
+        self.last_season = last_season
+        self.last_update = last_update
 
 
     def __repr__(self):
-        return "<PlayerMissingDataLog(id=%s, elite_name=%s, url_appendix='%s', uid='%s')>" % (
+        return "<PlayerMissingDataLog(id=%s, elite_name=%s, uid='%s', first_season='%s', last_season='%s', last_update=%s)>" % (
             self.id, 
             self.elite_name, 
-            self.url_appendix,
-            self.uid
+            self.uid,
+            self.first_season,
+            self.last_season,
+            self.last_update
         )
     
 
@@ -312,8 +363,106 @@ class Season(Base):
     id = Column("id", Integer, primary_key=True)
     season = Column("season", String, nullable=False, unique=True)
 
-    def __init__(self, season):
+    def __init__(self, season: str):
         self.season = season
 
+
     def __repr__(self):
-        return f"({self.id, self.season})"
+        return "<Season(id=%s, season=%s)>" % (
+            self.id, 
+            self.season
+        )
+    
+
+class LeagueName(Base):
+
+
+    __tablename__ = "league_names"
+
+
+    id = Column("id", Integer, primary_key=True)
+    html_data = Column("html_data", String, nullable=False, unique=True)
+
+
+    def __init__(self, html_data):
+        self.html_data = html_data
+
+
+    def __repr__(self):
+        return "<LeagueName(id=%s, html_data=%s)>" % (
+            self.id, 
+            self.html_data
+        )
+    
+
+class LeagueAchievement(Base):
+
+
+    __tablename__ = "league_achievements"
+
+
+    id = Column("id", Integer, primary_key=True)
+    html_data = Column("html_data", String, nullable=False, unique=True)
+
+
+    def __init__(self, html_data):
+        self.html_data = html_data
+
+
+    def __repr__(self):
+        return "<LeagueAchievement(id=%s, html_data=%s)>" % (
+            self.id, 
+            self.html_data
+        )
+    
+
+class LeagueSeason(Base):
+
+
+    __tablename__ = "league_seasons"
+
+
+    id = Column("id", Integer, primary_key=True)
+    html_data = Column("html_data", String, nullable=False, unique=True)
+
+
+    def __init__(self, html_data):
+        self.html_data = html_data
+
+
+    def __repr__(self):
+        return "<LeagueSeason(id=%s, html_data=%s)>" % (
+            self.id, 
+            self.html_data
+        )
+    
+
+class LeagueMissingDataLog(Base):
+
+    __tablename__ = "league_missing_data_logs"
+
+
+    id = Column(Integer, primary_key=True)
+    league_id = Column(Integer, ForeignKey("league_infos.id"), nullable=False)
+    data_type = Column(String, nullable=False)
+
+
+    __table_args__ = (
+        UniqueConstraint(
+            'league_id', 'data_type',
+            name='uq_league_missing_data_logs_all_columns'
+        ),
+    )
+
+
+    def __init__(self, league_id: int, data_type: str):
+        self.league_id = league_id
+        self.data_type = data_type
+
+
+    def __repr__(self):
+        return "<LeagueMissingDataLog(id=%s, league_id=%s, data_type='%s')>" % (
+            self.id, 
+            self.league_id, 
+            self.data_type
+        )
