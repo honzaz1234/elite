@@ -1,7 +1,7 @@
 import re
 
 from abc import ABC, abstractmethod
-from datetime import date, datetime
+from datetime import datetime
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -48,7 +48,7 @@ class DatabaseSession(ABC):
 
 
     def __init__(self, db_path: str):
-        self.database_path = db_path
+        self.db_path = db_path
         self.engine: Engine = None
         self.session: Session = None
         self.db_control: DatabaseMethods = None
@@ -58,7 +58,7 @@ class DatabaseSession(ABC):
 
     def start_session(self) -> None:
         self.engine = create_engine(
-            "sqlite:///" + self.database_path, echo=False
+            "sqlite:///" + self.db_path, echo=False
             )
         self.DB_SOURCE.Base.metadata.create_all(bind=self.engine)
         DBSession = sessionmaker(bind=self.engine)
@@ -66,7 +66,7 @@ class DatabaseSession(ABC):
         self.meta_data = self.DB_SOURCE.Base.metadata
         logger.info(
             "New DB session initiated with db at %s", 
-            self.database_path
+            self.db_path
                     )
         
 
@@ -80,10 +80,10 @@ class DatabaseSession(ABC):
 
 
     def clear_all_tables(self) -> None:
-        if 'test' not in self.database_path.lower():
+        if 'test' not in self.db_path.lower():
             error_message = (
                 f"Data deletion is not allowed on the" 
-                f"database  as {self.database_path} does not"
+                f"database  as {self.db_path} does not"
                 f" contain 'test'."
                 )
             cf.log_and_raise(error_message, ValueError)
@@ -91,7 +91,7 @@ class DatabaseSession(ABC):
             self.session.execute(text(f"DELETE FROM {table.name};"))
         logger.info(
             "Data from all tables in db %s has been deleted", 
-            self.database_path
+            self.db_path
             )
 
         self.session.commit()
@@ -235,14 +235,10 @@ class ScrapeDBSession(DatabaseSession):
 
 
     def set_up_connection(self) -> None:
-        logger.info("New scraping session started")
+        logger.info("New scraping session started at path %s...", self.db_path)
         self.start_session()
         self.set_up_db_control()
-        scrape_types_filled = self.check_is_table_empty(
-            table=storage_db.ScrapeType
-            )
-        if not scrape_types_filled:
-            self.add_data_to_tables()
+        self.add_data_to_tables()
 
 
     def add_data_to_tables(self) -> None:
