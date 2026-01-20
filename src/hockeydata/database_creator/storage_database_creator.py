@@ -64,7 +64,40 @@ class ScrapeType(Base):
             self.scrape_type
         )
     
-    
+
+class PlayerURLHTML(Base, HtmlPreviewMixin):
+
+
+    __tablename__ = 'player_url_htmls'
+
+
+    id = Column(Integer, primary_key=True)
+    html_data = Column(LargeBinary, nullable=False)
+    is_goalie = Column(Boolean, nullable=False)
+    scrape_id = Column(Integer, ForeignKey('scrapes.id'), nullable=False)
+    season_id = Column(Integer, ForeignKey('seasons.id'), nullable=False)
+    league_id = Column(Integer, ForeignKey('league_infos.id'), nullable=False)
+
+
+    def __init__(
+            self,  is_goalie: bool, scrape_id: int, season_id: int, 
+            league_id: int, html_data: bytes,):
+        self.is_goalie = is_goalie
+        self.scrape_id = scrape_id
+        self.season_id = season_id
+        self.league_id = league_id
+        self.html_data = html_data
+
+
+    def __repr__(self):
+        return "<PlayerURLHTML(id=%s, is_goalie='%s', scrape_id='%s', season_id=%s, league_id=%s, html_data='%s')>" % (
+            self.id, 
+            self.scrape_id,
+            self.season_id,
+            self.league_id,
+            self.html_preview()
+        )
+      
 
 class PlayerURL(Base):
 
@@ -74,21 +107,23 @@ class PlayerURL(Base):
 
     id = Column(Integer, primary_key=True)
     url = Column(String, nullable=False, unique=True)
+    is_goalie = Column(Boolean, nullable=False)
     scrape_id = Column(Integer, ForeignKey('scrapes.id'), nullable=False)
     season_id = Column(Integer, ForeignKey('seasons.id'), nullable=False)
     league_id = Column(Integer, ForeignKey('league_infos.id'), nullable=False)
 
 
     def __init__(
-            self, url: str, scrape_id: int, season_id: int, league_id: int):
+            self, url: str, is_goalie: bool, scrape_id: int, season_id: int, league_id: int):
         self.url = url
+        self.is_goalie = is_goalie
         self.scrape_id = scrape_id
         self.season_id = season_id
         self.league_id = league_id
 
 
     def __repr__(self):
-        return "<PlayerURL(id=%s, url='%s', scrape_id='%s', season_id=%s, league_id=%s)>" % (
+        return "<PlayerURL(id=%s, url='%s', is_goalie='%s', scrape_id='%s', season_id=%s, league_id=%s)>" % (
             self.id, 
             self.url,
             self.scrape_id,
@@ -203,7 +238,7 @@ class GoalieStats(Base, HtmlPreviewMixin):
         )
     
 
-class PlayerFacts(Base):
+class PlayerFacts(Base, HtmlPreviewMixin):
 
     __tablename__ = 'player_facts'
 
@@ -219,11 +254,10 @@ class PlayerFacts(Base):
 
 
     def __repr__(self):
-        preview = self.html_data[:50] + b"..." if len(self.html_data) > 50 else self.html_data
         return "<PlayerFacts(id=%s, player_id=%s, html_data=%s)>" % (
             self.id, 
             self.player_id, 
-            preview
+            self.html_preview()
         )
 
 
@@ -374,66 +408,75 @@ class Season(Base):
         )
     
 
-class LeagueName(Base):
+class LeagueName(Base, HtmlPreviewMixin):
 
 
     __tablename__ = "league_names"
 
 
     id = Column("id", Integer, primary_key=True)
+    league_id = Column(Integer, ForeignKey('league_logs.id'), nullable=False)
     html_data = Column("html_data", String, nullable=False, unique=True)
 
 
-    def __init__(self, html_data):
+    def __init__(self, league_id: int, html_data: bytes):
+        self.league_id = league_id
         self.html_data = html_data
 
 
     def __repr__(self):
-        return "<LeagueName(id=%s, html_data=%s)>" % (
+        return "<LeagueName(id=%s, league_id=%s, html_data=%s)>" % (
             self.id, 
-            self.html_data
+            self.league_id,
+            self.html_preview()
         )
     
 
-class LeagueAchievement(Base):
+class LeagueAchievement(Base, HtmlPreviewMixin):
 
 
     __tablename__ = "league_achievements"
 
 
     id = Column("id", Integer, primary_key=True)
+    league_id = Column(Integer, ForeignKey('league_logs.id'), nullable=False)
     html_data = Column("html_data", String, nullable=False, unique=True)
 
 
-    def __init__(self, html_data):
+    def __init__(self, league_id: int, html_data: bytes):
+        self.league_id = league_id
         self.html_data = html_data
 
 
     def __repr__(self):
-        return "<LeagueAchievement(id=%s, html_data=%s)>" % (
+        return "<LeagueAchievement(id=%s, league_id=%s, html_data=%s)>" % (
             self.id, 
-            self.html_data
+            self.league_id,
+            self.html_preview()
         )
     
 
-class LeagueSeason(Base):
+class LeagueSeason(Base, HtmlPreviewMixin):
 
 
     __tablename__ = "league_seasons"
 
 
     id = Column("id", Integer, primary_key=True)
+    league_id = Column(Integer, ForeignKey('league_logs.id'), nullable=False)
     html_data = Column("html_data", String, nullable=False, unique=True)
 
 
-    def __init__(self, html_data):
+    def __init__(self, league_id: int, html_data: bytes):
+        self.league_id = league_id
         self.html_data = html_data
 
 
     def __repr__(self):
-        return "<LeagueSeason(id=%s, html_data=%s)>" % (
+        return "<LeagueSeason(id=%s, league_id=%s, html_data=%s)>" % (
             self.id, 
-            self.html_data
+            self.league_id,
+            self.html_preview()
         )
     
 
@@ -443,7 +486,7 @@ class LeagueMissingDataLog(Base):
 
 
     id = Column(Integer, primary_key=True)
-    league_id = Column(Integer, ForeignKey("league_infos.id"), nullable=False)
+    league_id = Column(Integer, ForeignKey("league_logs.id"), nullable=False)
     data_type = Column(String, nullable=False)
 
 
