@@ -385,6 +385,6 @@ class StorageDBMapper(DBMapper):
 class PlayerStorageDBMapper(StorageDBMapper):
 
 
-    UID_COL = storage_db.PlayerLog.player_uid
+    UID_COL = storage_db.PlayerLog.uid
     UID_QUERY = "player_uids"
     URL_QUERY = "player_urls"
