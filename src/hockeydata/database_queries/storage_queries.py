@@ -5,19 +5,15 @@ STORAGE_QUERIES = {
     "player_base_info": {
         "base_table": storage_db.Scrape,
         "selected_cols": [
-            storage_db.PlayerLog.player_uid,
+            storage_db.PlayerLog.uid,
             storage_db.PlayerLog.is_goalie,
-            storage_db.PlayerURL.player_url
+            storage_db.PlayerURL.url,
+            storage_db.PlayerURL.scrape_id
             ],
         "joins": [
             {
                 "table": storage_db.PlayerLog, 
                 "conn": storage_db.PlayerLog.scrape_id == storage_db.Scrape.id, 
-                "type": "inner"
-            },
-            {
-                "table": storage_db.PlayerURL, 
-                "conn": storage_db.PlayerLog.player_uid == storage_db.PlayerURL.player_uid, 
                 "type": "inner"
             },
         ],
@@ -27,7 +23,7 @@ STORAGE_QUERIES = {
     "player_facts": {
         "base_table": storage_db.Scrape,
         "selected_cols": [
-            storage_db.PlayerLog.player_uid,
+            storage_db.PlayerLog.uid,
             storage_db.PlayerFacts.html_data,
             ],
         "joins": [
@@ -48,8 +44,8 @@ STORAGE_QUERIES = {
     "achievements": {
         "base_table": storage_db.Scrape,
         "selected_cols": [
-            storage_db.PlayerLog.player_uid,
-            storage_db.Achievements.html_data,
+            storage_db.PlayerLog.uid,
+            storage_db.PlayerAchievements.html_data,
             ],
         "joins": [
             {
@@ -58,8 +54,8 @@ STORAGE_QUERIES = {
                 "type": "inner"
             },
             {
-                "table": storage_db.Achievements, 
-                "conn": storage_db.Achievements.player_id == storage_db.PlayerLog.id, 
+                "table": storage_db.PlayerAchievements, 
+                "conn": storage_db.PlayerAchievements.player_id == storage_db.PlayerLog.id, 
                 "type": "inner"
             },
         ],
@@ -69,7 +65,7 @@ STORAGE_QUERIES = {
     "skater_stats": {
         "base_table": storage_db.Scrape,
         "selected_cols": [
-            storage_db.PlayerLog.player_uid,
+            storage_db.PlayerLog.uid,
             storage_db.SkaterStats.competition_type,
             storage_db.SkaterStats.html_data,
             ],
@@ -91,7 +87,7 @@ STORAGE_QUERIES = {
     "goalie_stats": {
         "base_table": storage_db.Scrape,
         "selected_cols": [
-            storage_db.PlayerLog.player_uid,
+            storage_db.PlayerLog.uid,
             storage_db.GoalieStats.competition_type,
             storage_db.GoalieStats.season_type,
             storage_db.GoalieStats.html_data,
@@ -114,7 +110,7 @@ STORAGE_QUERIES = {
     "player_uids": {
         "base_table": storage_db.Scrape,
         "selected_cols": [
-            storage_db.PlayerLog.player_uid,
+            storage_db.PlayerLog.uid,
             ],
         "joins": [
             {
@@ -134,9 +130,54 @@ STORAGE_QUERIES = {
         "joins": [
             {
             "table": storage_db.PlayerLog, 
-            "conn": storage_db.PlayerURL.scrape_id == storage_db.Scrape.id, 
+            "conn": storage_db.Scrape.id == storage_db.PlayerURL.scrape_id, 
             "type": "inner"
             },
+        ],
+        "filters": [
+        ]
+    },
+    "year_range": {
+        "base_table": storage_db.LeagueInfo,
+        "selected_cols": [
+            storage_db.LeagueInfo.first_season,
+            storage_db.LeagueInfo.last_season,
+            ],
+        "joins": [
+        ],
+        "filters": [
+        ]
+    },
+    "player_url_html": {
+        "base_table": storage_db.PlayerURLHTML,
+        "selected_cols": [
+            storage_db.PlayerURLHTML.html_data,
+            storage_db.Season.season,
+            storage_db.LeagueInfo.uid,
+            storage_db.PlayerURLHTML.scrape_id
+            ],
+        "joins": [
+            {
+            "table": storage_db.LeagueInfo, 
+            "conn": storage_db.PlayerURLHTML.league_id == storage_db.LeagueInfo.id, 
+            "type": "inner"
+            },
+            {
+            "table": storage_db.Season, 
+            "conn": storage_db.PlayerURLHTML.season_id == storage_db.Season.id, 
+            "type": "inner"
+            },
+        ],
+        "filters": [
+        ]
+    },
+        "season_mapper": {
+        "base_table": storage_db.Season.id,
+        "selected_cols": [
+            storage_db.Season.season,
+            storage_db.Season.id
+            ],
+        "joins": [
         ],
         "filters": [
         ]
