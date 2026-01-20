@@ -94,11 +94,13 @@ def wait_click_wait(
     else:
         logger.info(f"Failed to find the selector after maximum retries.")
 
-def go_to_page_wait_selector(
+
+def go_to_page_wait(
         page: sync_api.Page, url: str, sel_wait: str) -> None:
     sel_wait = get_xpath(sel_wait)
     page.goto(url)
     page.wait_for_selector(sel_wait)
+
 
 def go_to_page_wait_click_wait(
         page: sync_api.Page, url: str, sel_click: str, sel_wait: str,
