@@ -48,7 +48,7 @@ class PlaywrightScraper(ABC):
 
 
     def go_to_page(self):
-        ps.go_to_page_wait_selector(
+        ps.go_to_page_wait(
             page=self.page, url=self.url,
             sel_wait=self.PATHS["landing_check"]
             )
@@ -364,6 +364,13 @@ class LeagueScraper(PlaywrightScraper):
         return self.scraped_data
 
 
+    def get_season_range(self) -> dict:
+        self._get_list_of_years()
+        self._set_season_range()
+
+        return self.scraped_data['season_range']
+
+
     def _get_list_of_years(self) -> None:
         sel = Selector(text=self.page.content())
         first_year = self._get_year(sel=sel, xpath="first_year")
@@ -373,7 +380,11 @@ class LeagueScraper(PlaywrightScraper):
     
     def _get_year(self, sel: Selector, xpath: str) -> int:
         xpath = self.PATHS['seasons'] + self.PATHS[xpath]
-        extracted_year = sel.xpath(xpath).getall()[0]
+        extracted_year = cf.get_single_xpath_value(
+            sel=sel, 
+            xpath=xpath, 
+            optional=False
+            )
 
         return int(extracted_year)
 
@@ -402,7 +413,7 @@ class LeagueScraper(PlaywrightScraper):
     def _get_year_stats(self, year: str) -> Selector:
         season_string = self._create_season_string(year=year, preceeding=True)
         season_url = self.url + "/standings/" + season_string
-        ps.go_to_page_wait_selector(
+        ps.go_to_page_wait(
             page=self.page, 
             url=season_url, 
             sel_wait=self.PATHS["season"]
