@@ -59,7 +59,7 @@ def get_single_xpath_value(
             logger.debug("Value for xpath: %s is %s", xpath, None)
         else:
             error_message = (
-                f"Error: play_type is None – XPath ({xpath}) extraction"
+                f"Return value for xpath is None. XPath ({xpath}) extraction"
                 f" failed."
             )
             log_and_raise(
@@ -72,13 +72,13 @@ def get_single_xpath_value(
 def get_list_xpath_values(
         sel: scrapy.Selector, xpath: str, optional: bool) -> list:
     return_vals = sel.xpath(xpath).getall()
-    if return_vals == []:
+    if not return_vals:
         if optional:
-            logger.debug("Value for Xpath: %s is []", xpath)
+            logger.debug("Return value for xpath %s is empty.", xpath)
         else:
             error_message =  (
-                f"Extracted value from XPath ({xpath}) is []"
-                f".Extraction failed"
+                f"Return value from XPath ({xpath}) is empty"
+                f".Extraction failed."
                 )
             log_and_raise(
                 error_message, EmptyReturnXpathValueError,
