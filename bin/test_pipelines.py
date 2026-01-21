@@ -1,5 +1,5 @@
 import hockeydata.database_session.database_session as ds
-import hockeydata.management.management as management
+import management.scrape_management as scrape_management
 
 #path to folder with files with already downloaded entities (league, team, #player) must be specified
 
@@ -54,7 +54,7 @@ SEASONS_TO_GET = {
 }
 
 if type_to_scrape=="player":
-    manage_player = management.ManagePlayer(
+    manage_player = scrape_management.ManagePlayer(
         done_folder_path=done_folder_path,
         links_folder_path=links_folder_path,
         session_o=session_o
@@ -66,7 +66,7 @@ if type_to_scrape=="player":
 LEAGUE_LIST = ['NHL', 'SHL', 'AHL']
 
 if type_to_scrape=="team":
-    manage_team = management.ManageTeam(
+    manage_team = scrape_management.ManageTeam(
         done_folder_path=done_folder_path,
         links_folder_path=links_folder_path,
         session_o=session_o
@@ -80,7 +80,7 @@ if type_to_scrape=="team":
 LEAGUE_LIST = ['NHL', 'SHL', 'AHL']
 
 if type_to_scrape=="league":
-    manage_league = management.ManageLeague(
+    manage_league = scrape_management.ManageLeague(
         done_folder_path=done_folder_path,
         links_folder_path=links_folder_path,
         session_o=session_o
@@ -93,7 +93,7 @@ if type_to_scrape=="league":
 SEASONS = ["2021-2022"]
 
 if type_to_scrape=="game":
-    manage_game = management.ManageGame(
+    manage_game = scrape_management.ManageGame(
         done_folder_path=done_folder_path,
         links_folder_path=links_folder_path,
         session_o=session_o,

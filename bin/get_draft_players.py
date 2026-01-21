@@ -1,7 +1,7 @@
 import json
 
 import hockeydata.database_session.database_session as ds
-import hockeydata.management.management as management
+import management.scrape_management as scrape_management
 
 
 #path to folder with files with already downloaded entities (league, team, #player) must be specified
@@ -26,7 +26,7 @@ session_o = ds.DatabaseSession(db_path=db_path)
 session_o.set_up_connection()
 
 
-manage_player = management.ManagePlayer(
+manage_player = scrape_management.ManagePlayer(
         done_folder_path=done_folder_path,
         links_folder_path=links_folder_path,
         session_o=session_o
