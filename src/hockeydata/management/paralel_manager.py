@@ -29,7 +29,6 @@ def scrape_worker(
     return processed_data
 
 
-
 class MultiManager(ABC):
 
 
