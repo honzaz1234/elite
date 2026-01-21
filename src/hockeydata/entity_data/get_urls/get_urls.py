@@ -73,8 +73,10 @@ class LeagueUrlDownload():
         else:
             year_minus = int(year) - 1
             season_string = str(year_minus) + "-" + str(year)
+            
         return season_string
     
+
     def create_season_list(self, min: int, max: int) -> list:
          """create list of season strings"""
 
@@ -149,7 +151,7 @@ class LeagueUrlDownload():
         
         block_check = True
         while block_check is not None:
-                ps.go_to_page_wait_selector(
+                ps.go_to_page_wait(
                     page=self.page, 
                     url=url, 
                     sel_wait=self.WAIT_LEAGUE_PAGE

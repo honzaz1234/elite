@@ -1,16 +1,3 @@
-<<<<<<< HEAD
-import entity_data.get_urls.get_urls as get_urls
-import entity_data.scraper.league_scraper as league_scraper
-import entity_data.scraper.player_scraper as player_scraper
-import entity_data.scraper.team_scraper as team_scraper
-import entity_data.update_dict.update_league as league_updater
-import entity_data.update_dict.update_player as player_updater
-import entity_data.update_dict.update_team as team_updater
-import entity_data.playwright_setup.playwright_setup as ps
-import entity_data.input_dict.input_league_dict as input_dict_league
-import entity_data.input_dict.input_player_dict as input_dict_player
-import entity_data.input_dict.input_team_dict as input_dict_team
-=======
 import hockeydata.entity_data.get_urls.get_urls as get_urls
 import hockeydata.entity_data.scraper.league_scraper as league_scraper
 import hockeydata.entity_data.scraper.player_scraper as player_scraper
@@ -19,10 +6,9 @@ import hockeydata.entity_data.update_dict.update_league as league_updater
 import hockeydata.entity_data.update_dict.update_player as player_updater
 import hockeydata.entity_data.update_dict.update_team as team_updater
 import hockeydata.entity_data.playwright_setup.playwright_setup as ps
-import hockeydata.entity_data.input_dict.input_league_dict as input_dict_league
-import hockeydata.entity_data.input_dict.input_player_dict as input_dict_player
-import hockeydata.entity_data.input_dict.input_team_dict as input_dict_team
->>>>>>> main
+import hockeydata.entity_data.input_data.parsed.league as input_dict_league
+import hockeydata.entity_data.input_data.parsed.player as input_dict_player
+import hockeydata.entity_data.input_data.parsed.team as input_dict_team
 import database_session.database_session as ds
 
 import json
@@ -110,7 +96,7 @@ def team_urls_pipeline_test():
   
 
 def main():
-    session1 = ds.GetDatabaseSession(db_path=DB_PATH)
+    session1 = ds.DatabaseSession(db_path=DB_PATH)
     session1.set_up_connection()
     session1.clear_all_tables()
     to_test = input('Select pipelines to be tested: ')
