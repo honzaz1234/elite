@@ -1,5 +1,6 @@
 import re
-import scrapy
+
+from scrapy import Selector
 
 import hockeydata.common_functions as cf
 
@@ -78,7 +79,7 @@ class PlayerParser:
             )
     
 
-    def stats_factory(self) -> 'Stats':
+    def stats_factory(self) -> type['StatsParser']:
         """given that attaining stats for goalies and players differ
         they are divided into separate classes
         """
@@ -145,7 +146,7 @@ class PlayerFactsParser():
         """attribute: facts_html - part of the page html with player facts data
         """
 
-        self.selector = scrapy.Selector(text=facts_html.decode("utf-8"))
+        self.selector = Selector(text=facts_html.decode("utf-8"))
         self.player_uid = player_uid
 
 
@@ -250,7 +251,7 @@ class FamilyRelations():
     URL_UID_REGEX = "player\=([0-9]+)"
 
 
-    def __init__(self, selector: scrapy.Selector):
+    def __init__(self, selector: Selector):
         """selector - original selector
            relations_regex - regex for extracting relation types from  
                              text on webpage
@@ -519,7 +520,7 @@ class SkaterStatsParser(StatsParser):
 
     def get_selectors(self) -> None:
         for competition_type in self.stats_dict:
-            self.sel_dict[competition_type] = scrapy.Selector(
+            self.sel_dict[competition_type] = Selector(
                 text=self.stats_dict[competition_type]
                 )
         self.default_selector = self.sel_dict["league"]
@@ -548,7 +549,7 @@ class GoalieStatsParser(StatsParser):
             for season_type in self.stats_dict[competition_type]:
                 if not self.stats_dict[competition_type][season_type]:
                     continue
-                self.sel_dict[competition_type][season_type] = scrapy.Selector(
+                self.sel_dict[competition_type][season_type] = Selector(
                     text=self.stats_dict[competition_type][season_type]
                     )
         self.default_selector = self.sel_dict["league"]["regular"]
@@ -666,7 +667,7 @@ class OneRowStat():
 
 
     def _get_stat_atribute(
-            self, xpath_key: str, sel: scrapy.Selector, keep_list: bool=False,
+            self, xpath_key: str, sel: Selector, keep_list: bool=False,
             optional: bool=True) -> list|str|int:
         """method for extracting one attribute from stat row (team, league, capitancy, season stats)
         """
@@ -717,7 +718,7 @@ class OneRowSkaterStat(OneRowStat):
     }
 
 
-    def __init__(self, ind: int, selector: scrapy.Selector):
+    def __init__(self, ind: int, selector: Selector):
         super().__init__(ind=ind)
         self.selector = selector
 
@@ -831,7 +832,7 @@ class AchievementsParser():
     def __init__(
             self, acheivements_html: bytes):
         """selector - original selector of webpage of player"""
-        self.selector = scrapy.Selector(text=acheivements_html.decode(encoding="utf-8"))
+        self.selector = Selector(text=acheivements_html.decode(encoding="utf-8"))
 
 
     def parse_data(self, years: list=None) -> dict:
