@@ -11,7 +11,7 @@ import common_functions as cf
 
 from database_session.database_session import ParseDBSession, ScrapeDBSession
 from hockeydata.entity_data.storage_db_getter.storage_db_getter import GoalieStorageDBDataGetter, StorageDBDataGetter, SkaterStorageDBDataGetter
-from hockeydata.management.management import ScraperManager, ParserManager, PlayerScraperManager
+from management.scrape_management import ScraperManager, ParserManager, PlayerScraperManager
 from hockeydata.mappers.db_mappers import DBMapper, PlayerStorageDBMapper
 from hockeydata.logger.logging_config import logger
 
@@ -146,7 +146,7 @@ class MultiScrapeManager(MultiManager):
         self._set_chunk_size(data=data)
 
 
-    def scrape_data_with_multiple_processes(self) -> list:
+    def scrape_data(self) -> list:
         mapper_chunks = list(self._chunk_uids())
         args = [
             (self.db_path, mapper_chunk, self.SCRAPER_MANAGER)
@@ -155,7 +155,6 @@ class MultiScrapeManager(MultiManager):
 
         with multiprocessing.Pool(processes=self.max_workers) as pool:
             scraped_entities_nested = pool.map(scrape_worker, args)
-        self._set_end_time()
         scraped_entities = [
             entity for sublist in scraped_entities_nested 
             for entity in sublist
