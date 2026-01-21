@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 import hockeydata.database_creator.storage_database_creator as db
 
 from hockeydata.database_insert.db_insert import DatabaseMethods
-from hockeydata.entity_data.input_dict.scraped.base import HTMLEntityInputter
+from hockeydata.entity_data.input_data.scraped.base import HTMLEntityInputter
 from hockeydata.logger.logging_config import logger
 
 

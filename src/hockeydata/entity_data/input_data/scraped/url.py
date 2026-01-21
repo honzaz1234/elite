@@ -6,7 +6,7 @@ import hockeydata.database_creator.storage_database_creator as db
 
 from hockeydata.database_insert.db_insert import DatabaseMethods
 from hockeydata.database_queries.database_query import StorageDBQuery
-from hockeydata.entity_data.input_dict.scraped.base import HTMLInputter
+from hockeydata.entity_data.input_data.scraped.base import HTMLInputter
 from hockeydata.logger.logging_config import logger
 
 
