@@ -2,8 +2,10 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 
-from hockeydata.database_session.database_session import DatabaseSession, ParseDBSession, ScrapeDBSession
-from hockeydata.entity_data.input_html import HTMLInputter, PlayerHTMLInputter
+from hockeydata.database_session.database_session import ParseDBSession
+from hockeydata.database_session.database_session import ScrapeDBSession
+from hockeydata.entity_data.input_dict.scraped.base import HTMLInputter
+from hockeydata.entity_data.input_dict.scraped.player import PlayerHTMLInputter
 from hockeydata.logger.logging_config import logger
 
 

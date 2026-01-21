@@ -6,7 +6,7 @@ from pathlib import Path
 from sqlalchemy import text
 
 from database_session.database_session import ScrapeDBSession
-from hockeydata.entity_data.input_html import PlayerHTMLInputter
+from hockeydata.entity_data.input_dict.scraped.player import PlayerHTMLInputter
 from pathlib import Path
 
 
