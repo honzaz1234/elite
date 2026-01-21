@@ -1,0 +1,5 @@
+player_achievements - all league_id null
+leagues - bad regex
+drafts - 
+seasons = two different formats
+stadium - place id is missing

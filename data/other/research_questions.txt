@@ -1,0 +1,24 @@
+A) What determines player fututre success in NHL?
+
+- first some data exploration, then time series model:
+
+Variables:
+
+1) player_drafted  
+   nationality
+   years_from_draft
+   position
+   junior_league before draft 
+   draft_round (position ?)
+   height
+   handedness
+   time of birth in a year
+
+Dependent -
+Reaching - x games (200?)
+Playing x Seasons above some number of games
+
+
+
+B) Is/Was there a bias agains/for some country?
+   
