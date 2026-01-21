@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from unittest.mock import Base
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm import Session
 
