@@ -18,14 +18,14 @@ class PlaywrightScraper(ABC):
     @property
     @classmethod
     @abstractmethod
-    def PATHS(cls):
+    def PATHS(cls) -> dict[str, str]:
         pass
 
 
     @property
     @classmethod
     @abstractmethod
-    def TYPE(cls):
+    def TYPE(cls) -> str:
         pass
 
 
