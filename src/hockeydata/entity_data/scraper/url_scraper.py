@@ -8,137 +8,13 @@ from scrapy import Selector
 
 from hockeydata.constants import *
 from hockeydata.decorators import repeat_request_until_success
-from hockeydata.database_session.database_session import ScrapeDBSession
-from hockeydata.database_queries.database_query import StorageDBQuery
-from hockeydata.entity_data.scraper.league_scraper import LeagueScraper
+from hockeydata.entity_data.scraper.base import PlaywrightScraper
 from hockeydata.decorators import time_execution
 from hockeydata.logger.logging_config import logger
 
 
 import hockeydata.common_functions as cf
-import hockeydata.database_creator.storage_database_creator as storage_db
 import hockeydata.entity_data.playwright_setup.playwright_setup as ps
-
-
-class URLScraper():
-
-
-    WAIT_LEAGUE_PAGE = (
-        "//ul[preceding-sibling::header[./h2[contains(text(),"
-        "'Champions')]]]/li[last()]/a[1]"
-        )
-
-
-    def __init__(self, league_uid: str, page: Page, db_path: str):
-        self.page = page
-        self.selector = None
-        self.league_uid = league_uid
-        self.url = ELITE_URL + "/league/" + league_uid
-        self.season_range = {
-            "first_season": None, 
-            "last_season": None
-            }
-        self.seasons = []
-        self.db_path = db_path
-
-
-    @time_execution
-    def get_info(self) -> dict[str, dict[str, list]]:
-        self._add_seasons()
-        seasons = self._generate_seasons()
-        scraped_data = self._scrape_season_urls(seasons=seasons)
-
-        return scraped_data
-
-
-    def _add_seasons(self) -> None:
-        season_range_set = self._check_season_range_in_db(
-            league_uid=self.league_uid
-            )
-        if season_range_set:
-            return
-        self._scrape_season_range()
-
-
-    def _check_season_range_in_db(
-            self, league_uid: str) -> bool:
-        db_session = ScrapeDBSession(db_path=self.db_path)
-        db_session.set_up_connection()
-        query = StorageDBQuery(db_session=db_session.session)
-        filter_ = [storage_db.LeagueInfo.uid.is_(league_uid)]
-        season_range = query.get_db_query_result(
-             query_name="year_range", 
-             filters=filter_
-             )
-        #update based on return value
-        if not season_range:
-            logger.info(
-                "Season range for league %s not yet in DB. Scrape will proceed",
-                league_uid
-                )
-            
-            return False
-        else:
-            logger.info(
-                "Season range for league %s fetched from DB.",
-                league_uid
-                )
-            self._set_season_range(season_range=season_range)
-            
-            return True 
-
-
-    def _set_season_range(self, season_range: tuple) -> None:
-        self.season_range['first_season'] = season_range[0][0]
-        self.season_range['last_season'] = season_range[0][1]
-
-
-    def _scrape_season_range(self):
-        league_scraper = LeagueScraper(url=self.url, page=self.page)
-        self.season_range = league_scraper.get_season_range()
-
-
-    def _generate_seasons(self) -> list[str]:
-        first = self.season_range.get("first_season")
-        last = self.season_range.get("last_season")
-        if not first or not last:
-
-            return []
-        start_year = int(first.split("-")[0])
-        end_year = int(last.split("-")[0])
-        seasons = []
-        for year in range(start_year, end_year + 1):
-            next_year = year + 1
-            seasons.append(f"{year}-{next_year}")
-
-        return seasons
-
-
-    @abstractmethod
-    def _scrape_season_urls(self, seasons: str) -> None:
-        pass
-
-
-class PlayerURLScraper(URLScraper):
-
-
-    def __init__(self, league_uid: str, page: Page, db_path: str):
-        super().__init__(league_uid=league_uid, page=page, db_path=db_path)
-        self.base_url = ELITE_URL + "/league/" + league_uid + "/stats/"
-
-
-    def _scrape_season_urls(
-            self, seasons: list[str]) -> dict[str, dict[str, list]]:
-        scraped_data = {}
-        for season in seasons:
-            season_scraper = PlayerSeasonURLScraper(
-                season=season, 
-                page=self.page,
-                league_uid=self.league_uid
-                )
-            scraped_data[season] = season_scraper.get_data()
-
-        return scraped_data
 
 
 class PlayerSeasonURLScraper():
@@ -197,7 +73,7 @@ class PlayerSeasonURLScraper():
         return page_scraper._get_player_type_urls()
 
 
-class PlayerPageURLScraper(ABC):
+class PlayerPageURLScraper(PlaywrightScraper):
 
 
     @property
@@ -291,7 +167,10 @@ class PlayerPageURLScraper(ABC):
         )
         if not urls_check:
             raise ValueError
-        stats_table = sel.xpath(self.TABLE_XPATH)
+        stats_table = self._scrape_data(
+            xpath=self.TABLE_XPATH,
+            is_optional=False
+            )
         self.scraped_data.append(stats_table)
     
 
