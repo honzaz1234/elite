@@ -3,7 +3,6 @@ import re
 
 from abc import ABC, abstractmethod
 from playwright.sync_api import Page
-from pytest import Session
 from scrapy import Selector
 
 

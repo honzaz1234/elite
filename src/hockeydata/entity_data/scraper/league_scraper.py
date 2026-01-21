@@ -1,260 +1,152 @@
-import hockeydata.entity_data.playwright_setup.playwright_setup as ps
-import playwright.sync_api as sync_api
 import re
-import scrapy
+
+from datetime import datetime
+from playwright.sync_api import Page
+from scrapy import Selector
+from typing import Any
 
 import hockeydata.common_functions as cf
-from hockeydata.constants import *
-from hockeydata.decorators import time_execution
+import hockeydata.entity_data.playwright_setup.playwright_setup as ps
+
+from hockeydata.constants import LEAGUE_UID_REGEX
+from hockeydata.entity_data.scraper.base import PlaywrightScraper
 from hockeydata.logger.logging_config import logger
 
 
-class LeagueScrapper():
+class LeagueScraper(PlaywrightScraper):
 
-    """class used for scrapping data from the league webpage on eliteprospects website, data downloaded consists of league name, standings of teams in individual seasons and list of achievements (trophies)
-    """
-    #xpath to access different types of info regarding the league
-
+        
     PATHS = {
-        "achievements": "//div[preceding-sibling::header[./h2[contains(text(),"
-                        "'Awards')]]]/ul/li//a[1]/text()",
-        "long_name": "//h1//text()",
-        "season_href": "//div[preceding-sibling::header[./h2[contains(text(),"
-                       "'Champions')]]]/ul/li//a[1]/@href"
+        "achievements": "//header[./h2[contains(text(),'Awards')]]/"
+                        "following-sibling::div",
+        "accept_cookies": "//button[contains(., 'AGREE')]",
+        'first_year':"//li[last()]//a[contains(@class,'yearLink')]/text()",
+        "last_year": "//li[1]//a[contains(@class,'yearLink')]/text()",
+        "landing_check": "//h1/span[contains(@class,'LeagueHeader_titleMain')]",
+        "league_name":  "//h1/span[contains(@class,'LeagueHeader_titleMain')]",
+        "season": "//header[./h2[contains(text(),'Standings')]]"
+                        "/following-sibling::div[contains(@class,"
+                        "'Loader_loadingContentWrapper')  "
+                        "and not(contains(.,'No Data Found'))]",
+        "seasons": "//header[./h2[contains(text(),'Champions')]]/"
+                   "following-sibling::div",
     }
 
-    def __init__(self, url: str, page: sync_api.Page):
-        """url is the web address of league on elite prospect website"""
-
-        self.url = url
-        self.html = cf.get_valid_request(url=url, return_type="content")
-        self.page = page
-
-    @time_execution
-    def get_info(self) -> dict:
-        """method that creates dictionary of all data that is available for scrappping within this class
-        """
-        logger.info(f'Scraping of new league info at web adress: {self.url}'
-                    f' started')
-        league_dict = {}
-        self.page.goto(self.url)
-        self.selector = scrapy.Selector(text=self.page.content())
-        league_dict[LEAGUE_UID] = self._get_uid()
-        league_dict[LEAGUE_NAME] = self._get_name()
-        league_dict[LEAGUE_ACHIEVEMENTS] = self.get_achievements()
-        league_dict[SEASON_STANDINGS] = self.get_season_data()
-        logger.debug(f"League dict: {league_dict}")
-        logger.info(f"Dict of league with name " 
-                    f"{league_dict[LEAGUE_NAME]} "
-                    f"({league_dict[LEAGUE_UID]})"
-                    f"scraped")
-        
-        return league_dict
-
-    def _get_uid(self) -> str:
-        """method for accessing uid of league from url"""
-
-        uid = re.findall(LEAGUE_UID_REGEX, self.url)[0]
-        logger.debug(f"League uid: {uid}")
-
-        return uid
-
-    def _get_name(self) -> str:
-        """method for scraping league name"""
-
-        league_name = cf.get_single_xpath_value(
-            sel=self.selector,
-            xpath=LeagueScrapper.PATHS["long_name"],
-            optional=False
-        ) 
-        league_name = league_name.strip()
-        logger.debug(f"League name: {league_name}")
-
-        return league_name
-
-    def get_achievements(self) -> list:
-        """method for scraping list of achievements(trophies):
-        most points, goals in the season etc."""
-
-        achievements_list = cf.get_list_xpath_values(
-            sel=self.selector,
-            xpath=LeagueScrapper.PATHS["achievements"],
-            optional=True)
-        achievements_list = [achievement.strip()
-                             for achievement in achievements_list]
-        logger.debug(f"League achievements: {achievements_list}")
-
-        return achievements_list
-
-    def get_season_data(self) -> dict:
-        """method for creating dictionary with season standings of teams for all years that are availiable on the website
-        """
-
-        season_href_list = cf.get_list_xpath_values(
-            sel=self.selector, 
-            xpath=LeagueScrapper.PATHS["season_href"],
-            optional=False) 
-        league_standings_dict = {}
-        logger.info(f"{len(season_href_list)} links for season tables found"
-                    f" on the page")
-        for season_ref in season_href_list:
-            season = re.findall('\/([0-9\-]+)$', season_ref)[0]
-            season_link = ELITE_URL + season_ref
-            league_season_o = LeagueSeasonScraper(url=season_link)
-            season_dict = league_season_o.get_season_standings()
-            league_standings_dict[season] = season_dict
-        logger.debug(f"All season data: {league_standings_dict}")
-
-        return league_standings_dict
+    TYPE = "league"
 
 
-class LeagueSeasonScraper():
-
-    """class grouping methods for scraping data from one season standings table"""
-
-    #xpaths to access different parts of season standing table
-    
-    PATHS = {
-        "table_section_l": "//table[@class = 'table standings table-sortable']"
-                         "//tbody[count(./tr/*)>1]",
-        "table_section_r": "/tr[not(@class = 'title')]",
-        "table_section_names": "//table[@class = 'table standings"
-                               " table-sortable']//tr[@class='title']"
-                               "/td//text()",
-        "table_row": "//table[@class = 'table standings"
-                          " table-sortable']//tr",
-        "one_row_r": "/td//text()",
-        "team_url_r": "/td[@class='team']//a/@href"
-    }
-    
-    #names of columns in season standings table 
-
-    STAT_NAMES = [LEAGUE_POSITION, TEAM, GP, W, T, L,
-                    OTW, OTL, GOALS_FOR, GOALS_AGAINST, PLUS_MINUS, TOTAL_POINTS, POSTSEASON
-    ]
-    
-
-    def __init__(self, url: str):
-        self.url = url
-        self.season = re.findall('([0-9\-]+)$', self.url)
-        self.html = cf.get_valid_request(url=url, return_type="content")
-        self.selector = scrapy.Selector(text=self.html)
-
-    
-    def get_season_standings(self) -> dict:
-        """method for downloading season standings data from one season"""
-
-        section_names = cf.get_list_xpath_values(
-            sel=self.selector,
-            xpath=LeagueSeasonScraper.PATHS["table_section_names"],
-            optional=True
-        )
-        section_names = [name.strip() for name in section_names]
-        section_list = cf.get_list_xpath_values(
-            sel=self.selector,
-            xpath=LeagueSeasonScraper.PATHS["table_section_l"],
-            optional=True
-        )
-        n_sections = len(section_list)
-        if n_sections > len(section_names):
-            section_names = ["main"] + section_names
-        dict_season = {}
-        for section_ind in range(1, n_sections + 1):
-            dict_season[section_names[section_ind - 1]] = self._get_section(
-                section_ind=section_ind)
-        logger.debug(f"League standings for season ({self.season}): scraped")
-        if len(dict_season) == 0:
-            error_message = f"0 rows found in table at adress: {self.url}"
-            cf.log_and_raise(error_message)
-        
-        return dict_season
-    
-
-    def _get_section(self, section_ind: int) -> dict:
-        """wrapper method for downloading season standings data from one section of season standings table
-        """
-
-        path_section = (LeagueSeasonScraper.PATHS["table_section_l"] 
-                            + "[" 
-                            + str(section_ind) 
-                            + "]" 
-                            + LeagueSeasonScraper.PATHS["table_section_r"])
-        dict_section = self._get_section_standings(
-                path_section=path_section)
-        logger.debug(f"Section standings: {dict_section}")
-
-        return dict_section
+    def __init__(self, url: str, page: Page):
+        super().__init__(url=url, page=page)
+        self.scraped_data: dict[str, Any|None] = {
+                "uid": None,
+                "league_name": None,
+                "achievements": None,
+                "seasons": None,
+                "stats": {},
+                "missing_data": [],
+                "season_range": {
+                    "first_season": None,
+                    "last_season": None
+                    }
+            }
 
 
-    def _get_section_standings(self, path_section: str) -> dict:
-        """method for downloading season standings data from one section of season standings table
-        """
-        rows = cf.get_list_xpath_values(
-            sel=self.selector,
-            xpath=path_section,
-            optional=False
-        )
-        n_rows = len(rows)
-        dict_section = {}
-        for row_ind in range(1, n_rows + 1):
-            row_dict = self._get_one_row(
-                path_section=path_section, row_ind=row_ind)
-            dict_section[row_dict[LEAGUE_POSITION]] = row_dict
-
-        return dict_section
-    
-
-    def _get_one_row(self, path_section: str, row_ind: int) -> dict:
-        """method for downloading one row from season stadndings table"""
-
-        dict_row = {}
-        dict_row[TEAM_URL] = self._get_team_url(path_section=path_section, 
-                                               row_ind=row_ind)
-        row_stats = self._get_row_stats(path_section=path_section,
-                                        row_ind=row_ind)
-        for ind in range(len(row_stats)):
-            dict_row[LeagueSeasonScraper.STAT_NAMES[ind]
-                        ] = row_stats[ind].strip()
-        logger.debug(f"One Row standings: {dict_row}")
-
-        return dict_row
-
-
-    def _get_row_stats(self, path_section: str, row_ind: int) -> list:
-         """methods for downloading indvidiual attributes from one row of season standings table (total points, goals, goals against...)
-         """
-
-         one_row_path = (path_section 
-                        + "[" 
-                        + str(row_ind) 
-                        + "]" 
-                        + LeagueSeasonScraper.PATHS["one_row_r"])
-         row_data = cf.get_list_xpath_values(
-             sel=self.selector,
-             xpath=one_row_path,
-             optional=False
-         )
-         row_data = [
-             value.strip() for value in row_data if value.strip() != ""
-             ]
-         
-         return row_data
-
-
-    def _get_team_url(self, path_section: str, row_ind: int) -> str:
-        """method for accessing url of team from season standings table"""
-
-        path_url = (
-            path_section 
-            + "[" 
-            + str(row_ind) 
-            + "]" 
-            +  LeagueSeasonScraper.PATHS["team_url_r"]
+    def get_data(
+            self, scrape_seasons: bool = True, season_list: list = [] ) -> dict:
+        logger.info(
+            'Scraping of new league info at web adress: %s '
+            'started', self.url
             )
-        url_list = cf.get_single_xpath_value(
-             sel=self.selector,
-             xpath=path_url,
-             optional=False
-         )
+        self.scraped_data["uid"] = re.findall(
+            LEAGUE_UID_REGEX, self.url)[0]
+        self.scraped_data["league_name"] = self._scrape_data(
+            xpath_name="league_name",
+            is_optional=False
+            )
+        self.scraped_data["seasons"] = self._scrape_data(
+            xpath_name="seasons",
+            is_optional=False
+            )
+        self.scraped_data["achievements"] = self._scrape_data(
+            xpath_name="achievements"
+            )
+        self._get_list_of_years()
+        self._set_season_range()
+        if scrape_seasons:
+            self._get_stats(season_list=season_list)
+        self.scraped_data['time_scraped'] = datetime.now()
+        logger.info(
+            'Scraping of new player info at web adress: %s '
+            'finished', self.url
+            )
         
-        return url_list
+        return self.scraped_data
+
+
+    def get_season_range(self) -> dict:
+        self._get_list_of_years()
+        self._set_season_range()
+
+        return self.scraped_data['season_range']
+
+
+    def _get_list_of_years(self) -> None:
+        sel = Selector(text=self.page.content())
+        first_year = self._get_year(sel=sel, xpath="first_year")
+        last_year = self._get_year(sel=sel, xpath="last_year")
+        self.year_list = [year for year in range(first_year, last_year + 1)]
+
+    
+    def _get_year(self, sel: Selector, xpath: str) -> int:
+        xpath = self.PATHS['seasons'] + self.PATHS[xpath]
+        extracted_year = cf.get_single_xpath_value(
+            sel=sel, 
+            xpath=xpath, 
+            optional=False
+            )
+
+        return int(extracted_year)
+
+
+    def _set_season_range(self) -> None:
+        first_season = self._create_season_string(
+            year=self.year_list[0], 
+            preceeding=False
+            )
+        self.scraped_data['season_range']['first_season'] = first_season
+        last_season = self._create_season_string(
+            year=self.year_list[len(self.year_list) - 1], 
+            preceeding=False
+            )
+        self.scraped_data['season_range']['last_season'] = last_season
+
+
+    def _get_stats(self, season_list: list) -> None:
+        if season_list == []:
+            season_list = self.year_list
+        for year in season_list:
+            season = self._create_season_string(year=year, preceeding=False)
+            self.scraped_data['stats'][season] = self._get_year_stats(year=year)
+    
+
+    def _get_year_stats(self, year: str) -> Selector:
+        season_string = self._create_season_string(year=year, preceeding=True)
+        season_url = self.url + "/standings/" + season_string
+        ps.go_to_page_wait(
+            page=self.page, 
+            url=season_url, 
+            sel_wait=self.PATHS["season"]
+            )
+
+        return self._scrape_data(xpath_name="season", is_optional=False)
+
+
+    def _create_season_string(self, year: str, preceeding: bool=True) -> list:
+        if preceeding == True:
+            year_plus = int(year) + 1
+            season_string = str(year) + "-" +  str(year_plus)
+        else:
+            year_minus = int(year) - 1
+            season_string = str(year_minus) + "-" + str(year)
+            
+        return season_string
