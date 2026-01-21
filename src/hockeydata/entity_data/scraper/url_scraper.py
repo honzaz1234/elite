@@ -10,7 +10,7 @@ from hockeydata.constants import *
 from hockeydata.decorators import repeat_request_until_success
 from hockeydata.database_session.database_session import ScrapeDBSession
 from hockeydata.database_queries.database_query import StorageDBQuery
-from hockeydata.entity_data.scrapers import LeagueScraper
+from hockeydata.entity_data.scraper.league_scraper import LeagueScraper
 from hockeydata.decorators import time_execution
 from hockeydata.logger.logging_config import logger
 
