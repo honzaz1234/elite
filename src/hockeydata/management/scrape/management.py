@@ -13,7 +13,9 @@ from hockeydata.database_session.database_session import ScrapeDBSession
 from hockeydata.entity_data.input_data.scraped.base import HTMLInputter
 from hockeydata.entity_data.input_data.scraped.url import PlayerURLHTMLInputter
 from hockeydata.entity_data.scraper.league_scraper import LeagueScraper
-from hockeydata.management.paralel_management import MultiScrapeManager
+from hockeydata.management.scrape.paralel_management import MultiScrapeManager
+from hockeydata.management.scrape.paralel_management import  PlayerURLMultiScrapeManager
+from hockeydata.management.scrape.paralel_management import PlayerURLMultiScrapeManager
 from hockeydata.entity_data.playwright_setup.playwright_setup import PlaywrightSetUp
 from hockeydata.mappers.db_mappers import StorageDBMapper
 from hockeydata.logger.logging_config import logger
@@ -50,7 +52,6 @@ class ScrapeManager(ABC):
     def __init__(self):
         self.db_session: Session = None
         self.scrape_id: int = None
-        self.data: dict = {}
         self.start_time: datetime = None
         self.end_time: datetime = None
 
@@ -227,12 +228,15 @@ class PlayerURLScrapeManager(ScrapeManager):
 
 
     DB_INSERTER = PlayerURLHTMLInputter
-    PARALEL_MANAGER = 
+    PARALEL_MANAGER = PlayerURLMultiScrapeManager
 
 
     def __init__(self, league_uid: str):
         super().__init__()
-        self.league_uid = league_uid
+        self.data = {
+            "seasons": [],
+            "league_uid": league_uid
+        }
         self.season_range = {
             "first_season": None,
             "last_season": None
@@ -254,7 +258,7 @@ class PlayerURLScrapeManager(ScrapeManager):
 
     def _check_season_range_in_db(self) -> bool:
         query = StorageDBQuery(db_session=self.db_session)
-        filter_ = [storage_db.LeagueInfo.uid.is_(self.league_uid)]
+        filter_ = [storage_db.LeagueInfo.uid.is_(self.data["league_uid"])]
         season_range = query.get_db_query_result(
              query_name="year_range", 
              filters=filter_
@@ -263,14 +267,14 @@ class PlayerURLScrapeManager(ScrapeManager):
         if not season_range:
             logger.info(
                 "Season range for league %s not yet in DB. Scrape will proceed",
-                self.league_uid
+                self.data["league_uid"]
                 )
             
             return False
         else:
             logger.info(
                 "Season range for league %s fetched from DB.",
-                self.league_uid
+                self.data["league_uid"]
                 )
             self._set_season_range(season_range=season_range)
             
@@ -283,7 +287,7 @@ class PlayerURLScrapeManager(ScrapeManager):
 
 
     def _scrape_season_range(self):
-        url = "https://www.eliteprospects.com/league/" + self.league_uid
+        url = "https://www.eliteprospects.com/league/" + self.data["league_uid"]
         playwright =  PlaywrightSetUp()
         league_scraper = LeagueScraper(url=url, page=playwright.page)
         self.season_range = league_scraper.get_season_range()
@@ -298,7 +302,7 @@ class PlayerURLScrapeManager(ScrapeManager):
         start_year = int(first.split("-")[0])
         end_year = int(last.split("-")[0])
         for year in range(start_year, end_year + 1):
-            self.data.append(f"{year}-{year + 1}")
+            self.data["seasons"].append(f"{year}-{year + 1}")
 
 
 

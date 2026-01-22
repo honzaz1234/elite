@@ -12,7 +12,7 @@ from hockeydata.entity_data.scraper.url_scraper import PlayerSeasonURLScraper
 from hockeydata.logger.logging_config import logger
 
 
-class ScraperManager(ABC):
+class ScraperUnitManager(ABC):
 
 
     @property
@@ -50,7 +50,7 @@ class ScraperManager(ABC):
         pass
 
 
-class EntityScraperManager(ScraperManager):
+class EntityScraperUnitManager(ScraperUnitManager):
 
 
     def __init__(self, url_mapper: dict[str]=None):
@@ -89,14 +89,14 @@ class EntityScraperManager(ScraperManager):
         return scraper.get_data()
 
 
-class PlayerScraperManager(EntityScraperManager):
+class PlayerScraperUnitManager(EntityScraperUnitManager):
 
 
     SCRAPE_CLASS = PlayerScraper
     TYPE = "Player"
 
 
-class URLScraperManager(ScraperManager):
+class URLScraperUnitManager(ScraperUnitManager):
 
 
     def __init__(self, league_uid: str, seasons: list[str]):
@@ -141,7 +141,7 @@ class URLScraperManager(ScraperManager):
         return scraper.get_data()
     
 
-class PlayerURLScraperManager(URLScraperManager):
+class PlayerURLScraperUnitManager(URLScraperUnitManager):
 
 
     SCRAPER_CLASS = PlayerSeasonURLScraper
