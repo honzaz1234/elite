@@ -141,13 +141,18 @@ class DatabaseMethods():
         return id
     
 
+    def insert_bulk(self, table: Table, data: dict) -> None:
+        self.db_session.bulk_insert_mappings(table, data)
+
+
     def insert_update_or_ignore_on_conflict(
             self, table: Table, data: dict, update: bool=False, return_id=False) -> int|None:
 
+        index_cols = self.INDEX_CONFIG[table]["index_update"]
         insert_query = self._get_insert_query(
             table=table, 
             data=data, update=update, 
-            index_cols=self.INDEX_CONFIG[table]["index_update"]
+            index_cols=index_cols
             )
         if return_id:
             insert_query = insert_query.returning(table.id)
@@ -158,7 +163,10 @@ class DatabaseMethods():
                 return row[0]
             else:
                 return self.query._find_id_in_table(
-                    table, **{col: data[col] for col in index_cols}
+                    table, **{
+                        col: data[col] 
+                        for col in index_cols
+                        }
                     )
 
         return None
