@@ -156,8 +156,15 @@ def check_data_presence(
 
 def create_season_list(first_season: str, last_season: str) -> list[str]:
     return [
-        create_season_string(year=year, preceding=False) 
+        create_season_string(year=year, preceding=True) 
         for year in range(int(first_season[:4]), int(last_season[:4]) + 1)
+        ]
+
+
+def create_season_list_int(first_season: int, last_season: int) -> list[str]:
+    return [
+        create_season_string(year=year, preceding=True) 
+        for year in range(first_season, last_season + 1)
         ]
 
 
