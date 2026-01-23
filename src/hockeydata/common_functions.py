@@ -161,8 +161,8 @@ def create_season_list(first_season: str, last_season: str) -> list[str]:
         ]
 
 
-def create_season_string(self, year: str, preceeding: bool=True) -> list:
-        if preceeding == True:
+def create_season_string(year: str, preceding: bool=True) -> list:
+        if preceding == True:
             year_plus = int(year) + 1
             season_string = str(year) + "-" +  str(year_plus)
         else:

@@ -101,6 +101,8 @@ class PlayerPageURLScraper(PlaywrightScraper):
         "last_player_check": "//tbody[last()]//tr[last()]"
                              "//td[@class='position']/text()",
         "page_num": "//a[contains(text(), 'Last page')]/@href",
+        "table_goalies": "//div[@id='goalie-stats']",
+        "table_skaters": "//div[@id='skater-stats']",
         "url": "//td[@class='player']//a[@href]",
     }
 
@@ -114,7 +116,7 @@ class PlayerPageURLScraper(PlaywrightScraper):
     def _get_player_type_urls(self) -> list:
         page_num = self._get_page_num()
         for page in range(1, page_num + 1):
-            self._get_page_data(page=page)
+            self.get_data(page=page)
 
         return self.scraped_data
 
@@ -155,11 +157,11 @@ class PlayerPageURLScraper(PlaywrightScraper):
 
 
     @repeat_request_until_success
-    def _get_page_data(self, page: int) -> None:
+    def get_data(self, page: int) -> None:
         url = self.base_url + self.QUERY_STRING + str(page)
         self.page.goto(url=url)
         sel = Selector(text=self.page.content())
-        url_xpath = self.TABLE_XPATH + self.PATHS["url"] 
+        url_xpath = self.PATHS[self.TABLE_XPATH] + self.PATHS["url"] 
         urls_check = cf.get_list_xpath_values(
             sel=sel,
             xpath=url_xpath,
@@ -168,7 +170,7 @@ class PlayerPageURLScraper(PlaywrightScraper):
         if not urls_check:
             raise ValueError
         stats_table = self._scrape_data(
-            xpath=self.TABLE_XPATH,
+            xpath_name=self.TABLE_XPATH,
             is_optional=False
             )
         self.scraped_data.append(stats_table)
@@ -179,7 +181,8 @@ class SkaterPageURLScraper(PlayerPageURLScraper):
 
     PAGE_REGEX = "page=([0-9]+)"
     QUERY_STRING = "?page="
-    TABLE_XPATH = "//div[@id='skater-stats']"
+    TABLE_XPATH = "table_skaters"
+    TYPE = "Skater Page URLs"
 
 
 class GoaliePageURLScraper(PlayerPageURLScraper):
@@ -187,6 +190,7 @@ class GoaliePageURLScraper(PlayerPageURLScraper):
 
     PAGE_REGEX = "page-goalie=([0-9]+)"
     QUERY_STRING = "?page-goalie="
-    TABLE_XPATH = "//div[@id='goalie-stats']"
+    TABLE_XPATH = "table_goalies"
+    TYPE = "Goalie Page URLs"
 
     
