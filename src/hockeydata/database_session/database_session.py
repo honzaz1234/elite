@@ -8,13 +8,11 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.sql.schema import MetaData, Table
 from types import ModuleType
 
-
 import hockeydata.common_functions as cf
 import hockeydata.database_creator.database_creator as db
 import hockeydata.database_creator.storage_database_creator as storage_db
 import hockeydata.database_insert.db_insert  as db_insert
 import hockeydata.entity_data.get_urls.get_urls as league_url
-
 
 from hockeydata.constants import *
 from hockeydata.database_insert.db_insert import DatabaseMethods
@@ -70,13 +68,17 @@ class DatabaseSession(ABC):
                     )
         
 
-    def set_up_db_control(self) -> None:
+    def _set_up_db_control(self) -> None:
         self.db_control = self.DB_CONTROL(db_session=self.session) 
 
 
     @abstractmethod
-    def add_data_to_tables(self) -> None:
+    def _add_data_to_tables(self) -> None:
         pass
+
+
+    def commit(self) -> None:
+        self.session.commit()
 
 
     def clear_all_tables(self) -> None:
@@ -97,19 +99,31 @@ class DatabaseSession(ABC):
         self.session.commit()
 
 
-    def check_is_table_empty(self, table: Table) -> bool:
+    def _check_is_table_empty(self, table: Table) -> bool:
         check_data = self.session.query(table).all()
         if check_data == []:
             return False
         return True
     
 
-    def close_session(self) -> None:
-        self.session.close()
-        logger.debug("DB session closed.")
+    def close(self) -> None:
+        if hasattr(self, "session") and self.session:
+            self.session.close()
+            self.session = None
+
+        if hasattr(self, "engine") and self.engine:
+            self.engine.dispose()
+            self.engine = None
+
+        self.meta_data = None
+
+        logger.info(
+            "DB session closed for db at %s",
+            self.db_path
+        )
 
 
-    def add_seasons_to_seasons_table(self) -> None:
+    def _add_seasons_to_seasons_table(self) -> None:
         league_getter = league_url.LeagueUrlDownload()
         season_list = league_getter.create_season_list(1886, 2024)
         seasons_insert = []
@@ -123,7 +137,7 @@ class DatabaseSession(ABC):
             )
 
 
-    def add_years_to_seasons_table(self) -> None:
+    def _add_years_to_seasons_table(self) -> None:
         years = [*range(1886, 2025, 1)]
         years_insert = []
         for year in years:
@@ -152,17 +166,17 @@ class ParseDBSession(DatabaseSession):
     def set_up_connection(self) -> None:
         logger.info("New parsing session started")
         self.start_session()
-        self.set_up_db_control()
-        are_seasons_filled = self.check_is_table_empty(
+        self._set_up_db_control()
+        are_seasons_filled = self._check_is_table_empty(
             table=db.Season
             )
         if are_seasons_filled==False:
-            self.add_data_to_tables()
+            self._add_data_to_tables()
 
 
-    def add_data_to_tables(self) -> None:
-        self.add_seasons_to_seasons_table()
-        self.add_years_to_seasons_table()
+    def _add_data_to_tables(self) -> None:
+        self._add_seasons_to_seasons_table()
+        self._add_years_to_seasons_table()
         #add after the data is at least almost complete
      #   self.add_data_to_stadium_mapper_table()
       #  self.add_data_to_reference_tables()
@@ -227,7 +241,9 @@ class ScrapeDBSession(DatabaseSession):
 
     DB_CONTROL = StorageDatabaseMethods
     DB_SOURCE = storage_db
-    SCRAPE_TYPES = ["game", "player", "league", "team"]
+    SCRAPE_TYPES = [
+        "game", "player", "league", "team", "player url", "team url"
+        ]
 
 
     def __init__(self, db_path):
@@ -237,13 +253,13 @@ class ScrapeDBSession(DatabaseSession):
     def set_up_connection(self) -> None:
         logger.info("New scraping session started at path %s...", self.db_path)
         self.start_session()
-        self.set_up_db_control()
-        self.add_data_to_tables()
+        self._set_up_db_control()
+        self._add_data_to_tables()
 
 
-    def add_data_to_tables(self) -> None:
-        self.add_seasons_to_seasons_table()
-        self.add_years_to_seasons_table()
+    def _add_data_to_tables(self) -> None:
+        self._add_seasons_to_seasons_table()
+        self._add_years_to_seasons_table()
         self.add_scrape_types_to_scrape_types_table()
         self.add_league_info_to_league_info_table()
         self.session.commit()
