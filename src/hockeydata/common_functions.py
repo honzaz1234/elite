@@ -152,3 +152,21 @@ def check_data_presence(
         logger_dict.append(data_type)    
 
         return False
+    
+
+def create_season_list(first_season: str, last_season: str) -> list[str]:
+    return [
+        create_season_string(year=year, preceding=False) 
+        for year in range(int(first_season[:4]), int(last_season[:4]) + 1)
+        ]
+
+
+def create_season_string(self, year: str, preceeding: bool=True) -> list:
+        if preceeding == True:
+            year_plus = int(year) + 1
+            season_string = str(year) + "-" +  str(year_plus)
+        else:
+            year_minus = int(year) - 1
+            season_string = str(year_minus) + "-" + str(year)
+            
+        return season_string
