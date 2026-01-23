@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from playwright.sync_api import Page
+from playwright.sync_api import Browser, Page
 
 import hockeydata.common_functions as cf
 import hockeydata.entity_data.playwright_setup.playwright_setup as ps
@@ -28,21 +28,8 @@ class ScraperUnitManager(ABC):
         pass
 
 
-    def __init__(self):
-        playwright_session = ps.PlaywrightSetUp()
-        self.page = playwright_session.page
-
-
-    def process(self) -> list[dict]:
-        self.initiate_playwright_session()
-
-        return self.scrape_data()
-
-
-    def initiate_playwright_session(self) -> None:
-        playwright = ps.PlaywrightSetUp()
-        self.page = playwright.page
-        logger.debug("Playwright session succesfully initiated.")
+    def __init__(self, page: Page):
+        self.page = page
 
 
     @abstractmethod
@@ -53,8 +40,8 @@ class ScraperUnitManager(ABC):
 class EntityScraperUnitManager(ScraperUnitManager):
 
 
-    def __init__(self, url_mapper: dict[str]=None):
-        super().__init__()
+    def __init__(self, page: Page, url_mapper: dict[str]=None):
+        super().__init__(page=page)
         self.url_mapper = url_mapper
 
 
@@ -99,8 +86,8 @@ class PlayerScraperUnitManager(EntityScraperUnitManager):
 class URLScraperUnitManager(ScraperUnitManager):
 
 
-    def __init__(self, league_uid: str, seasons: list[str]):
-        super().__init__()
+    def __init__(self, page: Page, league_uid: str, seasons: list[str]):
+        super().__init__(page=page)
         self.league_uid = league_uid
         self.seasons = seasons
 
@@ -144,5 +131,5 @@ class URLScraperUnitManager(ScraperUnitManager):
 class PlayerURLScraperUnitManager(URLScraperUnitManager):
 
 
-    SCRAPER_CLASS = PlayerSeasonURLScraper
+    SCRAPE_CLASS = PlayerSeasonURLScraper
     TYPE = "Player"
