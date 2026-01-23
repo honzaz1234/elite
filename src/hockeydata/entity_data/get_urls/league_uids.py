@@ -384,6 +384,7 @@ LEAGUE_UIDS = {
     "U20 WJC D2A": "/league/wjc-20-d2a",
     "U20 WJC D2B": "/league/wjc-20-d2b",
     "U20 WJC D3": "/league/wjc-20-d3",
+    "U20 WJC D3B": "/league/wjc-20-d3b",
     "U18 WJC": "/league/wjc-18",
     "U18 WJC D1A": "/league/wjc-18-d1a",
     "U18 WJC D1B": "/league/wjc-18-d1b",
