@@ -1,6 +1,7 @@
 import re
 
 from datetime import datetime
+from urllib import request
 from playwright.sync_api import Page
 from scrapy import Selector
 from typing import Any
@@ -9,6 +10,7 @@ import hockeydata.common_functions as cf
 import hockeydata.entity_data.playwright_setup.playwright_setup as ps
 
 from hockeydata.constants import LEAGUE_UID_REGEX
+from hockeydata.entity_data.scraper.base import LeagueSeasonRangeScraper
 from hockeydata.entity_data.scraper.base import PlaywrightScraper
 from hockeydata.logger.logging_config import logger
 
@@ -20,16 +22,15 @@ class LeagueScraper(PlaywrightScraper):
         "achievements": "//header[./h2[contains(text(),'Awards')]]/"
                         "following-sibling::div",
         "accept_cookies": "//button[contains(., 'AGREE')]",
-        'first_year':"//li[last()]//a[contains(@class,'yearLink')]/text()",
-        "last_year": "//li[1]//a[contains(@class,'yearLink')]/text()",
+        'first_year':"[1]/ol/li[1]/a/@href",
+        "last_year": "[last()]/ol/li[last()]/a/@href",
         "landing_check": "//h1/span[contains(@class,'LeagueHeader_titleMain')]",
         "league_name":  "//h1/span[contains(@class,'LeagueHeader_titleMain')]",
         "season": "//header[./h2[contains(text(),'Standings')]]"
                         "/following-sibling::div[contains(@class,"
                         "'Loader_loadingContentWrapper')  "
                         "and not(contains(.,'No Data Found'))]",
-        "seasons": "//header[./h2[contains(text(),'Champions')]]/"
-                   "following-sibling::div",
+        "seasons": "//header[contains(.,'seasons')]/following-sibling::div"
     }
 
     TYPE = "league"
@@ -70,7 +71,7 @@ class LeagueScraper(PlaywrightScraper):
         self.scraped_data["achievements"] = self._scrape_data(
             xpath_name="achievements"
             )
-        self._get_list_of_years()
+        self._get_season_list()
         self._set_season_range()
         if scrape_seasons:
             self._get_stats(season_list=season_list)
@@ -83,55 +84,33 @@ class LeagueScraper(PlaywrightScraper):
         return self.scraped_data
 
 
-    def get_season_range(self) -> dict:
-        self._get_list_of_years()
-        self._set_season_range()
-
-        return self.scraped_data['season_range']
-
-
-    def _get_list_of_years(self) -> None:
-        sel = Selector(text=self.page.content())
-        first_year = self._get_year(sel=sel, xpath="first_year")
-        last_year = self._get_year(sel=sel, xpath="last_year")
-        self.year_list = [year for year in range(first_year, last_year + 1)]
-
-    
-    def _get_year(self, sel: Selector, xpath: str) -> int:
-        xpath = self.PATHS['seasons'] + self.PATHS[xpath]
-        extracted_year = cf.get_single_xpath_value(
-            sel=sel, 
-            xpath=xpath, 
-            optional=False
+    def _get_season_list(self) -> None:
+        range_scraper = LeagueSeasonRangeScraper(
+            league_uid=self.scraped_data["uid"]
             )
-
-        return int(extracted_year)
+        season_range = range_scraper._get_season_range()
+        self.season_list = cf.create_season_list(
+            first_season=season_range[0],
+            last_season=season_range[1]
+        )
 
 
     def _set_season_range(self) -> None:
-        first_season = self._create_season_string(
-            year=self.year_list[0], 
-            preceeding=False
-            )
-        self.scraped_data['season_range']['first_season'] = first_season
-        last_season = self._create_season_string(
-            year=self.year_list[len(self.year_list) - 1], 
-            preceeding=False
-            )
-        self.scraped_data['season_range']['last_season'] = last_season
+        self.scraped_data['season_range']['first_season'] = self.season_list[0]
+        self.scraped_data['season_range']['last_season'] = self.season_list[len(self.season_list) - 1]
 
 
     def _get_stats(self, season_list: list) -> None:
         if season_list == []:
-            season_list = self.year_list
-        for year in season_list:
-            season = self._create_season_string(year=year, preceeding=False)
-            self.scraped_data['stats'][season] = self._get_year_stats(year=year)
+            season_list = self.season_list
+        for season in season_list:
+            self.scraped_data['stats'][season] = self._get_year_stats(
+                season=season
+                )
     
 
-    def _get_year_stats(self, year: str) -> Selector:
-        season_string = self._create_season_string(year=year, preceeding=True)
-        season_url = self.url + "/standings/" + season_string
+    def _get_year_stats(self, season: str) -> Selector:
+        season_url = self.url + "/standings/" + season
         ps.go_to_page_wait(
             page=self.page, 
             url=season_url, 
@@ -139,14 +118,3 @@ class LeagueScraper(PlaywrightScraper):
             )
 
         return self._scrape_data(xpath_name="season", is_optional=False)
-
-
-    def _create_season_string(self, year: str, preceeding: bool=True) -> list:
-        if preceeding == True:
-            year_plus = int(year) + 1
-            season_string = str(year) + "-" +  str(year_plus)
-        else:
-            year_minus = int(year) - 1
-            season_string = str(year_minus) + "-" + str(year)
-            
-        return season_string
