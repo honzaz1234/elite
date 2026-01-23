@@ -1,61 +1,48 @@
 import math
-import multiprocessing 
+import multiprocessing
 
 from abc import ABC, abstractmethod
-from typing import Any, Generator
+from playwright.sync_api import Browser
+from typing import Any, Callable, Generator
 
-from management.scrape.unit_management import ScraperUnitManager
-from management.scrape.unit_management import PlayerScraperUnitManager
-from management.scrape.unit_management import PlayerURLScraperUnitManager
+from hockeydata.entity_data.playwright_setup.playwright_setup import PlaywrightSetUp
+from hockeydata.management.scrape.unit_management import PlayerScraperUnitManager
+from hockeydata.management.scrape.unit_management import PlayerURLScraperUnitManager
 from hockeydata.logger.logging_config import logger
 
 
 def player_scrape_worker(
-        url_mapper: tuple[dict[int, str]]) -> list[Any]:
+        args: tuple[dict[str, str]]) -> list[Any]:
+    url_mapper = args
+    playwright = PlaywrightSetUp()
     manager = PlayerScraperUnitManager(
-        url_mapper=url_mapper
+        url_mapper=url_mapper,
+        page=playwright.page
     )
-    manager.initiate_playwright_session()
-    processed_data = manager.process()
+    scraped_data = manager.scrape_data()
 
-    return processed_data
+    return scraped_data
 
 
 def player_url_scrape_worker(
         args: tuple[list[str], str]) -> list[Any]:
     seasons, league_uid = args
+    playwright = PlaywrightSetUp()
     manager = PlayerURLScraperUnitManager(
         seasons=seasons,
-        league_uid=league_uid
+        league_uid=league_uid,
+        page=playwright.page
     )
-    manager.initiate_playwright_session()
-    processed_data = manager.process()
+    scraped_data = manager.scrape_data()
+    playwright.close()
 
-    return processed_data
+    return scraped_data
 
 
 class MultiScrapeManager(ABC):
 
 
-    @property
-    @classmethod
-    @abstractmethod
-    def SCRAPER_MANAGER(cls) -> type[ScraperUnitManager]:
-        pass
-
-
-    @property
-    @classmethod
-    @abstractmethod
-    def SCRAPER_WORKER(cls) -> function:
-        pass
-
-
-    @property
-    @classmethod
-    @abstractmethod
-    def TYPE(cls) -> str:
-        pass
+    SCRAPER_WORKER: Callable
 
 
     def __init__(
@@ -63,22 +50,12 @@ class MultiScrapeManager(ABC):
         self.max_workers = max_workers
         self.data = data
         self.chunk_size = None
-        self._set_chunk_size(data=data)
-
+        self._set_chunk_size()
+    
 
     @abstractmethod
-    def set_up_manager(self) -> None:
+    def _set_chunk_size(self) -> None:
         pass
-    
-    
-    @abstractmethod
-    def _set_chunk_size(self, data: list) -> None:
-        self.chunk_size = math.ceil(len(data) / self.max_workers)
-        logger.info(
-            'Data will be divided between %s chunks of size %s', 
-            self.max_workers,
-            self.chunk_size
-            )
 
 
     @abstractmethod
@@ -87,11 +64,10 @@ class MultiScrapeManager(ABC):
 
 
     def scrape_data(self) -> list:
-        mapper_chunks = list(self._chunk_uids())
-        args = self._get_arguments(mapper_chunks=mapper_chunks)
-
+        chunks = list(self._chunk_uids())
+        args = self._get_arguments(chunks=chunks)
         with multiprocessing.Pool(processes=self.max_workers) as pool:
-            scraped_entities_nested = pool.map(self.SCRAPER_WORKER, args)
+            scraped_entities_nested = pool.map(type(self).SCRAPER_WORKER, args)
         scraped_entities = [
             entity for sublist in scraped_entities_nested 
             for entity in sublist
@@ -108,8 +84,16 @@ class MultiScrapeManager(ABC):
 class MultiPlayerScrapeManager(MultiScrapeManager):
 
 
-    SCRAPER_MANAGER = PlayerScraperUnitManager
     SCRAPER_WORKER = player_scrape_worker
+    
+
+    def _set_chunk_size(self, data: list) -> None:
+        self.chunk_size = math.ceil(len(data) / self.max_workers)
+        logger.info(
+            'Data will be divided between %s chunks of size %s', 
+            self.max_workers,
+            self.chunk_size
+            )
     
 
     def _chunk_uids(self) -> Generator[dict[str, int], None, None]:
@@ -121,19 +105,31 @@ class MultiPlayerScrapeManager(MultiScrapeManager):
 
     def _get_arguments(
             self,
-              mapper_chunks: list[list[dict[str, str]]]) -> tuple[dict[str, str]]:
-        return  [
-            (mapper_chunk)
-            for mapper_chunk in mapper_chunks
-            ]
+              chunks: list[list[dict[str, str]]]) -> tuple[dict[str, str]]:
+        args = []
+        for chunk in chunks:
+            tuple_ = (chunk,)
+            args.append(tuple_)
+
+        return args
     
 
 class PlayerURLMultiScrapeManager(MultiScrapeManager):
 
 
-    SCRAPER_MANAGER = PlayerURLScraperUnitManager
     SCRAPER_WORKER = player_url_scrape_worker
 
+
+    def _set_chunk_size(self) -> None:
+        self.chunk_size = (
+            math.ceil(len(self.data["seasons"]) / self.max_workers)
+            )
+        logger.info(
+            'Data will be divided between %s chunks of size %s', 
+            self.max_workers,
+            self.chunk_size
+            )
+        
 
     def _chunk_uids(self) -> Generator[list[str], None, None]:
         for i in range(0, len(self.data["seasons"]), self.chunk_size):
@@ -142,8 +138,10 @@ class PlayerURLMultiScrapeManager(MultiScrapeManager):
 
     def _get_arguments(
             self,
-              mapper_chunks: list[list[str]]) -> tuple[list[str]]:
-        return  [
-            (mapper_chunk, self.data["league_uid"])
-            for mapper_chunk in mapper_chunks
-            ]
+              chunks: list[list[str]]) -> tuple[dict[str, str]]:
+        args = []
+        for chunk in chunks:
+            tuple_ = (chunk, self.data["league_uid"])
+            args.append(tuple_)
+
+        return args
