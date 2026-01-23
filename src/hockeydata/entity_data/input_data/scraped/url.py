@@ -14,22 +14,27 @@ class PlayerURLHTMLInputter(HTMLInputter):
 
 
     def __init__(
-            self, db_session: Session, scraped_data: dict):
-        super().__init__(db_session=db_session, scraped_data=scraped_data)
-        self.league_id = None
+            self, db_session: Session, 
+            scraped_data: dict[str, dict[list[str]]|str]):
+        super().__init__(
+            db_session=db_session, 
+            scraped_data=scraped_data["data"]
+            )
+        self.league_id = scraped_data["uid"]
         self.query_manager = StorageDBQuery(db_session=db_session)
-        self.season_mapper: dict[str, int]|None = None
+        self.season_mapper: dict[str, int] = {}
 
 
     def _set_league_id(self) -> None:
         self.league_id = self.query._find_id_in_table(
             db.LeagueInfo, 
-            uid=self.scraped_data["uid"]
+            uid=self.league_id
             )
         
 
     def _set_season_mapper(self) -> None:
-        filter_ = db.Season.season.in_(self.scraped_data.keys())
+        seasons = list(self.scraped_data.keys())
+        filter_ = [db.Season.season.in_(seasons)]
         raw_data = self.query_manager.get_db_query_result(
             query_name="season_mapper",
             filters=filter_
@@ -95,13 +100,9 @@ class PlayerTypeURLHTMLInputter():
     def input_data(self, scraped_data: list) -> None:
         insert_list = []
         for url_html in scraped_data:
-            row_dict = self.get_row_dict(url=url_html)
+            row_dict = self.get_row_dict(url_html=url_html)
             insert_list.append(row_dict)
-        self.insert_db.insert_update_or_ignore_on_conflict_bulk(
-            table=db.PlayerURLHTML,
-            data=insert_list,
-            update=False
-            )
+        self.insert_db.insert_bulk(table=db.PlayerURLHTML, data=insert_list)
 
 
     def get_row_dict(self, url_html: bytes) -> dict[str, bool|int|str]:
@@ -114,13 +115,13 @@ class PlayerTypeURLHTMLInputter():
                 }
     
 
-class SkaterURLHTMLInputter():
+class SkaterURLHTMLInputter(PlayerTypeURLHTMLInputter):
 
 
     IS_GOALIE = False
 
 
-class GoalieURLHTMLInputter():
+class GoalieURLHTMLInputter(PlayerTypeURLHTMLInputter):
 
 
     IS_GOALIE = True
