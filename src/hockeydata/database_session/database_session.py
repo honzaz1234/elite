@@ -124,8 +124,9 @@ class DatabaseSession(ABC):
 
 
     def _add_seasons_to_seasons_table(self) -> None:
+        current_year = datetime.now().year
         league_getter = league_url.LeagueUrlDownload()
-        season_list = league_getter.create_season_list(1886, 2024)
+        season_list = cf.create_season_list_int(1886, current_year)
         seasons_insert = []
         for season in season_list:
             seasons_insert.append({"season": season})
@@ -138,7 +139,8 @@ class DatabaseSession(ABC):
 
 
     def _add_years_to_seasons_table(self) -> None:
-        years = [*range(1886, 2025, 1)]
+        current_year = datetime.now().year
+        years = [*range(1886, current_year, 1)]
         years_insert = []
         for year in years:
             years_insert.append({"season": year})
