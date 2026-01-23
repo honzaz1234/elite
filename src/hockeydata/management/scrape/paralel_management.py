@@ -25,7 +25,7 @@ def player_scrape_worker(
 
 
 def player_url_scrape_worker(
-        args: tuple[list[str], str]) -> list[Any]:
+        args: tuple[list[str], str]) -> dict[str, dict[str, list[bytes]]]:
     seasons, league_uid = args
     playwright = PlaywrightSetUp()
     manager = PlayerURLScraperUnitManager(
@@ -49,6 +49,10 @@ class MultiScrapeManager(ABC):
             self, data, max_workers: int=4):
         self.max_workers = max_workers
         self.data = data
+        self.scraped_data = {
+            "data": {},
+            "uid": self.data["uid"]
+        }
         self.chunk_size = None
         self._set_chunk_size()
     
@@ -63,17 +67,15 @@ class MultiScrapeManager(ABC):
         pass
 
 
-    def scrape_data(self) -> list:
+    def scrape_data(self) -> dict[str, str|dict[str, dict[str, list[bytes]]]]:
         chunks = list(self._chunk_uids())
         args = self._get_arguments(chunks=chunks)
         with multiprocessing.Pool(processes=self.max_workers) as pool:
             scraped_entities_nested = pool.map(type(self).SCRAPER_WORKER, args)
-        scraped_entities = [
-            entity for sublist in scraped_entities_nested 
-            for entity in sublist
-            ]
+        for dict_ in scraped_entities_nested:
+            self.scraped_data["data"].update(dict_)
 
-        return scraped_entities
+        return self.scraped_data
     
 
     @abstractmethod
@@ -141,7 +143,7 @@ class PlayerURLMultiScrapeManager(MultiScrapeManager):
               chunks: list[list[str]]) -> tuple[dict[str, str]]:
         args = []
         for chunk in chunks:
-            tuple_ = (chunk, self.data["league_uid"])
+            tuple_ = (chunk, self.data["uid"])
             args.append(tuple_)
 
         return args

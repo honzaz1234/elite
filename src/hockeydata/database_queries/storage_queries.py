@@ -172,7 +172,7 @@ STORAGE_QUERIES = {
         ]
     },
         "season_mapper": {
-        "base_table": storage_db.Season.id,
+        "base_table": storage_db.Season,
         "selected_cols": [
             storage_db.Season.season,
             storage_db.Season.id

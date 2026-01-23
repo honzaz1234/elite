@@ -90,13 +90,16 @@ class URLScraperUnitManager(ScraperUnitManager):
         super().__init__(page=page)
         self.league_uid = league_uid
         self.seasons = seasons
+        self.scraped_data = {
+            season: {}
+            for season in self.seasons
+        }
 
 
-    def scrape_data(self) -> list[dict]:
-        scraped_entities = []
+    def scrape_data(self) -> dict[str, dict[str, list[bytes]]]:
         for season in self.seasons:
             try:
-                scraped_entity = self.scrape_entity_data(
+                self.scraped_data[season] = self.scrape_season_data(
                     season=season,
                     league_uid=self.league_uid
                     )
@@ -112,13 +115,12 @@ class URLScraperUnitManager(ScraperUnitManager):
             #        self.db_source.Season, self.scrape_log
             #        )
                 cf.log_and_raise(error_message, Exception)
-            scraped_entities.append(scraped_entity)
         
-        return scraped_entities
+        return self.scraped_data
     
 
-    def scrape_entity_data(
-            self, season: str, league_uid: str) -> dict:
+    def scrape_season_data(
+            self, season: str, league_uid: str) -> dict[str, list[bytes]]:
         scraper = self.SCRAPE_CLASS(
             season=season, 
             page=self.page, 

@@ -11,6 +11,7 @@ from hockeydata.constants import *
 from hockeydata.database_queries.database_query import StorageDBQuery
 from hockeydata.database_session.database_session import ScrapeDBSession
 from hockeydata.entity_data.input_data.scraped.base import HTMLInputter
+from hockeydata.entity_data.input_data.scraped.league import LeagueHTMLInputter
 from hockeydata.entity_data.input_data.scraped.url import PlayerURLHTMLInputter
 from hockeydata.entity_data.scraper.base import LeagueSeasonRangeScraper
 from hockeydata.entity_data.scraper.league_scraper import LeagueScraper
@@ -52,16 +53,19 @@ class ScrapeManager(ABC):
 
     def __init__(self, storage_db_path: str):
         self.storage_db_path = storage_db_path
-        self.db_session: Session = None
+        self.session_manager: ScrapeDBSession = None
         self.scrape_id: int = None
         self.start_time: datetime = None
         self.end_time: datetime = None
 
 
     def _set_session(self) -> None:
-        db_session = ScrapeDBSession(db_path=self.storage_db_path)
-        db_session.set_up_connection()
-        self.db_session = db_session.session
+        self.session_manager = ScrapeDBSession(db_path=self.storage_db_path)
+        self.session_manager.set_up_connection()
+
+
+    def close_session(self) -> None:
+        self.session_manager.close()
 
 
   #  def get_session(
@@ -86,15 +90,17 @@ class ScrapeManager(ABC):
    #     self.uid_status_mapper =  self.GETDBID.get_parsed_data_statuses()
 
 
-    def _input_all_data(self, data: list[dict]) -> None:
-        data_inserter = self.DB_INSERTER(data=entity_dict)
+    def _input_all_data(self, scraped_data: list[dict]) -> None:
+        data_inserter = self.DB_INSERTER(
+            db_session=self.session_manager.session,
+            scraped_data=scraped_data
+            )
         data_inserter.input_scrape_log(
             scrape_type=self.TYPE,
             start_time=self.start_time,
             end_time=self.end_time
         )
-        for entity_dict in data:
-            data_inserter.input_data()
+        data_inserter.input_data()
 
 
     def _set_start_time(self) -> None:
@@ -171,7 +177,7 @@ class EntityScrapeManager(ScrapeManager):
 
 
     def get_urls(self, scrape_ids: list) -> list:
-        mapper = self.MAPPER(db_session=self.db_session)
+        mapper = self.MAPPER(db_session=self.session_manager.session)
 
         return mapper.get_urls(scrape_ids=scrape_ids)
 
@@ -191,7 +197,7 @@ class EntityScrapeManager(ScrapeManager):
 
 
     def _load_scraped_uids(self, uids: list) -> set:
-        db_mapper = self.MAPPER(db_session=self.db_session)
+        db_mapper = self.MAPPER(db_session=self.session_manager.session)
         scraped_uids =  db_mapper.get_scraped_uids(
             uids=uids
             )
@@ -215,7 +221,7 @@ class EntityScrapeManager(ScrapeManager):
     def scrape_data(self, max_workers: int=None) -> list[dict]:
         self._set_start_time()
         paralel_manager = self.PARALEL_MANAGER(
-            db_session=self.db_session,
+            db_session=self.session_manager.session,
             max_workers=max_workers,
             data=self.data
             )
@@ -230,19 +236,22 @@ class PlayerURLScrapeManager(ScrapeManager):
 
     DB_INSERTER = PlayerURLHTMLInputter
     PARALEL_MANAGER = PlayerURLMultiScrapeManager
-    TYPE = "player_url"
+    TYPE = "player url"
 
 
-    def __init__(self, storage_db_path:str, league_uid: str):
+    def __init__(
+            self, storage_db_path:str, league_uid: str, 
+            update_seasons: bool = False):
         super().__init__(storage_db_path=storage_db_path)
         self.data = {
             "seasons": [],
-            "league_uid": league_uid
+            "uid": league_uid
         }
         self.season_range = {
             "first_season": None,
             "last_season": None
         }
+        self.update_seasons = update_seasons
 
 
     def set_up(self) -> None:
@@ -253,50 +262,67 @@ class PlayerURLScrapeManager(ScrapeManager):
 
     def _add_season_range(self) -> None:
         season_range_set = self._check_season_range_in_db()
-        if season_range_set:
+        if season_range_set and not self.update_seasons:
             return
         season_range = self._scrape_season_range()
         self._set_season_range(season_range=season_range)
+        self._input_season_range_in_DB()
 
 
     def _check_season_range_in_db(self) -> bool:
-        query = StorageDBQuery(db_session=self.db_session)
-        filter_ = [storage_db.LeagueInfo.uid.is_(self.data["league_uid"])]
+        query = StorageDBQuery(db_session=self.session_manager.session)
+        filter_ = [storage_db.LeagueInfo.uid.is_(self.data["uid"])]
         season_range = query.get_db_query_result(
              query_name="year_range", 
              filters=filter_
              )
+        if season_range == []:
+            #add exception
+            raise Exception
         #update based on return value
         if all(value is None for value in season_range[0]):
             logger.info(
                 "Season range for league %s not yet in DB. Scrape will proceed",
-                self.data["league_uid"]
+                self.data["uid"]
                 )
             
             return False
         else:
             logger.info(
                 "Season range for league %s fetched from DB.",
-                self.data["league_uid"]
+                self.data["uid"]
                 )
-            self._set_season_range(season_range=season_range)
+            self._set_season_range(season_range=season_range[0])
             
             return True 
 
 
     def _set_season_range(self, season_range: tuple) -> None:
-        self.season_range['first_season'] = season_range[0][0]
-        self.season_range['last_season'] = season_range[0][1]
+        self.season_range['first_season'] = season_range[0]
+        self.season_range['last_season'] = season_range[1]
     
 
     def _scrape_season_range(self) -> tuple[str, str]:
         range_scraper = LeagueSeasonRangeScraper(
-            league_uid=self.data["league_uid"]
+            league_uid=self.data["uid"]
             )
         season_range = range_scraper._get_season_range()
 
         return season_range
     
+
+
+    def _input_season_range_in_DB(self):
+        league_html_input = LeagueHTMLInputter(
+            db_session=self.session_manager.session, 
+            scraped_data={
+                "season_range": self.season_range,
+                "uid": self.data["uid"]
+            }
+        )
+        league_html_input.update_season_range()
+        self.session_manager.commit()
+
 
     def _get_seasons(self):
         first_season = self.season_range['first_season']
