@@ -1,19 +1,14 @@
 import pandas as pd
 import unicodedata
 
-
 from abc import ABC, abstractmethod
 from collections import Counter
 from sqlalchemy.orm.attributes import InstrumentedAttribute
 
-
 import hockeydata.database_creator.database_creator as db
 import hockeydata.database_creator.storage_database_creator as storage_db
-import database_queries.database_query as dq
+from hockeydata.database_queries.database_query import DBQuery, ParsedDBQuery, StorageDBQuery
 import hockeydata.mappers.team_mappers as team_map
-
-
-from database_queries.database_query import DBQuery, ParsedDBQuery, StorageDBQuery
 from hockeydata.logger.logging_config import logger
 
 
