@@ -1,9 +1,20 @@
+from playwright.sync_api import sync_playwright
 import playwright.sync_api as sync_api
 
 from hockeydata.logger.logging_config import logger
 
 
 COOKIES_AGREE_XPATH = "//button[./*[contains(text(), 'AGREE')]]"
+FORBIDDEN_TYPES = ["image", "stylesheet", "font"]
+FORBIDDEN_STRINGS = [
+        'google', 'clarity', 'analytics', 
+        'RinksideWidget', 'facebook', 'twitter', 
+        'reddit', 'linkedin', 'ad.doubleclick'
+        'chrome', 'Endorsements', 'PlayerStatsAllTime',
+        'PlayerTransactions', 'SubscriptionOffer', 'PlayerMedia',
+        'PlayerGameLogs', 'DraftCoverage',
+    ]
+
 
 
 class PlaywrightSetUp():
@@ -21,25 +32,36 @@ class PlaywrightSetUp():
 
 
     def __init__(self):
-        self.p = None
-        self.browser = None
-        self.page = None
-        self.blocked_list = []
+        self.p: sync_api.Playwright = None
+        self.browser: sync_api.Browser = None
+        self.page: sync_api.Page = None
         self.initiate_sync_playwright()
 
 
-    def initiate_sync_playwright(self):
-        self.p = sync_api.sync_playwright().start()
+    def initiate_sync_playwright(self) -> None:
+        self.p = sync_playwright().start()
         self.browser = self.p.chromium.launch(headless=False)
         self.page = self.browser.new_page()
         self.page.route("**/*", self.intercept_requests)
 
 
-    def intercept_requests(self, route, request):
-        if request.resource_type in PlaywrightSetUp.FORBIDDEN_TYPES:
+    def close(self) -> None:
+        self.browser.close()
+        self.p.stop()
+
+ 
+    def initiate_another_browser(self) -> sync_api.Page:
+        new_browser = self.p.chromium.launch(headless=False)
+
+        return new_browser.new_page()
+
+
+    def intercept_requests(
+            self, route: sync_api.Route, request: sync_api.Request) -> None:
+        if request.resource_type in FORBIDDEN_TYPES:
             route.abort()
         elif any(forbidden_string in request.url 
-                 for forbidden_string in PlaywrightSetUp.FORBIDDEN_STRINGS):
+                 for forbidden_string in FORBIDDEN_STRINGS):
             route.abort()
         else:
             route.continue_()
