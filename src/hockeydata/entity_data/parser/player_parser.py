@@ -6,10 +6,11 @@ import hockeydata.common_functions as cf
 
 from hockeydata.constants import *
 from hockeydata.decorators import time_execution
+from hockeydata.entity_data.parser.base import Parser
 from hockeydata.logger.logging_config import logger
 
     
-class PlayerParser:
+class PlayerParser(Parser):
     """Class for parsing information from players htmls obtained by player 
        scraper;
        includes one method which wraps around methods from classes for downloading 
@@ -33,7 +34,7 @@ class PlayerParser:
             )
 
 
-    def get_info_all(self, years: list=None) -> dict:
+    def get_data(self, years: list=None) -> dict:
         """Arguments: years - list of years for which data is parsed"""
         logger.info(
             'Parsing of new player info %s started', 
