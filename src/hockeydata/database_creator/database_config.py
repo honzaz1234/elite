@@ -198,4 +198,15 @@ STORAGE_TABLE_CONFIG = {
             storage_db.LeagueMissingDataLog.data_type,
         ],
     },
+    storage_db.URLType: {
+        "index_update": [storage_db.URLType.url_type],
+    },
+    storage_db.PlayerURL: {
+        "index_update": [
+            storage_db.PlayerURL.url,
+            storage_db.PlayerURL.scrape_id,
+            storage_db.PlayerURL.season_id,
+            storage_db.PlayerURL.league_id,
+            ],
+    },
 }
