@@ -152,9 +152,12 @@ STORAGE_QUERIES = {
         "base_table": storage_db.PlayerURLHTML,
         "selected_cols": [
             storage_db.PlayerURLHTML.html_data,
-            storage_db.Season.season,
+            storage_db.PlayerURLHTML.season_id,
+            storage_db.PlayerURLHTML.league_id,
+            storage_db.PlayerURLHTML.scrape_id,
+            storage_db.PlayerURLHTML.is_goalie,
             storage_db.LeagueInfo.uid,
-            storage_db.PlayerURLHTML.scrape_id
+            storage_db.Season.season,
             ],
         "joins": [
             {
