@@ -1,117 +1,94 @@
 import math
-import multiprocessing 
-import re
+import multiprocessing
 
 from abc import ABC, abstractmethod
-from datetime import datetime
-from typing import Any, Generator
+from typing import Callable, Generator
 
-
-import common_functions as cf
-
-from database_session.database_session import ParseDBSession, ScrapeDBSession
-from hockeydata.entity_data.storage_db_getter.storage_db_getter import GoalieStorageDBDataGetter, StorageDBDataGetter, SkaterStorageDBDataGetter
-from management.scrape_management import ScraperManager, ParserManager, PlayerScraperManager
-from hockeydata.mappers.db_mappers import DBMapper, PlayerStorageDBMapper
+from hockeydata.management.parsing.unit_management import PlayerURLParserUnitManager
 from hockeydata.logger.logging_config import logger
 
 
-def scrape_worker(
-        args: tuple[str, dict[int, str], type[ParserManager|ScraperManager]]) -> list[Any]:
-    db_path, url_mapper, manager_class  = args
-
-    manager = manager_class(
-        url_mapper=url_mapper
+def player_url_parse_worker(
+        args: tuple[list[dict[str, bytes|int|str]]]
+        ) -> list[dict[str, int|list|str]]:
+    pages = args
+    manager = PlayerURLParserUnitManager(
+        scraped_data=pages
     )
-    manager.initiate_playwright_session()
-    processed_data = manager.process()
+    parsed_data = manager.parse_data()
 
-    return processed_data
-
-
-class MultiManager(ABC):
+    return parsed_data
 
 
-    @property
-    @classmethod
-    @abstractmethod
-    def TYPE(cls) -> str:
-        pass
+class MultiParseManager(ABC):
+
+
+    SCRAPER_WORKER: Callable
 
 
     def __init__(
-            self, db_path: str, data: dict[int|str, str], max_workers: int=4):
-        self.db_path = db_path
+            self, scraped_data, max_workers: int=4):
         self.max_workers = max_workers
-        self.data = data
+        self.scraped_data = scraped_data
+        self.parsed_data = []
         self.chunk_size = None
+        self._set_chunk_size()
+    
+
+    @abstractmethod
+    def _set_chunk_size(self) -> None:
+        pass
 
 
     @abstractmethod
-    def set_up_manager(self) -> None:
+    def _chunk_uids(self) -> Generator:
+        pass
+
+
+    def parse_data(self) -> dict[str, str|dict[str, dict[str, list[bytes]]]]:
+        chunks = list(self._chunk_uids())
+        args = self._get_arguments(chunks=chunks)
+        with multiprocessing.Pool(processes=self.max_workers) as pool:
+            scraped_entities_nested = pool.map(type(self).SCRAPER_WORKER, args)
+        for chunk in scraped_entities_nested:
+            self.parsed_data.extend(chunk)
+
+        return self.parsed_data
+    
+
+    @abstractmethod
+    def _get_arguments(self) -> list[tuple]:
         pass
     
-    
-    @abstractmethod
-    def _set_chunk_size(self, data: list) -> None:
-        self.chunk_size = math.ceil(len(data) / self.max_workers)
+
+class PlayerURLMultiParseManager(MultiParseManager):
+
+
+    SCRAPER_WORKER = player_url_parse_worker
+
+
+    def _set_chunk_size(self) -> None:
+        self.chunk_size = (
+            math.ceil(len(self.scraped_data) / self.max_workers)
+            )
         logger.info(
             'Data will be divided between %s chunks of size %s', 
             self.max_workers,
             self.chunk_size
             )
+        
+
+    def _chunk_uids(self) -> Generator[list[str], None, None]:
+        for i in range(0, len(self.scraped_data), self.chunk_size):
+            yield self.scraped_data[i : i + self.chunk_size]
 
 
-    def _chunk_uids(self) -> Generator[dict[str, int], None, None]:
-        keys = list(self.data.keys())
-        for i in range(0, len(keys), self.chunk_size):
-            chunk_keys = keys[i:i + self.chunk_size]
-            yield {k: self.data[k] for k in chunk_keys}
+    def _get_arguments(
+            self,
+              chunks: list[list[str]]) -> tuple[dict[str, str]]:
+        args = []
+        for chunk in chunks:
+            tuple_ = (chunk)
+            args.append(tuple_)
 
-
-class MultiParseManager(MultiManager):
-
-
-    @property
-    @classmethod
-    @abstractmethod
-    def DB_MAPPER(cls) -> type[StorageDBDataGetter]:
-        pass
-
-    STORAGE_DB_GETTER = type[StorageDBDataGetter]
-
-
-    def __init__(
-            self, db_path: str, max_workers:int, scrape_ids: list[int], 
-            uids: list=None, update: bool=False):
-        super().__init__(db_path=db_path, max_workers=max_workers)
-        self.scrape_ids = scrape_ids
-        self.uids = uids
-        self.update = update
-        self._set_chunk_size(data=uids)
-
-
-    def set_up_manager(self):
-        self._load_data()
-        self._set_chunk_size(data=self.data)
-        if not self.update:
-            mapper_getter = 
-            status_mapper = 
-
-
-
-    def _load_data(self) -> None:
-        storage_db_getter = self.STORAGE_DB_GETTER(
-            db_path=self.db_path,
-            scrape_ids=self.scrape_ids,
-            uids=self.uids
-            )
-        self.scraped_data =  storage_db_getter.get_data(
-            )
-        logger.info(
-            "%s scraped %s from scrapes %s loaded", 
-            len(self.scraped_data),
-            self.TYPE,
-            self.scrape_ids
-            )
-
+        return args
