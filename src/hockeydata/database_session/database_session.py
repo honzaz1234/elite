@@ -11,7 +11,6 @@ from types import ModuleType
 import hockeydata.common_functions as cf
 import hockeydata.database_creator.database_creator as db
 import hockeydata.database_creator.storage_database_creator as storage_db
-import hockeydata.database_insert.db_insert  as db_insert
 import hockeydata.entity_data.get_urls.get_urls as league_url
 
 from hockeydata.constants import *
@@ -246,6 +245,7 @@ class ScrapeDBSession(DatabaseSession):
     SCRAPE_TYPES = [
         "game", "player", "league", "team", "player url", "team url"
         ]
+    URL_TYPES = ["player", "team"]
 
 
     def __init__(self, db_path):
@@ -262,24 +262,34 @@ class ScrapeDBSession(DatabaseSession):
     def _add_data_to_tables(self) -> None:
         self._add_seasons_to_seasons_table()
         self._add_years_to_seasons_table()
-        self.add_scrape_types_to_scrape_types_table()
-        self.add_league_info_to_league_info_table()
-        self.session.commit()
-
-
-    def add_scrape_types_to_scrape_types_table(self) -> None:
-        scrape_type_insert = []
-        for scrape_type in self.SCRAPE_TYPES:
-            scrape_type_insert.append({"scrape_type": scrape_type})
-        self.db_control = self.DB_CONTROL(db_session=self.session)
-        self.db_control.insert_update_or_ignore_on_conflict_bulk(
-            table=storage_db.ScrapeType,
-            data=scrape_type_insert,
-            update=False
+        self._add_types_to_table(
+            table=storage_db.ScrapeType, 
+            col_name="scrape_type",
+            type_list=self.SCRAPE_TYPES
             )
+        self._add_types_to_table(
+            table=storage_db.URLType, 
+            col_name="url_type",
+            type_list=self.URL_TYPES
+            )
+        self._add_league_info_to_league_info_table()
+        self.session.commit()
         
 
-    def add_league_info_to_league_info_table(self) -> None:
+    def _add_types_to_table(
+            self, table: Table, col_name: str, type_list: list[str]) -> None:
+        type_insert = []
+        for scrape_type in type_list:
+            type_insert.append({col_name: scrape_type})
+        self.db_control = self.DB_CONTROL(db_session=self.session)
+        self.db_control.insert_update_or_ignore_on_conflict_bulk(
+            table=table,
+            data=type_insert,
+            update=False
+            )
+
+
+    def _add_league_info_to_league_info_table(self) -> None:
         insert_info = []
         for league_name in LEAGUE_UIDS:
             uid = re.findall('league\/(.+)$',LEAGUE_UIDS[league_name])[0]
