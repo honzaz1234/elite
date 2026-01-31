@@ -141,7 +141,7 @@ class DatabaseMethods():
         return id
     
 
-    def insert_bulk(self, table: Table, data: dict) -> None:
+    def insert_bulk(self, table: Table, data: list) -> None:
         self.db_session.bulk_insert_mappings(table, data)
 
 
@@ -198,10 +198,16 @@ class DatabaseMethods():
             index_cols: list) -> Insert:
         insert_query = sqlite_insert(table).values(data)
         if update:
+            if isinstance(data, dict):
+                rows = [data]
+            else:
+                rows = data
+            all_cols = set().union(*(row.keys() for row in rows))
             update_cols = {
-                col: insert_query.excluded[col] for col in data 
+                col: insert_query.excluded[col]
+                for col in all_cols
                 if col not in index_cols
-                }
+            }
             insert_query = insert_query.on_conflict_do_update(
                 index_elements=index_cols,
                 set_=update_cols
