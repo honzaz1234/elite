@@ -1,9 +1,7 @@
 from abc import abstractmethod
 from scrapy import Selector
 
-
-import common_functions as cf
-
+import hockeydata.common_functions as cf
 
 from hockeydata.entity_data.parser.base import Parser
 from hockeydata.logger.logging_config import logger
@@ -25,6 +23,9 @@ class URLParser(Parser):
             "league_uid": self.scraped_data["league_uid"],
             "scrape_id": self.scraped_data["scrape_id"],
             "season": self.scraped_data["season"],
+            "is_goalie": self.scraped_data["is_goalie"],
+            "season_id": self.scraped_data["season_id"],
+            "league_id": self.scraped_data["league_id"],
             "urls": []
         }
 
@@ -34,7 +35,8 @@ class URLParser(Parser):
         sel = Selector(text=self.scraped_data["html"])
         self.parsed_data["urls"] = cf.get_list_xpath_values(
                 sel=sel,
-                xpath=self.URL_XPATH
+                xpath=self.URL_XPATH,
+                optional=False
         )
 
         return self.parsed_data
