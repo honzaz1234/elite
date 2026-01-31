@@ -106,11 +106,18 @@ class PlayerURL(Base):
 
 
     id = Column(Integer, primary_key=True)
-    url = Column(String, nullable=False, unique=True)
+    url = Column(String, nullable=False)
     is_goalie = Column(Boolean, nullable=False)
     scrape_id = Column(Integer, ForeignKey('scrapes.id'), nullable=False)
     season_id = Column(Integer, ForeignKey('seasons.id'), nullable=False)
     league_id = Column(Integer, ForeignKey('league_infos.id'), nullable=False)
+
+
+    __table_args__ = (
+        UniqueConstraint(
+            'url', 'scrape_id', 'season_id', 'league_id',
+            name='uq_player_urls_url_scrape_id_season_id_league_id'),
+    )
 
 
     def __init__(
@@ -130,7 +137,60 @@ class PlayerURL(Base):
             self.season_id,
             self.league_id
         )
+
+
+class URLLog(Base):
+
+
+    __tablename__ = 'url_logs'
+
+
+    id = Column(Integer, primary_key=True)
+    start_datetime = Column(DateTime, nullable=False)
+    end_datetime = Column(DateTime, nullable=True)
+    url_type_id = Column(
+        Integer, 
+        ForeignKey('url_types.id'), 
+        nullable=False
+        )
+
+
+    def __init__(
+            self, url_type_id: int, start_datetime: datetime, 
+            end_datetime: datetime
+            ):
+        self.start_datetime = start_datetime or datetime.now()
+        self.end_datetime = end_datetime
+        self.url_type_id = url_type_id
+
+
+    def __repr__(self):
+        return "<Scrape(id=%s, start='%s', end='%s', url_type_id='%s')>" % (
+            self.id, 
+            self.start_datetime, 
+            self.end_datetime, 
+            self.url_type_id
+        )
     
+
+class URLType(Base):
+
+    __tablename__ = 'url_types'
+
+    id = Column(Integer, primary_key=True)
+    url_type = Column(String, nullable=False, unique=True)
+
+
+    def __init__(self, url_type: str):
+        self.url_type = url_type
+
+
+    def __repr__(self):
+        return "<Scrape(id=%s, url_type='%s')>" % (
+            self.id, 
+            self.url_type
+        )
+
 
 class PlayerLog(Base):
 
