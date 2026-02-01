@@ -6,6 +6,7 @@ import time
 from functools import wraps
 from sqlalchemy.exc import SQLAlchemyError
 
+from hockeydata.errors import PageBlockError
 from hockeydata.logger.logging_config import logger
 
 
@@ -23,10 +24,18 @@ def repeat_request_until_success(func):
                 logger.info("Attempt %s executing function  %s "
                             "failed: %s", attempt, {func.__name__}, e)
                 time.sleep(10)
-            except (ConnectionError, requests.Timeout, ssl.SSLError, OSError):
+            except ( 
+                ConnectionError, 
+                requests.Timeout, 
+                ssl.SSLError, 
+                OSError
+                ) as e:
                 logger.info("Attempt %s executing function %s "
                             "failed: %s", attempt, {func.__name__}, e)
                 time.sleep(120)
+            except PageBlockError as e:
+                logger.info("Attempt %s executing function %s "
+                            "failed: %s", attempt, {func.__name__}, e)
             except(sp.TimeoutError):
                 time.sleep(60)
         logger.info('Max attempt (%s) was reached', attempt)

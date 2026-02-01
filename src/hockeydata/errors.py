@@ -108,6 +108,8 @@ class InputPlayDBError(Exception):
 
 
 class NoneReferenceValueError(TypeError):
+
+
     def __init__(self, table: str):
         message = {
             f"Mandatory value for column from table {table}"
@@ -116,6 +118,13 @@ class NoneReferenceValueError(TypeError):
         super().__init__(message)
 
 
+class PageBlockError(Exception):
+
+
+    def __init__(self, url: str):
+        message = "Blocked connection for following url: %s" % url
+
+        super().__init__(message)
 
 
 
