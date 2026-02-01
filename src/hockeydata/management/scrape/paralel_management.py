@@ -2,7 +2,6 @@ import math
 import multiprocessing
 
 from abc import ABC, abstractmethod
-from playwright.sync_api import Browser
 from typing import Any, Callable, Generator
 
 from hockeydata.entity_data.playwright_setup.playwright_setup import PlaywrightSetUp
@@ -87,7 +86,7 @@ class MultiPlayerScrapeManager(MultiScrapeManager):
 
 
     SCRAPER_WORKER = player_scrape_worker
-    
+
 
     def _set_chunk_size(self, data: list) -> None:
         self.chunk_size = math.ceil(len(data) / self.max_workers)
