@@ -18,7 +18,6 @@ from hockeydata.entity_data.scraper.league_scraper import LeagueScraper
 from hockeydata.management.scrape.paralel_management import MultiScrapeManager
 from hockeydata.management.scrape.paralel_management import  PlayerURLMultiScrapeManager
 from hockeydata.management.scrape.paralel_management import PlayerURLMultiScrapeManager
-from hockeydata.entity_data.playwright_setup.playwright_setup import PlaywrightSetUp
 from hockeydata.mappers.db_mappers import StorageDBMapper
 from hockeydata.logger.logging_config import logger
 
@@ -114,6 +113,10 @@ class ScrapeManager(ABC):
 
 
     def scrape_data(self, max_workers: int=4) -> list[dict]:
+        logger.info(
+            "Scrape divided in %s processes will now proceed.",
+            max_workers
+            )
         self._set_start_time()
         paralel_manager = self.PARALEL_MANAGER(
             max_workers=max_workers,
@@ -121,6 +124,7 @@ class ScrapeManager(ABC):
             )
         scraped_data = paralel_manager.scrape_data()
         self._set_end_time()
+        logger.info("Scrape finished.")
 
         return scraped_data
 
@@ -154,14 +158,20 @@ class EntityScrapeManager(ScrapeManager):
 
     def set_up(
             self, db_path: str, scrape_ids: list, 
-            rescrape: bool) -> None:
+            rescrape: bool = True) -> None:
+        logger.info(
+            "Setting up scrape for %s data based on URLs from scrapes: "
+            "%s...", 
+            self.TYPE,
+            scrape_ids
+            )
         self._set_session(db_path=db_path)
         urls = self.get_urls(scrape_ids=scrape_ids)
         self._get_uid_to_url_mapper(urls=urls)
         if not rescrape:
             logger.info(
-                "Rescrape set to True, already scraped data will"
-                " be rescraped."
+                "Rescrape set to True, already scraped data will "
+                "be rescraped."
                 )
             scraped_uids = self._load_scraped_uids(
                 uids=self.data.keys()
@@ -174,6 +184,7 @@ class EntityScrapeManager(ScrapeManager):
                 "Rescrape set to False, already scraped data will"
                 "not  be rescraped."
                 )
+        logger.info("Scrape set up.")
 
 
     def get_urls(self, scrape_ids: list) -> list:
@@ -216,19 +227,6 @@ class EntityScrapeManager(ScrapeManager):
             }
         logger.info("UIDs for already scraped players filtered out. %s UIDs "
                     " left to scrape.", len(self.data))
-        
-
-    def scrape_data(self, max_workers: int=None) -> list[dict]:
-        self._set_start_time()
-        paralel_manager = self.PARALEL_MANAGER(
-            db_session=self.session_manager.session,
-            max_workers=max_workers,
-            data=self.data
-            )
-        scraped_data = paralel_manager.scrape_data()
-        self._set_end_time()
-
-        return scraped_data
     
 
 class PlayerURLScrapeManager(ScrapeManager):
@@ -241,7 +239,7 @@ class PlayerURLScrapeManager(ScrapeManager):
 
     def __init__(
             self, storage_db_path:str, league_uid: str, 
-            update_seasons: bool = False):
+            rescrape_seasons: bool = False):
         super().__init__(storage_db_path=storage_db_path)
         self.data = {
             "seasons": [],
@@ -251,7 +249,7 @@ class PlayerURLScrapeManager(ScrapeManager):
             "first_season": None,
             "last_season": None
         }
-        self.update_seasons = update_seasons
+        self.rescrape_seasons = rescrape_seasons
 
 
     def set_up(self) -> None:
@@ -262,7 +260,7 @@ class PlayerURLScrapeManager(ScrapeManager):
 
     def _add_season_range(self) -> None:
         season_range_set = self._check_season_range_in_db()
-        if season_range_set and not self.update_seasons:
+        if season_range_set and not self.rescrape_seasons:
             return
         season_range = self._scrape_season_range()
         self._set_season_range(season_range=season_range)
@@ -300,6 +298,12 @@ class PlayerURLScrapeManager(ScrapeManager):
     def _set_season_range(self, season_range: tuple) -> None:
         self.season_range['first_season'] = season_range[0]
         self.season_range['last_season'] = season_range[1]
+        logger.info(
+            "Season range for league %s is between %s and %s",
+             self.data["uid"],
+             self.season_range['first_season'],
+             self.season_range['last_season']
+            )
     
 
     def _scrape_season_range(self) -> tuple[str, str]:
@@ -310,7 +314,6 @@ class PlayerURLScrapeManager(ScrapeManager):
 
         return season_range
     
-
 
     def _input_season_range_in_DB(self):
         league_html_input = LeagueHTMLInputter(
