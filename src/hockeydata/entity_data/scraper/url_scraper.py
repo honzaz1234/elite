@@ -53,6 +53,7 @@ class PlayerSeasonURLScraper(PlaywrightScraper):
             "skaters": [],
             "goalies": []
         }
+        self.season = season
     
 
     def _one_page_check(
@@ -126,9 +127,10 @@ class PlayerSeasonURLScraper(PlaywrightScraper):
             page_cls: type['PlayerPageURLScraper']) -> list[bytes]:
         tables = []
         logger.info(
-            "Scraping %s data.. (%s page(s))", 
+            "Scraping %s data.. (%s page(s), %s)", 
             page_cls.TYPE, 
-            self.page_nums[page_cls]
+            self.page_nums[page_cls],
+            self.season
             )
         for page in range(1, self.page_nums[page_cls] + 1):
             table_html = self._get_one_table(
@@ -136,7 +138,7 @@ class PlayerSeasonURLScraper(PlaywrightScraper):
                 page_cls=page_cls
                 )
             tables.append(table_html)
-        logger.info("%s data  scraped.", page_cls.TYPE)
+        logger.info("%s data  scraped. (%s)", page_cls.TYPE, self.season)
 
         return tables
     
@@ -152,8 +154,11 @@ class PlayerSeasonURLScraper(PlaywrightScraper):
             page_scraper.go_to_page()
             scraped_table = page_scraper.get_data()
             logger.info(
-                "%s/%s",  page_num, 
-                self.page_nums[page_cls]
+                "%s/%s (%s, %s)",  
+                page_num, 
+                self.page_nums[page_cls],
+                page_cls.TYPE,
+                self.season
                 )
             
             return scraped_table
