@@ -7,6 +7,8 @@ from scrapy import Selector
 import hockeydata.common_functions as cf
 import hockeydata.entity_data.playwright_setup.playwright_setup as ps
 
+from hockeydata.decorators import repeat_request_until_success
+from hockeydata.errors import PageBlockError
 from hockeydata.logger.logging_config import logger
 
 
@@ -31,6 +33,9 @@ class PlaywrightScraper(ABC):
         pass
 
 
+    BLOCK_XPATH = "xpath=//*[contains(text(), 'Delaying the game!')]"
+
+
     def __init__(self, url: str, page: Page):
         """Arguments:
         url - url of webpage with player's information
@@ -41,18 +46,22 @@ class PlaywrightScraper(ABC):
 
         self.url = url
         self.page = page
-        self.scraped_data = {}  
 
 
+    @repeat_request_until_success
     def go_to_page(self):
-        ps.go_to_page_wait(
-            page=self.page, url=self.url,
-            sel_wait=self.PATHS["landing_check"]
-            )
-        ps.click_optional_button(
-            page=self.page, sel_click=self.PATHS["accept_cookies"],
-            button_type="Accept Cookies", wait_time=5000
-            )
+        try:
+            ps.go_to_page_wait(
+                page=self.page, url=self.url,
+                sel_wait=self.PATHS["landing_check"]
+                )
+            ps.click_optional_button(
+                page=self.page, sel_click=self.PATHS["accept_cookies"],
+                button_type="Accept Cookies", wait_time=5000
+                )
+        except:
+            if self.page.locator(self.BLOCK_XPATH).count() > 0:
+                cf.log_and_raise(PageBlockError, url=self.url)
 
 
     def _scrape_data(
