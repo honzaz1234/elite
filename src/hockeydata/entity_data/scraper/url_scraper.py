@@ -17,18 +17,26 @@ import hockeydata.common_functions as cf
 import hockeydata.entity_data.playwright_setup.playwright_setup as ps
 
 
-class PlayerSeasonURLScraper():
+class PlayerSeasonURLScraper(PlaywrightScraper):
 
 
     PATHS = {
         "goalie_stats": "//div[@id='goalie-stats']",
-        "skater_stats": "//div[@id='skater-stats']"
+        "landing_check": "//div[@id='skater-stats']"
+                        "//td[@class='player']//a[@href]",
+        "last_player_check": "//tbody[last()]//tr[last()]"
+                             "//td[@class='position']/text()",
+        "page_num": "//a[contains(text(), 'Last page')]/@href",
+        "skater_stats": "//div[@id='skater-stats']",
+        "table_goalies": "//div[@id='goalie-stats']",
+        "table_skaters": "//div[@id='skater-stats']",
     }
+    TYPE = "Player URL"
 
 
     def __init__(
             self, season: str, league_uid: str, page: Page):
-        self.url = (
+        url = (
             ELITE_URL 
             + "/league/" 
             + league_uid 
@@ -36,42 +44,120 @@ class PlayerSeasonURLScraper():
             + season 
             + "/total"
         )
+        super().__init__(url=url, page=page)
         self.page_nums = {
-            "skaters": None,
-            "goalies": None
+            SkaterPageURLScraper: None,
+            GoaliePageURLScraper: None
         }
-        self.page = page
         self.scraped_data = {
             "skaters": [],
             "goalies": []
         }
+    
 
+    def _one_page_check(
+            self, sel: Selector, 
+            page_cls: type['PlayerPageURLScraper']) -> bool:
+        """In case page listing is not found, checks that last postion in 
+            stat table is than 100
+        """
+        last_player_xpath = (
+            self.PATHS[page_cls.TABLE_XPATH] 
+            + self.PATHS["last_player_check"]
+            )
+        last_position = cf.get_single_xpath_value(
+            sel=sel,
+            xpath=last_player_xpath,
+            optional=False
+            )
+        last_position = int(re.findall("[0-9]+", last_position)[0])
+        if last_position < 100:
+
+            return True
+        
+        return False
+    
 
     def get_data(self) -> dict:
-        ps.go_to_page_wait(
-            page=self.page, 
-            url=self.url, 
-            sel_wait=self.PATHS["skater_stats"]
-            )
+        self._get_page_nums()
         self.scraped_data["skaters"] = self.get_player_type_data(
-            page_scraper_cls=SkaterPageURLScraper,
+            page_cls=SkaterPageURLScraper,
             )
         self.scraped_data["goalies"] = self.get_player_type_data(
-            page_scraper_cls=GoaliePageURLScraper,
+            page_cls=GoaliePageURLScraper,
             )
         
         return self.scraped_data
+    
+
+    def _get_page_nums(self) -> None:
+        self.page_nums[SkaterPageURLScraper] = self._get_page_num(
+            page_cls=SkaterPageURLScraper
+            )
+        self.page_nums[GoaliePageURLScraper] = self._get_page_num(
+            page_cls=GoaliePageURLScraper
+            )
+    
+    
+    def _get_page_num(self, page_cls: type['PlayerPageURLScraper']) -> int:
+        sel = Selector(text=self.page.content())
+        last_page_xpath = ( 
+            self.PATHS[page_cls.TABLE_XPATH] 
+            + self.PATHS["page_num"] 
+            )
+        page_url = cf.get_single_xpath_value(
+            sel=sel,
+            xpath=last_page_xpath,
+            optional=True
+            )
+        if page_url:
+
+            return int(re.findall(page_cls.PAGE_REGEX, page_url)[0])
+        is_one_page = self._one_page_check(sel=sel, page_cls=page_cls) 
+        if is_one_page:
+
+            return 1
+        
+        raise ValueError 
 
 
     def get_player_type_data(
-            self, page_scraper_cls: type['PlayerPageURLScraper']):
-        page_scraper = page_scraper_cls(
-            base_url=self.url, 
-            page=self.page, 
+            self, 
+            page_cls: type['PlayerPageURLScraper']) -> list[bytes]:
+        tables = []
+        logger.info(
+            "Scraping %s data.. (%s page(s))", 
+            page_cls.TYPE, 
+            self.page_nums[page_cls]
             )
-        
-        return page_scraper._get_player_type_urls()
+        for page in range(1, self.page_nums[page_cls] + 1):
+            table_html = self._get_one_table(
+                page_num=page, 
+                page_cls=page_cls
+                )
+            tables.append(table_html)
+        logger.info("%s data  scraped.", page_cls.TYPE)
 
+        return tables
+    
+
+    def _get_one_table(
+            self, page_num: int, 
+            page_cls: type['PlayerPageURLScraper']) -> bytes:
+            page_scraper = page_cls(
+                base_url=self.url, 
+                page_num=page_num,
+                page=self.page, 
+                )
+            page_scraper.go_to_page()
+            scraped_table = page_scraper.get_data()
+            logger.info(
+                "%s/%s",  page_num, 
+                self.page_nums[page_cls]
+                )
+            
+            return scraped_table
+    
 
 class PlayerPageURLScraper(PlaywrightScraper):
 
@@ -98,82 +184,23 @@ class PlayerPageURLScraper(PlaywrightScraper):
 
 
     PATHS = {
-        "last_player_check": "//tbody[last()]//tr[last()]"
-                             "//td[@class='position']/text()",
-        "page_num": "//a[contains(text(), 'Last page')]/@href",
+        "landing_check": "//div[@id='skater-stats']"
+                         "//td[@class='player']//a[@href]",
         "table_goalies": "//div[@id='goalie-stats']",
-        "table_skaters": "//div[@id='skater-stats']",
-        "url": "//td[@class='player']//a[@href]",
+        "table_skaters": "//div[@id='skater-stats']"
     }
 
 
-    def __init__(self, base_url: str, page: Page):
-        self.base_url = base_url
-        self.page = page
-        self.scraped_data = []
+    def __init__(self, base_url: str, page_num: int, page: Page):
+        url = base_url + self.QUERY_STRING + str(page_num)
+        super().__init__(url=url, page=page)
 
-
-    def _get_player_type_urls(self) -> list:
-        page_num = self._get_page_num()
-        for page in range(1, page_num + 1):
-            self.get_data(page=page)
-
-        return self.scraped_data
-
-
-    def _get_page_num(self) -> int:
-        sel = Selector(text=self.page.content())
-        page_url = cf.get_single_xpath_value(
-            sel=sel,
-            xpath=self.PATHS["page_num"],
-            optional=True
-            )
-        if page_url:
-
-            return int(re.findall(self.PAGE_REGEX, page_url)[0])
-        is_one_page = self._one_page_check(sel=sel) 
-        if is_one_page:
-
-            return 1
-        
-        raise ValueError 
-
-
-    def _one_page_check(self, sel: Selector) -> bool:
-        """In case page listing is not found, checks that last postion in 
-            stat table is than 100
-        """
-        last_position = cf.get_single_xpath_value(
-            sel=sel,
-            xpath=self.PATHS["last_player_check"],
-            optional=False
-            )
-        last_position = int(re.findall("[0-9]+", last_position)[0])
-        if last_position < 100:
-
-            return True
-        
-        return False
-
-
-    @repeat_request_until_success
-    def get_data(self, page: int) -> None:
-        url = self.base_url + self.QUERY_STRING + str(page)
-        self.page.goto(url=url)
-        sel = Selector(text=self.page.content())
-        url_xpath = self.PATHS[self.TABLE_XPATH] + self.PATHS["url"] 
-        urls_check = cf.get_list_xpath_values(
-            sel=sel,
-            xpath=url_xpath,
-            optional=False
-        )
-        if not urls_check:
-            raise ValueError
-        stats_table = self._scrape_data(
+    
+    def get_data(self) -> None:
+        return  self._scrape_data(
             xpath_name=self.TABLE_XPATH,
             is_optional=False
             )
-        self.scraped_data.append(stats_table)
     
 
 class SkaterPageURLScraper(PlayerPageURLScraper):
