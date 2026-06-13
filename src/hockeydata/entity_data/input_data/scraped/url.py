@@ -14,14 +14,11 @@ from hockeydata.logger.logging_config import logger
 class PlayerURLHTMLInputter(HTMLInputter):
 
 
-    def __init__(
-            self, db_session: Session, 
-            scraped_data: dict[str, dict[list[str]]|str]):
+    def __init__(self, db_session: Session, league_uid: str):
         super().__init__(
-            db_session=db_session, 
-            scraped_data=scraped_data["data"]
+            db_session=db_session
             )
-        self.league_id = scraped_data["uid"]
+        self.league_id = league_uid
         self.query_manager = StorageDBQuery(db_session=db_session)
         self.season_mapper: dict[str, int] = {}
 
@@ -33,8 +30,9 @@ class PlayerURLHTMLInputter(HTMLInputter):
             )
         
 
-    def _set_season_mapper(self) -> None:
-        seasons = list(self.scraped_data.keys())
+    def _set_season_mapper(
+            self, scraped_data: dict[str, dict[list[str]]|str]) -> None:
+        seasons = list(scraped_data.keys())
         filter_ = [db.Season.season.in_(seasons)]
         raw_data = self.query_manager.get_db_query_result(
             query_name="season_mapper",
@@ -44,12 +42,12 @@ class PlayerURLHTMLInputter(HTMLInputter):
             self.season_mapper[row[0]] = row[1]
 
 
-    def input_data(self) -> None:
+    def input_data(self, scraped_data: dict[str, dict[list[str]]|str]) -> None:
         self._set_league_id()
-        self._set_season_mapper()
-        for season in self.scraped_data:
+        self._set_season_mapper(scraped_data=scraped_data)
+        for season in scraped_data:
             self._input_season_player_urls(
-                scraped_data=self.scraped_data[season],
+                scraped_data=scraped_data[season],
                 season=season
                 )
         #maybe delete later?
@@ -144,16 +142,14 @@ class URLInputter():
         pass
 
 
-    def __init__(self, db_session: Session, 
-                 parsed_data: list[dict[str, int|list|str]]):
+    def __init__(self, db_session: Session):
         self.db_session = db_session
         self.insert_db = StorageDatabaseMethods(db_session=db_session)
         self.query = Query(db_session=db_session) 
-        self.parsed_data = parsed_data
 
 
-    def input_data(self) -> None:
-        for chunk in self.parsed_data:
+    def input_data(self, parsed_data: list[dict[str, int|list|str]]) -> None:
+        for chunk in parsed_data:
             self._input_page(chunk=chunk)
 
 
