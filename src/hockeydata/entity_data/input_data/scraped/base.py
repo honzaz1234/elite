@@ -14,16 +14,15 @@ class HTMLInputter(ABC):
 
 
     def __init__(
-            self, db_session: Session, scraped_data: dict):
+            self, db_session: Session):
         self.db_session = db_session
         self.insert_db = DatabaseMethods(db_session=db_session)
-        self.scraped_data = scraped_data
         self.query = Query(db_session=db_session)
         self.scrape_id: int|None = None
 
 
     @abstractmethod
-    def input_data(self) -> None:
+    def input_data(self, scraped_data: list[dict]) -> None:
         pass
 
 
@@ -50,8 +49,8 @@ class HTMLEntityInputter(HTMLInputter):
 
 
     def __init__(
-            self, db_session: Session, scraped_data: dict):
-        super().__init__(db_session=db_session, scraped_data=scraped_data)
+            self, db_session: Session):
+        super().__init__(db_session=db_session)
         self.db_id = None
 
 
